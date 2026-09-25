@@ -482,36 +482,30 @@ with tab_oficial:
         # 3. RENDERIZACIÓN DE LA PLANILLA CUADRICULADA
         st.dataframe(df_mostrar_oficial, use_container_width=True, hide_index=True)
 
-        # 4. EXPORTADOR DIRECTO FIDELIDAD 100% (TAL CUAL SE VE EN LA WEB)
+         # 4. EXPORTADOR DIRECTO NATIVO (EVITA ERRORES DE LIBRERÍAS)
         st.markdown("---")
-        import io
         
-        try:
-            output_oficial_excel = io.BytesIO()
-            with pd.ExcelWriter(output_oficial_excel, engine='openpyxl') as writer:
-                df_mostrar_oficial.to_excel(writer, index=False, sheet_name="Presupuesto_Destino")
-            excel_oficial_data = output_oficial_excel.getvalue()
-            
-            col_down_ex, col_down_csv = st.columns(2)
-            with col_down_ex:
-                st.download_button(
-                    label=" Green 📗 Descargar Presupuesto Oficial a Excel (.xlsx)", 
-                    data=excel_oficial_data, 
-                    file_name=f"Presupuesto_{str(dest_sel).replace(' ', '_')}.xlsx", 
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-                    use_container_width=True,
-                    key="btn_oficial_excel_final"
-                )
-            with col_down_csv:
-                # El formato CSV exporta las cadenas verticales para impresión o volcado directo a PDF
-                csv_oficial_data = df_mostrar_oficial.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="📄 Exportar Planilla Imprimible / PDF (CSV)", 
-                    data=csv_oficial_data, 
-                    file_name=f"Presupuesto_{str(dest_sel).replace(' ', '_')}.csv", 
-                    mime="text/csv", 
-                    use_container_width=True,
-                    key="btn_oficial_csv_final"
-                )
-        except:
-            st.error("Error al estructurar los archivos de descarga.")
+        # Generamos un archivo CSV con codificación Excel y tabulación por comas
+        csv_oficial_excel = df_mostrar_oficial.to_csv(index=False).encode('utf-8-sig')
+        
+        col_down_ex, col_down_csv = st.columns(2)
+        with col_down_ex:
+            # Este botón descarga el archivo directamente con extensión .xls para que Excel lo abra limpio en columnas y en vertical
+            st.download_button(
+                label="📗 Descargar Presupuesto Oficial para Excel (.xls)", 
+                data=csv_oficial_excel, 
+                file_name=f"Presupuesto_{str(dest_sel).replace(' ', '_')}.xls", 
+                mime="application/vnd.ms-excel", 
+                use_container_width=True,
+                key="btn_oficial_excel_nativo"
+            )
+        with col_down_csv:
+            # Copia exacta imprimible para mandar directo a PDF
+            st.download_button(
+                label="📄 Exportar Planilla Imprimible / PDF (CSV)", 
+                data=csv_oficial_excel, 
+                file_name=f"Presupuesto_{str(dest_sel).replace(' ', '_')}.csv", 
+                mime="text/csv", 
+                use_container_width=True,
+                key="btn_oficial_csv_nativo"
+            )

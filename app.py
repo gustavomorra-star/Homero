@@ -375,7 +375,7 @@ with tab_agregar_destino:
             nueva_clase = st.selectbox("Cambiar Clase:", opciones_clase, index=opciones_clase.index(fila_real["clase"]) if fila_real["clase"] in opciones_clase else 0)
             nuevo_tipo = st.selectbox("Cambiar Tipo:", opciones_tipo, index=opciones_tipo.index(fila_real["tipo"]) if fila_real["tipo"] in opciones_tipo else 0)
         with col_ed3:
-            nuevo_finan = st.selectbox("Cambiar Financiamiento:", opciones_financiamiento, index=opciones_financiamiento.index(fila_real["financiamiento"]) if fila_real["financiamiento"] in opciones_financiamiento else 0)
+            nuevo_finan = st.selectbox("Cambiar Finalidad:", opciones_finalidad, index=opciones_finalidad.index(fila_real["finalidad"]) if fila_real["finalidad"] in opciones_finalidad else 0)
             
         st.markdown("<br>", unsafe_allow_html=True)
         col_btn1, col_btn2 = st.columns(2)

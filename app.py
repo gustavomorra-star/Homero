@@ -221,8 +221,8 @@ st.subheader("📥 Cargar Nuevo Renglón Presupuestario")
 st.caption("Los campos se encuentran vacíos por defecto. Seleccioná una opción para activar las cascadas de imputación.")
     
 col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**📍 1. Ubicación Institucional**")
+with col1:
+    st.markdown("**📍 1. Ubicación Institucional**")
         
         f_sec = st.selectbox(
             "SECRETARÍA:", 
@@ -263,8 +263,8 @@ col1, col2 = st.columns(2)
             f_dest = None
             st.info("💡 Seleccioná una Secretaría arriba para desplegar las Subsecretarías.")
         
-    with col2:
-        st.markdown("**📊 2. Imputación de Partida**")
+with col2:
+    st.markdown("**📊 2. Imputación de Partida**")
         
         f_obj = st.selectbox(
             "OBJETO DE GASTO:", 
@@ -299,32 +299,32 @@ col1, col2 = st.columns(2)
 
 st.markdown("---")
 col3, col4, col5 = st.columns(3)
-    with col3:
-        f_total = st.number_input("PRESUPUESTO / VALOR ($):", min_value=0.0, step=100.0)
-        f_fuente = st.selectbox("F.FIN:", [""] + opciones_fuente_fin, format_func=lambda x: "--- Elegí F.Fin ---" if x == "" else x)
-    with col4:
-        f_clase = st.selectbox("CLASE:", [""] + opciones_clase, format_func=lambda x: "--- Elegí Clase ---" if x == "" else x)
-        f_tipo = st.selectbox("TIPO:", [""] + opciones_tipo, format_func=lambda x: "--- Elegí Tipo ---" if x == "" else x)
-    with col5:
-        f_finalidad = st.selectbox("FINALIDAD:", [""] + opciones_finalidad, format_func=lambda x: "--- Elegí Finalidad ---" if x == "" else x)
+with col3:
+    f_total = st.number_input("PRESUPUESTO / VALOR ($):", min_value=0.0, step=100.0)
+    f_fuente = st.selectbox("F.FIN:", [""] + opciones_fuente_fin, format_func=lambda x: "--- Elegí F.Fin ---" if x == "" else x)
+with col4:
+    f_clase = st.selectbox("CLASE:", [""] + opciones_clase, format_func=lambda x: "--- Elegí Clase ---" if x == "" else x)
+    f_tipo = st.selectbox("TIPO:", [""] + opciones_tipo, format_func=lambda x: "--- Elegí Tipo ---" if x == "" else x)
+with col5:
+    f_finalidad = st.selectbox("FINALIDAD:", [""] + opciones_finalidad, format_func=lambda x: "--- Elegí Finalidad ---" if x == "" else x)
 
-    campos_completos = (f_sec != "") and (f_sub != "") and (f_dest is not None and f_dest != "") and (f_obj != "") and (f_padre != "") and (f_presup != "") and (f_fuente != "") and (f_clase != "") and (f_tipo != "") and (f_finalidad != "")
+campos_completos = (f_sec != "") and (f_sub != "") and (f_dest is not None and f_dest != "") and (f_obj != "") and (f_padre != "") and (f_presup != "") and (f_fuente != "") and (f_clase != "") and (f_tipo != "") and (f_finalidad != "")
     
-    boton_guardar = st.button("💾 GUARDAR REGISTRO INMEDIATO", type="primary", use_container_width=True, disabled=not campos_completos)
+boton_guardar = st.button("💾 GUARDAR REGISTRO INMEDIATO", type="primary", use_container_width=True, disabled=not campos_completos)
     
-    if boton_guardar and f_total > 0:
-        conn = sqlite3.connect(DB_NAME)
-        cursor = conn.cursor()
-        cursor.execute("""
+if boton_guardar and f_total > 0:
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("""
             INSERT INTO egresos_sistema (secretaria, subsecretaria, destino, objeto_gasto, cuenta_padre, cuenta_presupuestaria, total, fuente_fin, clase, tipo, financiamiento)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (f_sec, f_sub, f_dest, f_obj, f_padre, f_presup, f_total, f_fuente, f_clase, f_tipo, f_finalidad))
-        conn.commit()
-        conn.close()
-        st.success("✅ ¡Renglón presupuestario guardado con éxito!")
-        st.rerun()
-    elif boton_guardar and f_total <= 0:
-        st.error("❌ Por favor, ingresá un monto presupuestario mayor a $0.")
+    conn.commit()
+    conn.close()
+    st.success("✅ ¡Renglón presupuestario guardado con éxito!")
+    st.rerun()
+elif boton_guardar and f_total <= 0:
+    st.error("❌ Por favor, ingresá un monto presupuestario mayor a $0.")
 
 # =====================================================================
 # PESTAÑA 2: ABM DE DESTINOS DINÁMICOS DESDE CERO

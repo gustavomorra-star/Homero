@@ -390,7 +390,7 @@ with tab_agregar_destino:
 # =====================================================================
 # PESTAÑA 3: HISTORIAL DE REGISTROS DE EGRESOS
 # =====================================================================
-    st.subheader("📋 Planilla de Consulta de Datos Guardados (Formato R.A.F.A.M.)")
+    st.subheader("📋 Planilla de Consulta de Datos Guardados")
     st.caption("Visualización del presupuesto ejecutado y partidas agrupadas por estructura institucional.")
     
     conn = sqlite3.connect(DB_NAME)

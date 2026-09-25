@@ -180,14 +180,14 @@ with tab_egresos:
         destino_seleccionado = st.selectbox("🔍 BUSCAR Y SELECCIONAR DESTINO:", options=[""] + df_egr["destino"].dropna().unique().tolist(), format_func=lambda x: "--- Elegí un destino ---" if x == "" else str(x).upper())
         if destino_seleccionado != "":
             df_f = df_egr[df_egr["destino"] == destino_seleccionado]
-            col_izq, col_der = st.columns()
+            col_izq, col_der = st.columns(2)
             with col_izq: st.markdown(f"### 🎯 DESTINO: {str(destino_seleccionado).upper()}")
             with col_der: st.metric(label="📋 TOTAL DESTINO", value=f"${df_f['total'].sum():,.2f}")
             df_rep = pd.DataFrame({"CUENTA PADRE": df_f["cuenta_padre"], "PARTIDA": df_f["cuenta_presupuestaria"], "PRESUPUESTO": df_f["total"].map(lambda x: f"${x:,.2f}"), "F.FIN": df_f["fuente_fin"], "CLASE": df_f["clase"], "TIPO": df_f["tipo"], "FINALIDAD": df_f["finalidad"]})
             st.dataframe(df_rep, use_container_width=True, hide_index=True)
 
 with tab_registros:
-    st.subheader("📋 Planilla de Consulta de Datos Guardados (Formato R.A.F.A.M.)")
+    st.subheader("📋 Planilla de Consulta de Datos Guardados")
     conn = sqlite3.connect(DB_NAME)
     df_auditoria = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
     conn.close()

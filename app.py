@@ -180,12 +180,23 @@ with tab_egresos:
     else:
         destino_seleccionado = st.selectbox("🔍 BUSCAR Y SELECCIONAR DESTINO:", options=[""] + df_egr["destino"].dropna().unique().tolist(), format_func=lambda x: "--- Elegí un destino ---" if x == "" else str(x).upper())
         if destino_seleccionado != "":
-            df_f = df_egr[df_egr["destino"] == destino_seleccionado]
+            df_f = df_egr[df_egr["destino"] == destino_seleccionado].copy()
             col_izq, col_der = st.columns(2)
             with col_izq: st.markdown(f"### 🎯 DESTINO: {str(destino_seleccionado).upper()}")
             with col_der: st.metric(label="📋 TOTAL DESTINO", value=f"${df_f['total'].sum():,.2f}")
+            
+            # Unificación y desglose VERTICAL de la partida
+            df_f["partida_completa"] = df_f.apply(lambda r: f"{r['objeto_gasto']}\n↳ {r['cuenta_padre']}\n  ↳ {r['cuenta_presupuestaria']}", axis=1)
             col_finalidad_rep = df_f["finalidad"] if "finalidad" in df_f.columns else df_f["financiamiento"]
-            df_rep = pd.DataFrame({"CUENTA PADRE": df_f["cuenta_padre"], "PARTIDA": df_f["cuenta_presupuestaria"], "PRESUPUESTO": df_f["total"].map(lambda x: f"${x:,.2f}"), "F.FIN": df_f["fuente_fin"], "CLASE": df_f["clase"], "TIPO": df_f["tipo"], "FINALIDAD": col_finalidad_rep})
+            
+            df_rep = pd.DataFrame({
+                "PARTIDA": df_f["partida_completa"], 
+                "PRESUPUESTO": df_f["total"].map(lambda x: f"${x:,.2f}"), 
+                "F.FIN": df_f["fuente_fin"], 
+                "CLASE": df_f["clase"], 
+                "TIPO": df_f["tipo"], 
+                "FINALIDAD": col_finalidad_rep
+            })
             st.dataframe(df_rep, use_container_width=True, hide_index=True)
 
 with tab_registros:
@@ -200,9 +211,22 @@ with tab_registros:
         for (sec, sub, dest), df_grupo in df_auditoria.groupby(["secretaria", "subsecretaria", "destino"]):
             st.markdown(f'<div style="background-color: #f0f2f6; padding: 10px; border-radius: 4px; margin-top: 15px;"><b>🏛️ JURISDICCIÓN:</b> {sec}<br><b>🏢 SUBSEC:</b> {sub} | <b>🎯 DESTINO:</b> {dest}</div>', unsafe_allow_html=True)
             col_finalidad = df_grupo["finalidad"] if "finalidad" in df_grupo.columns else df_grupo["financiamiento"]
-            df_bloque_vista = pd.DataFrame({"ID": df_grupo["id"], "CUENTA PADRE": df_grupo["cuenta_padre"], "PARTIDA": df_grupo["cuenta_presupuestaria"], "PRESUPUESTO ($)": df_grupo["total"].map(lambda x: f"${x:,.2f}"), "F.FIN": df_grupo["fuente_fin"], "CLASE": df_grupo["clase"], "TIPO": df_grupo["tipo"], "FINALIDAD": col_finalidad})
+            
+            # Unificación y desglose VERTICAL de la partida para la vista de auditoría
+            df_grupo_copy = df_grupo.copy()
+            df_grupo_copy["partida_completa"] = df_grupo_copy.apply(lambda r: f"{r['objeto_gasto']}\n↳ {r['cuenta_padre']}\n  ↳ {r['cuenta_presupuestaria']}", axis=1)
+            
+            df_bloque_vista = pd.DataFrame({
+                "ID": df_grupo_copy["id"], 
+                "PARTIDA": df_grupo_copy["partida_completa"], 
+                "PRESUPUESTO ($)": df_grupo_copy["total"].map(lambda x: f"${x:,.2f}" if pd.notnull(x) else "$0.00"), 
+                "F.FIN": df_grupo_copy["fuente_fin"], 
+                "CLASE": df_grupo_copy["clase"], 
+                "TIPO": df_grupo_copy["tipo"], 
+                "FINALIDAD": col_finalidad
+            })
             st.dataframe(df_bloque_vista, use_container_width=True, hide_index=True)
-            st.markdown(f'<div style="text-align: right; font-weight: bold; border-top: 1px solid #dcdcdc; padding-top: 5px; margin-bottom: 15px;">Total Destino: <span style="color: #2e7d32;">${df_grupo["total"].sum():,.2f}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="text-align: right; font-weight: bold; border-top: 1px solid #dcdcdc; padding-top: 5px; margin-bottom: 15px;">Total Destino: <span style="color: #2e7d32;">${df_grupo_copy["total"].sum():,.2f}</span></div>', unsafe_allow_html=True)
         st.markdown("---")
         st.metric(label="📊 TOTAL GENERAL ACUMULADO", value=f"${df_auditoria['total'].sum():,.2f}")
         
@@ -214,7 +238,7 @@ with tab_registros:
         df_auditoria["Texto_Descriptivo"] = df_auditoria.apply(lambda r: f"ID: {r['id']} | Destino: {r['destino']} | Monto: ${r['total']:,.2f}", axis=1)
         linea_seleccionada = st.selectbox("Seleccioná el registro a modificar por su ID:", df_auditoria["Texto_Descriptivo"].tolist(), key="select_modificar_auditoria")
         
-        fila_real = df_auditoria[df_auditoria["Texto_Descriptivo"] == linea_seleccionada].iloc[0]
+        fila_real = df_auditoria[df_auditoria["Texto_Descriptivo"] == linea_seleccionada].iloc
         id_registro = int(fila_real["id"])
         
         col_ed1, col_ed2, col_ed3 = st.columns(3)

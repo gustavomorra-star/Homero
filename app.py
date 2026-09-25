@@ -256,11 +256,11 @@ with tab_egresos:
             with col_izq: st.markdown(f"### 🎯 DESTINO: {str(destino_seleccionado).upper()}")
             with col_der: st.metric(label="📋 TOTAL DESTINO", value=f"${df_f['total'].sum():,.2f}")
             
-            # Formato Vertical en celda
+            # 1. En la pantalla web mantenemos el formato visual de árbol vertical que te gustó
             df_f["partida_vertical"] = df_f.apply(lambda r: f"{r['objeto_gasto']}\n↳ {r['cuenta_padre']}\n  ↳ {r['cuenta_presupuestaria']}", axis=1)
             col_finalidad_rep = df_f["finalidad"] if "finalidad" in df_f.columns else df_f["financiamiento"]
             
-            df_rep = pd.DataFrame({
+            df_rep_pantalla = pd.DataFrame({
                 "PARTIDA": df_f["partida_vertical"], 
                 "PRESUPUESTO": df_f["total"].map(lambda x: f"${x:,.2f}"), 
                 "F.FIN": df_f["fuente_fin"], 
@@ -268,21 +268,38 @@ with tab_egresos:
                 "TIPO": df_f["tipo"], 
                 "FINALIDAD": col_finalidad_rep
             })
-            st.dataframe(df_rep, use_container_width=True, hide_index=True)
+            st.dataframe(df_rep_pantalla, use_container_width=True, hide_index=True)
             
             # =====================================================================
-            # 📥 EXPORTADOR DIRECTO NATIVO SEGURO (EVITA ERRORES DE LIBRERÍAS)
+            # 📥 EXPORTADOR EXCEL EN 11 COLUMNAS PLANAS INDEPENDIENTES
             # =====================================================================
             st.markdown("---")
-            csv_sheet_excel = df_rep.to_csv(index=False).encode('utf-8-sig')
+            
+            # Armamos el DataFrame con el orden estricto de columnas que solicitaste
+            df_excel_11_columnas = pd.DataFrame({
+                "Secretaría": df_f["secretaria"],
+                "Subsecretaría": df_f["subsecretaria"],
+                "Destino": df_f["destino"],
+                "Objeto del Gasto": df_f["objeto_gasto"],
+                "Cuenta Padre": df_f["cuenta_padre"],
+                "Cuenta Imputación": df_f["cuenta_presupuestaria"],
+                "Presupuesto": df_f["total"], # Número puro para que Excel pueda sumar
+                "F. Financiamiento": df_f["fuente_fin"],
+                "Clase": df_f["clase"],
+                "Tipo": df_f["tipo"],
+                "Finalidad": col_finalidad_rep
+            })
+            
+            # Conversión nativa segura a formato binario (Evita caídas de openpyxl)
+            csv_11_cols = df_excel_11_columnas.to_csv(index=False).encode('utf-8-sig')
             
             st.download_button(
-                label="📗 Descargar Planilla Sheet para Excel (.xls)", 
-                data=csv_sheet_excel, 
-                file_name=f"Planilla_{str(destino_seleccionado).replace(' ', '_')}.xls", 
+                label="📗 Descargar Reporte Sheet en 11 Columnas para Excel (.xls)", 
+                data=csv_11_cols, 
+                file_name=f"Reporte_Sheet_{str(destino_seleccionado).replace(' ', '_')}.xls", 
                 mime="application/vnd.ms-excel", 
                 use_container_width=True,
-                key=f"btn_sheet_excel_nativo_{str(destino_seleccionado).replace(' ', '_')}"
+                key=f"btn_sheet_11cols_{str(destino_seleccionado).replace(' ', '_')}"
             )
 # =====================================================================
 # PESTAÑA 4: CONSULTA COMPLETA POR BLOQUES Y PANEL DE EDICIÓN SEGURO

@@ -341,24 +341,65 @@ with tab_agregar_destino:
 # =====================================================================
 # PESTAÑA 3: HISTORIAL DE REGISTROS DE EGRESOS
 # =====================================================================
-with tab_registros:
-    st.subheader("📋 Historial de Cargas Realizadas")
+    st.subheader("📋 Panel de Control y Modificación de Cargas")
+    
     conn = sqlite3.connect(DB_NAME)
-    df_actual = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
+    df_auditoria = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
     conn.close()
-    if df_actual.empty:
-        st.info("Todavía no se cargaron registros mediante el formulario.")
+    
+    if df_auditoria.empty:
+        st.info("No hay registros en la base de datos para modificar.")
     else:
-        st.dataframe(df_actual.drop(columns=["id"]), use_container_width=True, hide_index=True)
-
-# Barra lateral - Limpieza total por si querés resetear en el futuro
-st.sidebar.header("⚙️ Herramientas")
-if st.sidebar.button("⚠️ Vaciar Base de Datos Completa"):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM egresos_sistema")
-    cursor.execute("DELETE FROM destinos_sistema")
-    conn.commit()
-    conn.close()
-    st.sidebar.success("Base de datos e historial limpios por completo.")
-    st.rerun()
+        st.markdown("**1. Elegí el registro que querés Corregir o Eliminar:**")
+        # Generar una línea descriptiva por fila para identificarla fácil en la lista
+        df_auditoria["Visualizar"] = df_auditoria.apply(
+            lambda r: f"ID: {r['id']} | Destino: {r['destino']} | Partida: {str(r['cuenta_presupuestaria'])[:30]}... | Monto: ${r['total']:,.2f}", axis=1
+        )
+        
+        opciones_lineas = df_auditoria["Visualizar"].tolist()
+        linea_seleccionada = st.selectbox("Seleccioná un movimiento de la lista:", opciones_lineas)
+        
+        # Extraer los datos reales de la fila elegida para precargarlos
+        fila_real = df_auditoria[df_auditoria["Visualizar"] == linea_seleccionada].iloc[0]
+        id_registro = int(fila_real["id"])
+        
+        st.markdown("---")
+        st.markdown(f"🛠️ **Formulario de Corrección para el ID: {id_registro}**")
+        
+        # Cuadrícula para editar los valores en caliente
+        col_ed1, col_ed2, col_ed3 = st.columns(3)
+        with col_ed1:
+            nuevo_total = st.number_input("Corregir Monto ($):", min_value=0.0, value=float(fila_real["total"]), key=f"tot_{id_registro}")
+            nueva_fuente = st.selectbox("Cambiar F.Fin:", opciones_fuente_fin, index=opciones_fuente_fin.index(fila_real["fuente_fin"]) if fila_real["fuente_fin"] in opciones_fuente_fin else 0)
+        with col_ed2:
+            nueva_clase = st.selectbox("Cambiar Clase:", opciones_clase, index=opciones_clase.index(fila_real["clase"]) if fila_real["clase"] in opciones_clase else 0)
+            nuevo_tipo = st.selectbox("Cambiar Tipo:", opciones_tipo, index=opciones_tipo.index(fila_real["tipo"]) if fila_real["tipo"] in opciones_tipo else 0)
+        with col_ed3:
+            nuevo_finan = st.selectbox("Cambiar Financiamiento:", opciones_financiamiento, index=opciones_financiamiento.index(fila_real["financiamiento"]) if fila_real["financiamiento"] in opciones_financiamiento else 0)
+            
+        st.markdown("<br>", unsafe_allow_html=True)
+        col_btn1, col_btn2 = st.columns(2)
+        
+        with col_btn1:
+            if st.button("🔄 ACTUALIZAR REGISTRO", type="primary", use_container_width=True):
+                conn = sqlite3.connect(DB_NAME)
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE egresos_sistema 
+                    SET total = ?, fuente_fin = ?, clase = ?, tipo = ?, financiamiento = ?
+                    WHERE id = ?
+                """, (nuevo_total, nueva_fuente, nueva_clase, nuevo_tipo, nuevo_finan, id_registro))
+                conn.commit()
+                conn.close()
+                st.success(f"✅ ¡ID {id_registro} actualizado correctamente!")
+                st.rerun()
+                
+        with col_btn2:
+            if st.button("🗑️ ELIMINAR REGISTRO TOTALMENTE", type="secondary", use_container_width=True):
+                conn = sqlite3.connect(DB_NAME)
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM egresos_sistema WHERE id = ?", (id_registro,))
+                conn.commit()
+                conn.close()
+                st.warning(f"💥 El registro ID {id_registro} fue eliminado del sistema.")
+                st.rerun()

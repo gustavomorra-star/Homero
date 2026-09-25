@@ -43,9 +43,10 @@ def inicializar_base_datos():
 
 inicializar_base_datos()
 
-st.set_page_config(layout="wide")
-st.title("💼 Homero - Sistema de Registro Presupuestario")
-st.write("📍 Municipalidad de Sunchales | Base de Datos Limpia de Cero")
+# Configura la pestaña del navegador con el nombre y la rosquilla de Homero
+st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="🍩")
+st.title("🍩 Homero - Sistema de Registro Presupuestario")
+st.write("📍 Municipalidad de Sunchales | ¡D'oh! Presupuesto Normalizado")
 
 # --- Plan de Cuentas fija de la Municipalidad ---
 MAPEO_GASTOS = {

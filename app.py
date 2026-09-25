@@ -246,23 +246,23 @@ with col1:
             conn.close()
             lista_d = df_d["nombre_destino"].tolist()
                 
-        if not lista_d:
-            st.warning("⚠️ Sin destinos creados para esta área. Crealo primero en '➕ GESTIÓN DE DESTINOS'.")
-            f_dest = None
+            if not lista_d:
+                st.warning("⚠️ Sin destinos creados para esta área. Crealo primero en '➕ GESTIÓN DE DESTINOS'.")
+                f_dest = None
+            else:
+                f_dest = st.selectbox(
+                    "DESTINO SELECCIONADO:", 
+                    options=[""] + lista_d,
+                    format_func=lambda x: "--- Seleccioná un Destino ---" if x == "" else str(x).upper(),
+                    key="reg_dest"
+                )
         else:
-            f_dest = st.selectbox(
-                "DESTINO SELECCIONADO:", 
-                options=[""] + lista_d,
-                format_func=lambda x: "--- Seleccioná un Destino ---" if x == "" else str(x).upper(),
-                key="reg_dest"
-                    )
-        else:
-            f_dest = None
+          f_dest = None
     else:
-        f_sub = ""
-        f_dest = None
-        st.info("💡 Seleccioná una Secretaría arriba para desplegar las Subsecretarías.")
-    
+      f_sub = ""
+      f_dest = None
+      st.info("💡 Seleccioná una Secretaría arriba para desplegar las Subsecretarías.")
+
 with col2:
     st.markdown("**📊 2. Imputación de Partida**")
         

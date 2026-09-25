@@ -1,5 +1,6 @@
-import sqlite3
-import pandas as pd
+st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="https://wikimedia.org")
+st.title("🍩 Homero - Sistema de Registro Presupuestario")
+
 import streamlit as st
 
 DB_NAME = "homero_sistema.db"

@@ -487,9 +487,8 @@ with tab_oficial:
         else:
             st.info("No hay transacciones registradas para este destino.")
  # =====================================================================
-    # =====================================================================
-     # =====================================================================
-        # 📥 GENERADOR NATIVO DE PDF DIRECTO (.PDF REAL EN SOLAPA 5 COMPACTO)
+ # =====================================================================
+        # 📥 GENERADOR NATIVO DE PDF DIRECTO (BLINDADO CONTRA CORTES)
         # =====================================================================
         st.markdown("<br>", unsafe_allow_html=True)
         try:
@@ -499,7 +498,6 @@ with tab_oficial:
             from reportlab.lib import colors
 
             buf = io.BytesIO()
-            # Fija los márgenes de la hoja A4 (Ancho útil de impresión: 515 puntos)
             doc = SimpleDocTemplate(buf, pagesize=A4, rightMargin=35, leftMargin=45, topMargin=35, bottomMargin=35)
             story = []
             
@@ -509,14 +507,15 @@ with tab_oficial:
             C = ParagraphStyle('C', parent=sty['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=1)
             B_C = ParagraphStyle('BC', parent=sty['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, alignment=1)
             
-            # 1. Cabecera del Membrete Oficial Municipal (130 + 255 + 130 = 515 puntos)
+            # 1. Cabecera del Membrete Oficial Municipal 2027
             h_data = [[
                 Paragraph("<b>Municipalidad de Sunchales</b><br><font color='#555' size='7'>Presupuesto Oficial 2027</font>", L), 
                 Paragraph("<b>PRESUPUESTO DE GASTO POR DESTINO</b><br><font size='10'>-2027-</font>", C), 
                 Paragraph("<b>Total Destino</b><br><font size='12'><b>$" + f"{total_acumulado_destino:,.2f}" + "</b></font>", B_C)
             ]]
             
-            h_tab = Table(h_data, colWidths=[130, 255, 130])
+            # Usamos el autoajuste nativo de ReportLab para evitar el uso de variables con corchetes
+            h_tab = Table(h_data)
             h_tab.setStyle(TableStyle([
                 ('BOX', (0,0), (-1,-1), 1, colors.black),
                 ('INNERGRID', (0,0), (-1,-1), 0.5, colors.black),
@@ -527,14 +526,14 @@ with tab_oficial:
             story.append(h_tab)
             story.append(Spacer(1, 8))
             
-            # 2. Línea de Jurisdicciones e Imputación (180 + 185 + 150 = 515 puntos)
+            # 2. Línea de Jurisdicciones
             m_data = [[
                 Paragraph(f"<b>SECRETARÍA:</b> {sec_sel}", L), 
                 Paragraph(f"<b>SUBSECRETARÍA:</b> {sub_sel}", L), 
                 Paragraph(f"<b>DESTINO:</b> {str(dest_sel).upper()}", C)
             ]]
             
-            m_tab = Table(m_data, colWidths=[180, 185, 150])
+            m_tab = Table(m_data)
             m_tab.setStyle(TableStyle([
                 ('BOX', (0,0), (-1,-1), 1, colors.black), 
                 ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), 
@@ -572,9 +571,8 @@ with tab_oficial:
                         Paragraph(str(f["FINANCIAMIENTO"]), estilo_valores)
                     ])
             
-            # Medidas exactas en puntos para las 6 columnas en papel A4 (Total: 515 puntos)
-            # Partida ancha (225) a la izquierda, y las 5 columnas de números fijas centradas
-            d_tab = Table(t_data, colWidths=[225, 65, 50, 55, 50, 70])
+            # Autoajuste de grilla sin colWidths para asegurar la compilación directa en el servidor
+            d_tab = Table(t_data)
             d_tab.setStyle(TableStyle([
                 ('LINEBELOW', (0,0), (-1,0), 1.5, colors.black), 
                 ('LINEBELOW', (0,1), (-1,-1), 0.5, colors.lightgrey), 

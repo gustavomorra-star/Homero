@@ -436,7 +436,7 @@ with tab_oficial:
                             <b>Municipalidad de Sunchales</b><br>
                             <span style="font-size: 9px; color: #777;">Presupuesto Oficial 2027</span>
                         </td>
-                        <td style="width: 50%; text-align: center; padding: 15px; border-right: 1px solid #000000; vertical-align: middle;">
+                        <td style="width: 55%; text-align: center; padding: 15px; border-right: 1px solid #000000; vertical-align: middle;">
                             <h2 style="margin: 0; padding: 0; color: #000000; font-size: 18px; font-weight: bold;">PRESUPUESTO DE GASTO POR DESTINO</h2>
                             <h4 style="margin: 4px 0 0 0; padding: 0; font-size: 13px; font-weight: normal;">-2027-</h4>
                         </td>
@@ -462,21 +462,17 @@ with tab_oficial:
 
         # 2. PROCESAMIENTO CONTABLE ARBÓREO MATEMÁTICO (SUBTOTALES AUTOMÁTICOS)
         filas_planilla = []
-        html_filas_pdf = ""
-
         if not df_filtrado_oficial.empty:
             for objeto, df_objeto in df_filtrado_oficial.groupby("objeto_gasto"):
                 tot_obj = df_objeto["total"].sum()
                 filas_planilla.append({"OBJETO DEL GASTO": f"<b>{objeto}</b>", "PRESUPUESTO": f"<b>${tot_obj:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
-                
                 for padre, df_padre in df_objeto.groupby("cuenta_padre"):
                     tot_pad = df_padre["total"].sum()
                     filas_planilla.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{padre}</b>", "PRESUPUESTO": f"<b>${tot_pad:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
-                    
                     for _, fila in df_padre.iterrows():
                         val_fin = fila["finalidad"] if "finalidad" in df_filtrado_oficial.columns else fila["financiamiento"]
-                        filas_planilla.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{fila['cuenta_presupuestaria']}", "PRESUPUESTO": f"${fila['total']:,.2f}", "F.FIN": fila["fuente_fin"], "CLASE": fila["clase"], "TIPO": fila["tipo"], "FINANCIAMIENTO": val_fin})
-   # 3. RENDERIZACIÓN DE LA PLANILLA EN PANTALLA
+                        filas_planilla.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{fila['cuenta_presupuestaria']}", "PRESUPUESTO": f"${fila['total']:,.2f}", "F.FIN": fila["fuente_fin"], "CLASE": fila["clase"], "TIPO": fila["tipo"], "FINANCIAMIENTO": v
+# 3. RENDERIZACIÓN DE LA PLANILLA EN PANTALLA
         if filas_planilla:
             st.write(pd.DataFrame(filas_planilla).to_html(escape=False, index=False), unsafe_allow_html=True)
         else:
@@ -493,7 +489,6 @@ with tab_oficial:
             from reportlab.lib import colors
 
             buf = io.BytesIO()
-            # Configuración simétrica de márgenes para centrado absoluto en papel A4
             doc = SimpleDocTemplate(buf, pagesize=A4, rightMargin=35, leftMargin=45, topMargin=35, bottomMargin=35)
             story = []
             
@@ -503,13 +498,20 @@ with tab_oficial:
             C = ParagraphStyle('C', parent=sty['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=1)
             B_C = ParagraphStyle('BC', parent=sty['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, alignment=1)
             
-            # 1. Membrete Superior Oficial 2027 Calibrado (Ancho Total: 515 puntos)
+            # 1. Membrete Superior 2027 Calibrado
             h_data = [[
                 Paragraph("<b>Municipalidad de Sunchales</b><br><font color='#555' size='7'>Presupuesto Oficial 2027</font>", L),
                 Paragraph("<b>PRESUPUESTO DE GASTO POR DESTINO</b><br><font size='10'>-2027-</font>", C),
                 Paragraph("<b>Total Destino</b><br><font size='12'><b>$" + f"{total_acumulado_destino:,.2f}" + "</b></font>", B_C)
             ]]
-            h_tab = Table(h_data, colWidths=[140, 240, 135])
+            
+            # Anchos fijos en puntos para el membrete
+            ancho_col_m1 = 130
+            ancho_col_m2 = 255
+            ancho_col_m3 = 130
+            medidas_membrete = [ancho_col_m1, ancho_col_m2, ancho_col_m3]
+            
+            h_tab = Table(h_data, colWidths=medidas_membrete)
             h_tab.setStyle(TableStyle([
                 ('BOX', (0,0), (-1,-1), 1, colors.black),
                 ('INNERGRID', (0,0), (-1,-1), 0.5, colors.black),
@@ -520,9 +522,11 @@ with tab_oficial:
             story.append(h_tab)
             story.append(Spacer(1, 8))
             
-            # 2. Línea de Jurisdicciones (Ancho Total: 515 puntos)
+            # 2. Línea de Jurisdicciones
             m_data = [[Paragraph(f"<b>SECRETARÍA:</b> {sec_sel}", L), Paragraph(f"<b>SUBSECRETARÍA:</b> {sub_sel}", L), Paragraph(f"<b>DESTINO:</b> {str(dest_sel).upper()}", C)]]
-            m_tab = Table(m_data, colWidths=[190, 190, 135])
+            medidas_jurisdiccion = [185, 185, 145]
+            
+            m_tab = Table(m_data, colWidths=medidas_jurisdiccion)
             m_tab.setStyle(TableStyle([('BOX', (0,0), (-1,-1), 1, colors.black), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('PADDING', (0,0), (-1,-1), 5)]))
             story.append(m_tab)
             story.append(Spacer(1, 15))
@@ -548,8 +552,16 @@ with tab_oficial:
                                 Paragraph(str(fila["clase"]), C), Paragraph(str(fila["tipo"]), C), Paragraph(str(v_fin), C)
                             ])
             
-            # Distribución exacta de columnas: Partida a la izquierda (225) y las de números centradas (50 a 65)
-            d_tab = Table(t_data, colWidths=[225, 60, 50, 55, 60, 65])
+            # Anchos fijos en puntos para cada columna de datos (Total: 515 puntos)
+            ancho_c1 = 225
+            ancho_c2 = 65
+            ancho_c3 = 50
+            ancho_c4 = 55
+            ancho_c5 = 50
+            ancho_c6 = 70
+            medidas_grilla = [ancho_c1, ancho_c2, ancho_c3, ancho_c4, ancho_c5, ancho_c6]
+            
+            d_tab = Table(t_data, colWidths=medidas_grilla)
             d_tab.setStyle(TableStyle([
                 ('LINEBELOW', (0,0), (-1,0), 1.5, colors.black),
                 ('LINEBELOW', (0,1), (-1,-1), 0.5, colors.lightgrey),

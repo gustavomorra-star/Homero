@@ -256,12 +256,12 @@ with col1:
                 format_func=lambda x: "--- Seleccioná un Destino ---" if x == "" else str(x).upper(),
                 key="reg_dest"
                     )
+        else:
+            f_dest = None
     else:
+        f_sub = ""
         f_dest = None
-else:
-    f_sub = ""
-    f_dest = None
-    st.info("💡 Seleccioná una Secretaría arriba para desplegar las Subsecretarías.")
+        st.info("💡 Seleccioná una Secretaría arriba para desplegar las Subsecretarías.")
     
 with col2:
     st.markdown("**📊 2. Imputación de Partida**")

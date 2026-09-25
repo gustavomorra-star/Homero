@@ -467,6 +467,9 @@ with tab_oficial:
 # =====================================================================
         # 📄 MÓDULO EXPORTADOR OFICIAL IMPRIMIBLE A PDF (CENTRADO ABSOLUTO Y 2027)
         # =====================================================================
+        # =====================================================================
+        # 📄 MÓDULO EXPORTADOR OFICIAL IMPRIMIBLE A PDF (CENTRADO DE COLUMNAS Y 2027)
+        # =====================================================================
         st.markdown("<br>", unsafe_allow_html=True)
         
         html_imprimible = f"""
@@ -502,21 +505,31 @@ with tab_oficial:
                 .linea-institucional {{ width: 100%; border-collapse: collapse; margin-top: 10px; border-top: 1px solid #000000; font-size: 11px; }}
                 .linea-institucional td {{ padding-top: 8px; border: none; }}
                 .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }}
-                .tabla-datos th { border-bottom: 2px solid #000000; padding: 8px 5px; text-align: left; font-weight: bold; }
-                .tabla-datos td { border-bottom: 1px solid #e0e0e0; padding: 8px 5px; vertical-align: middle; }
+                .tabla-datos th {{ 
+                    border-bottom: 2px solid #000000; 
+                    padding: 8px 5px; 
+                    text-align: center; 
+                    font-weight: bold; 
+                }}
+                .tabla-datos td {{ 
+                    border-bottom: 1px solid #e0e0e0; 
+                    padding: 8px 5px; 
+                    vertical-align: middle; 
+                    text-align: center; 
+                }}
             </style>
         </head>
         <body>
             <div class="container-membrete">
                 <table class="tabla-header">
                     <tr>
-                        <td style="width: 25%; font-size: 10px; line-height: 1.3;">
+                        <td style="width: 25%; font-size: 10px; line-height: 1.3; text-align: left;">
                             <b>Municipalidad de Sunchales</b><br>
                             <span style="color: #555; font-size: 8px;">Presupuesto Oficial 2027</span>
                         </td>
-                        <td style="width: 50%;">
-                            <div class="titulo-principal">PRESUPUESTO DE GASTO POR DESTINO</div>
-                            <div class="sub-ano" style="text-align: center; font-size: 12px; margin-top: 3px;">-2027-</div>
+                        <td style="width: 50%; text-align: center; vertical-align: middle;">
+                            <div class="titulo-principal" style="text-align: center;">PRESUPUESTO DE GASTO POR DESTINO</div>
+                            <div class="sub-ano" style="text-align: center; font-size: 12px; margin-top: 3px; font-weight: normal;">-2027-</div>
                         </td>
                         <td style="width: 25%;" class="box-total">
                             <div class="total-label">Total Destino</div>

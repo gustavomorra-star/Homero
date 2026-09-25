@@ -241,76 +241,70 @@ with tab_agregar_destino:
 # PESTAÑA 3: REPORTES AUTOMÁTICOS CON DESGLOSE VERTICAL
 # =====================================================================
 with tab_egresos:
-    st.subheader("📊 Consulta de Reportes Presupuestarios por Destino")
-    st.caption("Planilla de datos extendida con desglose completo de imputaciones en columnas independientes.")
+    st.subheader("📊 Base de Datos General de Egresos")
+    st.caption("Visualización y exportación unificada de la totalidad de renglones presupuestarios en 11 columnas paralelas.")
     
     conn = sqlite3.connect(DB_NAME)
-    df_egr = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
+    df_egr_completo = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
     conn.close()
 
-    if df_egr.empty:
-        st.info("No hay movimientos registrados para armar los reportes.")
+    if df_egr_completo.empty:
+        st.info("No hay movimientos registrados en la base de datos actualmente.")
     else:
-        # Selector para buscar por destino
-        destino_seleccionado = st.selectbox("🔍 BUSCAR Y SELECCIONAR DESTINO MUNICIPAL:", options=[""] + df_egr["destino"].dropna().unique().tolist(), format_func=lambda x: "--- Elegí un destino ---" if x == "" else str(x).upper())
-        if destino_seleccionado != "":
-            df_f = df_egr[df_egr["destino"] == destino_seleccionado].copy()
-            
-            col_izq, col_der = st.columns(2)
-            with col_izq: st.markdown(f"### 🎯 DESTINO: {str(destino_seleccionado).upper()}")
-            with col_der: st.metric(label="📋 TOTAL DESTINO", value=f"${df_f['total'].sum():,.2f}")
-            
-            # Sincronizamos la columna de finalidad/financiamiento
-            col_finalidad_rep = df_f["finalidad"] if "finalidad" in df_f.columns else df_f["financiamiento"]
-            
-            # CONSTRUCCIÓN DE LA PLANILLA PLANTA DE 11 COLUMNAS IDENTICA A TU CAPTURA DE PANTALLA
-            df_plano_11_cols = pd.DataFrame({
-                "SECRETARIA": df_f["secretaria"],
-                "SUBSECRETARIA": df_f["subsecretaria"],
-                "DESTINO": df_f["destino"],
-                "OBJETO DEL GASTO": df_f["objeto_gasto"],
-                "CUENTA PADRE": df_f["cuenta_padre"],
-                "CUENTA IMPUTACIÓN": df_f["cuenta_presupuestaria"],
-                "TOTAL": df_f["total"].map(lambda x: f"${x:,.2f}" if pd.notnull(x) else "$0.00"),
-                "FUENTE FIN.": df_f["fuente_fin"],
-                "CLASE": df_f["clase"],
-                "TIPO": df_f["tipo"],
-                "FINALIDAD/FUNCIÓN": col_finalidad_rep
-            })
-            
-            # Desplegamos la tabla ancha y plana directamente en la pantalla de Streamlit
-            st.dataframe(df_plano_11_cols, use_container_width=True, hide_index=True)
-            
-            # =====================================================================
-            # 📥 EXPORTADOR DIRECTO NATIVO DE TEXTO PLANO PARA EXCEL (.XLS)
-            # =====================================================================
-            st.markdown("---")
-            
-            # Para el archivo Excel dejamos los números sin el signo $ para que puedas aplicar fórmulas matemáticas sumatorias
-            df_excel_puro = pd.DataFrame({
-                "SECRETARIA": df_f["secretaria"],
-                "SUBSECRETARIA": df_f["subsecretaria"],
-                "DESTINO": df_f["destino"],
-                "OBJETO DEL GASTO": df_f["objeto_gasto"],
-                "CUENTA PADRE": df_f["cuenta_padre"],
-                "CUENTA IMPUTACIÓN": df_f["cuenta_presupuestaria"],
-                "TOTAL": df_f["total"],
-                "FUENTE FIN.": df_f["fuente_fin"],
-                "CLASE": df_f["clase"],
-                "TIPO": df_f["tipo"],
-                "FINALIDAD/FUNCIÓN": col_finalidad_rep
-            })
-            
-            csv_data_sheet = df_excel_puro.to_csv(index=False).encode('utf-8-sig')
-            
-            st.download_button(
-                label="📗 Descargar Reporte Sheet en 11 Columnas Planas para Excel (.xls)", 
-                data=csv_data_sheet, 
-                file_name=f"Planilla_Sheet_{str(destino_seleccionado).replace(' ', '_')}.xls", 
-                mime="application/vnd.ms-excel", 
-                use_container_width=True,
-                key=f"btn_sheet_flat_11cols_{str(destino_seleccionado).replace(' ', '_')}"
-            )
+        # Indicador masivo de control contable
+        st.metric(label="📋 TOTAL GENERAL ACUMULADO MUNICIPAL (EGRESOS)", value=f"${df_egr_completo['total'].sum():,.2f}")
+        
+        # Sincronizamos dinámicamente la columna de finalidad/financiamiento
+        col_finalidad_completa = df_egr_completo["finalidad"] if "finalidad" in df_egr_completo.columns else df_egr_completo["financiamiento"]
+        
+        # CONSTRUCCIÓN DE LA PLANILLA ABIERTA TOTAL EN PANTALLA
+        df_plano_masivo = pd.DataFrame({
+            "SECRETARIA": df_egr_completo["secretaria"],
+            "SUBSECRETARIA": df_egr_completo["subsecretaria"],
+            "DESTINO": df_egr_completo["destino"],
+            "OBJETO DEL GASTO": df_egr_completo["objeto_gasto"],
+            "CUENTA PADRE": df_egr_completo["cuenta_padre"],
+            "CUENTA IMPUTACIÓN": df_egr_completo["cuenta_presupuestaria"],
+            "TOTAL": df_egr_completo["total"].map(lambda x: f"${x:,.2f}" if pd.notnull(x) else "$0.00"),
+            "FUENTE FIN.": df_egr_completo["fuente_fin"],
+            "CLASE": df_egr_completo["clase"],
+            "TIPO": df_egr_completo["tipo"],
+            "FINALIDAD/FUNCIÓN": col_finalidad_completa
+        })
+        
+        # Renderizamos la totalidad de los datos en una grilla extendida para control visual directo
+        st.dataframe(df_plano_masivo, use_container_width=True, hide_index=True)
+        
+        # =====================================================================
+        # 📥 EXPORTADOR GLOBAL EN 11 COLUMNAS SEPARADAS POR PUNTO Y COMA
+        # =====================================================================
+        st.markdown("---")
+        
+        df_excel_global = pd.DataFrame({
+            "SECRETARIA": df_egr_completo["secretaria"],
+            "SUBSECRETARIA": df_egr_completo["subsecretaria"],
+            "DESTINO": df_egr_completo["destino"],
+            "OBJETO DEL GASTO": df_egr_completo["objeto_gasto"],
+            "CUENTA PADRE": df_egr_completo["cuenta_padre"],
+            "CUENTA IMPUTACIÓN": df_egr_completo["cuenta_presupuestaria"],
+            "TOTAL": df_egr_completo["total"], # Número crudo matemático
+            "FUENTE FIN.": df_egr_completo["fuente_fin"],
+            "CLASE": df_egr_completo["clase"],
+            "TIPO": df_egr_completo["tipo"],
+            "FINALIDAD/FUNCIÓN": col_finalidad_completa
+        })
+        
+        # El comando 'sep=";"' fuerza a Excel a dividir las 11 columnas automáticamente en sistemas argentinos
+        csv_global_data = df_excel_global.to_csv(index=False, sep=';').encode('utf-8-sig')
+        
+        st.download_button(
+            label="📗 Descargar Base de Datos Completa en 11 Columnas (.xls)", 
+            data=csv_global_data, 
+            file_name="Base_De_Datos_Egresos_General.xls", 
+            mime="application/vnd.ms-excel", 
+            use_container_width=True,
+            key="btn_descarga_global_sheet_egresos"
+        )
 # =====================================================================
 # PESTAÑA 4: CONSULTA COMPLETA POR BLOQUES Y PANEL DE EDICIÓN SEGURO
 # =====================================================================

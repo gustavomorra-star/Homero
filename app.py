@@ -183,7 +183,8 @@ with tab_egresos:
             col_izq, col_der = st.columns(2)
             with col_izq: st.markdown(f"### 🎯 DESTINO: {str(destino_seleccionado).upper()}")
             with col_der: st.metric(label="📋 TOTAL DESTINO", value=f"${df_f['total'].sum():,.2f}")
-            df_rep = pd.DataFrame({"CUENTA PADRE": df_f["cuenta_padre"], "PARTIDA": df_f["cuenta_presupuestaria"], "PRESUPUESTO": df_f["total"].map(lambda x: f"${x:,.2f}"), "F.FIN": df_f["fuente_fin"], "CLASE": df_f["clase"], "TIPO": df_f["tipo"], "FINALIDAD": df_f["finalidad"]})
+            col_finalidad_rep = df_f["finalidad"] if "finalidad" in df_f.columns else df_f["financiamiento"]
+            df_rep = pd.DataFrame({"CUENTA PADRE": df_f["cuenta_padre"], "PARTIDA": df_f["cuenta_presupuestaria"], "PRESUPUESTO": df_f["total"].map(lambda x: f"${x:,.2f}"), "F.FIN": df_f["fuente_fin"], "CLASE": df_f["clase"], "TIPO": df_f["tipo"], "FINALIDAD": col_finalidad_rep})
             st.dataframe(df_rep, use_container_width=True, hide_index=True)
 
 with tab_registros:

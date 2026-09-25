@@ -195,7 +195,8 @@ with tab_registros:
     else:
         for (sec, sub, dest), df_grupo in df_auditoria.groupby(["secretaria", "subsecretaria", "destino"]):
             st.markdown(f'<div style="background-color: #f0f2f6; padding: 10px; border-radius: 4px; margin-top: 15px;"><b>🏛️ JURISDICCIÓN:</b> {sec}<br><b>🏢 SUBSEC:</b> {sub} | <b>🎯 DESTINO:</b> {dest}</div>', unsafe_allow_html=True)
-            df_bloque_vista = pd.DataFrame({"CUENTA PADRE": df_grupo["cuenta_padre"], "PARTIDA": df_grupo["cuenta_presupuestaria"], "PRESUPUESTO ($)": df_grupo["total"].map(lambda x: f"${x:,.2f}"), "F.FIN": df_grupo["fuente_fin"], "CLASE": df_grupo["clase"], "TIPO": df_grupo["tipo"], "FINALIDAD": df_grupo["finalidad"]})
+            col_finalidad = df_grupo["finalidad"] if "finalidad" in df_grupo.columns else df_grupo["financiamiento"]
+         df_bloque_vista = pd.DataFrame({"CUENTA PADRE": df_grupo["cuenta_padre"], "PARTIDA": df_grupo["cuenta_presupuestaria"], "PRESUPUESTO ($)": df_grupo["total"].map(lambda x: f"${x:,.2f}"), "F.FIN": df_grupo["fuente_fin"], "CLASE": df_grupo["clase"], "TIPO": df_grupo["tipo"], "FINALIDAD": col_finalidad})
             st.dataframe(df_bloque_vista, use_container_width=True, hide_index=True)
             st.markdown(f'<div style="text-align: right; font-weight: bold; border-top: 1px solid #dcdcdc; padding-top: 5px; margin-bottom: 15px;">Total Destino: <span style="color: #2e7d32;">${df_grupo["total"].sum():,.2f}</span></div>', unsafe_allow_html=True)
         st.markdown("---")

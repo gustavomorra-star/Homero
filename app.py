@@ -406,7 +406,6 @@ with tab_oficial:
     df_oficial_base = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
     conn.close()
 
-    # Selectores en triple cascada limpia e independiente
     col_f1, col_f2, col_f3 = st.columns(3)
     with col_f1:
         sec_sel = st.selectbox("1. SELECCIONÁ SECRETARÍA:", options=[""] + opciones_secretarias, key="oficial_sec")
@@ -426,62 +425,24 @@ with tab_oficial:
         df_filtrado_oficial = df_oficial_base[(df_oficial_base["secretaria"] == sec_sel) & (df_oficial_base["subsecretaria"] == sub_sel) & (df_oficial_base["destino"] == dest_sel)].copy()
         total_acumulado_destino = df_filtrado_oficial["total"].sum() if not df_filtrado_oficial.empty else 0.0
 
-        # 1. REPRODUCCIÓN DEL ENCABEZADO SUPERIOR CON RECUADRO DE TOTAL DESTINO (PANTALLA)
-        st.markdown(
-            f"""
-            <div style="border: 1px solid #000000; padding: 0px; border-radius: 2px; background-color: #ffffff; margin-top: 15px; margin-bottom: 20px; font-family: Arial, sans-serif;">
-                <table style="width: 100%; border-collapse: collapse; margin: 0;">
-                    <tr>
-                        <td style="width: 25%; text-align: left; font-size: 11px; color: #555; padding: 15px; border-right: 1px solid #000000;">
-                            <b>Municipalidad de Sunchales</b><br>
-                            <span style="font-size: 9px; color: #777;">Presupuesto Oficial 2027</span>
-                        </td>
-                        <td style="width: 55%; text-align: center; padding: 15px; border-right: 1px solid #000000; vertical-align: middle;">
-                            <h2 style="margin: 0; padding: 0; color: #000000; font-size: 18px; font-weight: bold;">PRESUPUESTO DE GASTO POR DESTINO</h2>
-                            <h4 style="margin: 4px 0 0 0; padding: 0; font-size: 13px; font-weight: normal;">-2027-</h4>
-                        </td>
-                        <td style="width: 25%; text-align: center; padding: 0; margin: 0; vertical-align: middle; background-color: #f5f5f5;">
-                            <div style="font-size: 13px; font-weight: bold; border-bottom: 1px solid #000000; padding: 6px 0;">Total Destino</div>
-                            <div style="font-size: 18px; font-weight: bold; padding: 10px 0;">${total_acumulado_destino:,.2f}</div>
-                        </td>
-                    </tr>
+        st.markdown(f"""
+        <div style="border: 1px solid #000; padding: 0px; border-radius: 2px; background-color: #fff; margin-top: 15px; margin-bottom: 20px; font-family: Arial, sans-serif;">
+            <table style="width: 100%; border-collapse: collapse; margin: 0;">
+                <tr>
+                    <td style="width: 25%; font-size: 11px; padding: 15px; border-right: 1px solid #000; text-align: left;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 9px; color: #777;">Presupuesto Oficial 2027</span></td>
+                    <td style="width: 55%; text-align: center; padding: 15px; border-right: 1px solid #000; vertical-align: middle;"><h2 style="margin: 0; padding: 0; font-size: 18px; font-weight: bold;">PRESUPUESTO DE GASTO POR DESTINO</h2><h4 style="margin: 4px 0 0 0; padding: 0; font-size: 13px; font-weight: normal;">-2027-</h4></td>
+                    <td style="width: 20%; text-align: center; vertical-align: middle; background-color: #f5f5f5;"><div style="font-size: 12px; font-weight: bold; border-bottom: 1px solid #000; padding: 4px 0;">Total Destino</div><div style="font-size: 16px; font-weight: bold; padding: 8px 0;">${total_acumulado_destino:,.2f}</div></td>
+                </tr>
+            </table>
+            <div style="border-top: 1px solid #000; font-size: 11px; padding: 6px 10px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr><td><b>SECRETARÍA:</b> {sec_sel}</td><td><b>SUBSECRETARÍA:</b> {sub_sel}</td><td style="text-align: right;"><b>DESTINO:</b> {str(dest_sel).upper()}</td></tr>
                 </table>
-                <div style="border-top: 1px solid #000000; background-color: #ffffff; font-size: 11px; padding: 6px 10px;">
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr>
-                            <td style="width: 35%; padding: 2px;"><b>SECRETARÍA:</b> {sec_sel}</td>
-                            <td style="width: 35%; padding: 2px;"><b>SUBSECRETARÍA:</b> {sub_sel}</td>
-                            <td style="width: 30%; padding: 2px; text-align: right;"><b>DESTINO:</b> {str(dest_sel).upper()}</td>
-                        </tr>
-                    </table>
-                </div>
             </div>
-            """, 
-            unsafe_allow_html=True
-        )
+        </div>
+        """, unsafe_allow_html=True)
 
-        # 2. PROCESAMIENTO CONTABLE ARBÓREO MATEMÁTICO (SUBTOTALES AUTOMÁTICOS)
         filas_planilla = []
-        if not df_filtrado_oficial.empty:
-            for objeto, df_objeto in df_filtrado_oficial.groupby("objeto_gasto"):
-                tot_obj = df_objeto["total"].sum()
-                filas_planilla.append({"OBJETO DEL GASTO": f"<b>{objeto}</b>", "PRESUPUESTO": f"<b>${tot_obj:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
-                for padre, df_padre in df_objeto.groupby("cuenta_padre"):
-                    tot_pad = df_padre["total"].sum()
-                    filas_planilla.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{padre}</b>", "PRESUPUESTO": f"<b>${tot_pad:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
-                    for _, fila in df_padre.iterrows():
-                        val_fin = fila["finalidad"] if "finalidad" in df_filtrado_oficial.columns else fila["financiamiento"]
-                        filas_planilla.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{fila['cuenta_presupuestaria']}", "PRESUPUESTO": f"${fila['total']:,.2f}", "F.FIN": fila["fuente_fin"], "CLASE": fila["clase"], "TIPO": fila["tipo"], "FINANCIAMIENTO": v
-# 3. RENDERIZACIÓN DE LA PLANILLA EN PANTALLA
-        if filas_planilla:
-            st.write(pd.DataFrame(filas_planilla).to_html(escape=False, index=False), unsafe_allow_html=True)
-        else:
-            st.info("No hay transacciones registradas para este destino.")
-
-        # =====================================================================
-        # 📥 GENERADOR NATIVO DE PDF DIRECTO (.PDF REAL EN SOLAPA 5)
-        # =====================================================================
-        st.markdown("<br>", unsafe_allow_html=True)
         try:
             from reportlab.lib.pagesizes import A4
             from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -498,89 +459,50 @@ with tab_oficial:
             C = ParagraphStyle('C', parent=sty['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=1)
             B_C = ParagraphStyle('BC', parent=sty['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, alignment=1)
             
-            # 1. Membrete Superior 2027 Calibrado
-            h_data = [[
-                Paragraph("<b>Municipalidad de Sunchales</b><br><font color='#555' size='7'>Presupuesto Oficial 2027</font>", L),
-                Paragraph("<b>PRESUPUESTO DE GASTO POR DESTINO</b><br><font size='10'>-2027-</font>", C),
-                Paragraph("<b>Total Destino</b><br><font size='12'><b>$" + f"{total_acumulado_destino:,.2f}" + "</b></font>", B_C)
-            ]]
-            
-            # Anchos fijos en puntos para el membrete
-            ancho_col_m1 = 130
-            ancho_col_m2 = 255
-            ancho_col_m3 = 130
-            medidas_membrete = [ancho_col_m1, ancho_col_m2, ancho_col_m3]
-            
-            h_tab = Table(h_data, colWidths=medidas_membrete)
-            h_tab.setStyle(TableStyle([
-                ('BOX', (0,0), (-1,-1), 1, colors.black),
-                ('INNERGRID', (0,0), (-1,-1), 0.5, colors.black),
-                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                ('BACKGROUND', (2,0), (2,0), colors.HexColor('#f5f5f5')),
-                ('PADDING', (0,0), (-1,-1), 8),
-            ]))
-            story.append(h_tab)
-            story.append(Spacer(1, 8))
-            
-            # 2. Línea de Jurisdicciones
-            m_data = [[Paragraph(f"<b>SECRETARÍA:</b> {sec_sel}", L), Paragraph(f"<b>SUBSECRETARÍA:</b> {sub_sel}", L), Paragraph(f"<b>DESTINO:</b> {str(dest_sel).upper()}", C)]]
-            medidas_jurisdiccion = [185, 185, 145]
-            
-            m_tab = Table(m_data, colWidths=medidas_jurisdiccion)
-            m_tab.setStyle(TableStyle([('BOX', (0,0), (-1,-1), 1, colors.black), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('PADDING', (0,0), (-1,-1), 5)]))
-            story.append(m_tab)
-            story.append(Spacer(1, 15))
-            
-            # 3. Encabezados de la Planilla de Cuentas
             t_data = [[Paragraph("<b>OBJETO DEL GASTO</b>", B_C), Paragraph("<b>PRESUPUESTO</b>", B_C), Paragraph("<b>F.FIN</b>", B_C), Paragraph("<b>CLASE</b>", B_C), Paragraph("<b>TIPO</b>", B_C), Paragraph("<b>FINANCIAMIENTO</b>", B_C)]]
             
-            # 4. Inyección del árbol contable jerárquico al PDF
             if not df_filtrado_oficial.empty:
                 for objeto, df_objeto in df_filtrado_oficial.groupby("objeto_gasto"):
                     tot_obj = df_objeto["total"].sum()
+                    filas_planilla.append({"OBJETO DEL GASTO": f"<b>{objeto}</b>", "PRESUPUESTO": f"<b>${tot_obj:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
                     t_data.append([Paragraph(f"<b>{objeto}</b>", L), Paragraph(f"<b>${tot_obj:,.2f}</b>", C), "", "", "", ""])
                     
                     for padre, df_padre in df_objeto.groupby("cuenta_padre"):
                         tot_pad = df_padre["total"].sum()
+                        filas_planilla.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{padre}</b>", "PRESUPUESTO": f"<b>${tot_pad:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
                         t_data.append([Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{padre}</b>", B_L), Paragraph(f"<b>${tot_pad:,.2f}</b>", C), "", "", "", ""])
                         
                         for _, fila in df_padre.iterrows():
                             v_fin = fila["finalidad"] if "finalidad" in df_filtrado_oficial.columns else fila["financiamiento"]
-                            t_data.append([
-                                Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{fila['cuenta_presupuestaria']}", L),
-                                Paragraph(f"${fila['total']:,.2f}", C), Paragraph(str(fila["fuente_fin"]), C),
-                                Paragraph(str(fila["clase"]), C), Paragraph(str(fila["tipo"]), C), Paragraph(str(v_fin), C)
-                            ])
+                            filas_planilla.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{fila['cuenta_presupuestaria']}", "PRESUPUESTO": f"${fila['total']:,.2f}", "F.FIN": fila["fuente_fin"], "CLASE": fila["clase"], "TIPO": fila["tipo"], "FINANCIAMIENTO": v_fin})
+                            t_data.append([Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{fila['cuenta_presupuestaria']}", L), Paragraph(f"${fila['total']:,.2f}", C), Paragraph(str(fila["fuente_fin"]), C), Paragraph(str(fila["clase"]), C), Paragraph(str(fila["tipo"]), C), Paragraph(str(v_fin), C)])
+
+            if filas_planilla:
+                st.write(pd.DataFrame(filas_planilla).to_html(escape=False, index=False), unsafe_allow_html=True)
+            else:
+                st.info("No hay transacciones registradas para este destino.")
+
+            # Ensamblado estructural de las cabeceras en el archivo PDF
+            h_data = [[Paragraph("<b>Municipalidad de Sunchales</b><br><font color='#555' size='7'>Presupuesto Oficial 2027</font>", L), Paragraph("<b>PRESUPUESTO DE GASTO POR DESTINO</b><br><font size='10'>-2027-</font>", C), Paragraph("<b>Total Destino</b><br><font size='12'><b>$" + f"{total_acumulado_destino:,.2f}" + "</b></font>", B_C)]]
+            h_tab = Table(h_data, colWidths=[130, 255, 130])
+            h_tab.setStyle(TableStyle([('BOX', (0,0), (-1,-1), 1, colors.black), ('INNERGRID', (0,0), (-1,-1), 0.5, colors.black), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('BACKGROUND', (2,0), (2,0), colors.HexColor('#f5f5f5')), ('PADDING', (0,0), (-1,-1), 8)]))
+            story.append(h_tab)
+            story.append(Spacer(1, 8))
             
-            # Anchos fijos en puntos para cada columna de datos (Total: 515 puntos)
-            ancho_c1 = 225
-            ancho_c2 = 65
-            ancho_c3 = 50
-            ancho_c4 = 55
-            ancho_c5 = 50
-            ancho_c6 = 70
-            medidas_grilla = [ancho_c1, ancho_c2, ancho_c3, ancho_c4, ancho_c5, ancho_c6]
+            m_data = [[Paragraph(f"<b>SECRETARÍA:</b> {sec_sel}", L), Paragraph(f"<b>SUBSECRETARÍA:</b> {sub_sel}", L), Paragraph(f"<b>DESTINO:</b> {str(dest_sel).upper()}", C)]]
+            m_tab = Table(m_data, colWidths=[170, 170, 175])
+            m_tab.setStyle(TableStyle([('BOX', (0,0), (-1,-1), 1, colors.black), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('PADDING', (0,0), (-1,-1), 5)]))
+            story.append(m_tab)
+            story.append(Spacer(1, 15))
             
-            d_tab = Table(t_data, colWidths=medidas_grilla)
-            d_tab.setStyle(TableStyle([
-                ('LINEBELOW', (0,0), (-1,0), 1.5, colors.black),
-                ('LINEBELOW', (0,1), (-1,-1), 0.5, colors.lightgrey),
-                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                ('TOPPADDING', (0,0), (-1,-1), 5),
-                ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-            ]))
+            d_tab = Table(t_data, colWidths=[225, 65, 50, 55, 50, 70])
+            d_tab.setStyle(TableStyle([('LINEBELOW', (0,0), (-1,0), 1.5, colors.black), ('LINEBELOW', (0,1), (-1,-1), 0.5, colors.lightgrey), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('TOPPADDING', (0,0), (-1,-1), 5), ('BOTTOMPADDING', (0,0), (-1,-1), 5)]))
             story.append(d_tab)
             
             doc.build(story)
             pdf_bytes = buf.getvalue()
             
-            st.download_button(
-                label="📄 DESCARGAR INFORME OFICIAL EN PDF DIRECTO",
-                data=pdf_bytes,
-                file_name=f"Presupuesto_Oficial_2027_{str(dest_sel).replace(' ', '_')}.pdf",
-                mime="application/pdf",
-                use_container_width=True,
-                key="btn_pdf_directo_real_final"
-            )
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.download_button(label="📄 DESCARGAR INFORME OFICIAL EN PDF DIRECTO", data=pdf_bytes, file_name=f"Presupuesto_Oficial_2027_{str(dest_sel).replace(' ', '_')}.pdf", mime="application/pdf", use_container_width=True, key="btn_pdf_directo_real_final")
         except Exception as e:
             st.error("Error al compilar el archivo PDF de descarga.")

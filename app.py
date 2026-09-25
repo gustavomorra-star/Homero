@@ -217,67 +217,119 @@ tab_formulario, tab_agregar_destino, tab_registros = st.tabs([
 # =====================================================================
 # PESTAÑA 1: FORMULARIO PRINCIPAL DE REGISTRO (CON CRUCE DINÁMICO)
 # =====================================================================
-with tab_formulario:
     st.subheader("📥 Cargar Nuevo Renglón Presupuestario")
+    st.caption("Los campos se encuentran vacíos por defecto. Seleccioná una opción para activar las cascadas de imputación.")
     
     col1, col2 = st.columns(2)
     with col1:
-        f_sec = st.selectbox("1. SECRETARÍA:", opciones_secretarias, key="reg_sec")
+        st.markdown("**📍 1. Ubicación Institucional**")
         
-        opciones_sub_filtradas = MAPEO_ESTRUCTURA[f_sec]
-        f_sub = st.selectbox("2. SUBSECRETARÍA:", opciones_sub_filtradas, key="reg_sub")
+        # Secretaría arranca vacía
+        f_sec = st.selectbox(
+            "SECRETARÍA:", 
+            options=[""] + opciones_secretarias,
+            format_func=lambda x: "--- Seleccioná una Secretaría ---" if x == "" else x,
+            key="reg_sec"
+        )
         
-        # Consulta dinámica a la base de datos
-        conn = sqlite3.connect(DB_NAME)
-        query_destinos = "SELECT nombre_destino FROM destinos_sistema WHERE secretaria = ? AND subsecretaria = ?"
-        df_destinos_db = pd.read_sql_query(query_destinos, conn, params=(f_sec, f_sub))
-        conn.close()
-        
-        lista_destinos_disponibles = df_destinos_db["nombre_destino"].tolist()
-        
-        if not lista_destinos_disponibles:
-            st.warning("⚠️ No hay destinos creados para esta Subsecretaría. Registralo primero en la pestaña '➕ GESTIÓN DE DESTINOS'.")
-            f_dest = None
+        # Subsecretaría y Destino solo se activan si se elige una Secretaría
+        if f_sec != "":
+            opciones_sub_filtradas = MAPEO_ESTRUCTURA[f_sec]
+            f_sub = st.selectbox(
+                "SUBSECRETARÍA:", 
+                options=[""] + opciones_sub_filtradas,
+                format_func=lambda x: "--- Seleccioná una Subsecretaría ---" if x == "" else x,
+                key="reg_sub"
+            )
+            
+            if f_sub != "":
+                conn = sqlite3.connect(DB_NAME)
+                df_d = pd.read_sql_query("SELECT nombre_destino FROM destinos_sistema WHERE secretaria = ? AND subsecretaria = ?", conn, params=(f_sec, f_sub))
+                conn.close()
+                lista_d = df_d["nombre_destino"].tolist()
+                
+                if not lista_d:
+                    st.warning("⚠️ Sin destinos creados para esta área. Crealo primero en '➕ GESTIÓN DE DESTINOS'.")
+                    f_dest = None
+                else:
+                    f_dest = st.selectbox(
+                        "DESTINO SELECCIONADO:", 
+                        options=[""] + lista_d,
+                        format_func=lambda x: "--- Seleccioná un Destino ---" if x == "" else str(x).upper(),
+                        key="reg_dest"
+                    )
+            else:
+                f_dest = None
         else:
-            f_dest = st.selectbox("3. DESTINO SELECCIONADO:", lista_destinos_disponibles, key="reg_dest")
+            f_sub = ""
+            f_dest = None
+            st.info("💡 Seleccioná una Secretaría arriba para desplegar las Subsecretarías.")
         
     with col2:
-        f_obj = st.selectbox("OBJETO DE GASTO:", opciones_objetos, key="reg_obj")
-        f_padre = st.selectbox("CUENTA PADRE:", list(MAPEO_GASTOS[f_obj].keys()), key="reg_padre")
-        f_presup = st.selectbox("CUENTA DE IMPUTACIÓN / PARTIDA:", MAPEO_GASTOS[f_obj][f_padre], key="reg_presup")
-
+        st.markdown("**📊 2. Imputación de Partida**")
+        
+        # Objeto de Gasto arranca vacío
+        f_obj = st.selectbox(
+            "OBJETO DE GASTO:", 
+            options=[""] + opciones_objetos,
+            format_func=lambda x: "--- Seleccioná un Objeto de Gasto ---" if x == "" else x,
+            key="reg_obj"
+        )
+        
+        # Cuenta Padre y Partida solo se activan si se elige un Objeto de Gasto
+        if f_obj != "":
+            diccionario_cuentas_padre = MAPEO_GASTOS[f_obj]
+            f_padre = st.selectbox(
+                "CUENTA PADRE:", 
+                options=[""] + list(diccionario_cuentas_padre.keys()),
+                format_func=lambda x: "--- Seleccioná una Cuenta Padre ---" if x == "" else x,
+                key="reg_padre"
+            )
+            
+            if f_padre != "":
+                lista_imputaciones_filtradas = diccionario_cuentas_padre[f_padre]
+                f_presup = st.selectbox(
+                    "CUENTA DE IMPUTACIÓN / PARTIDA:", 
+                    options=[""] + lista_imputaciones_filtradas,
+                    format_func=lambda x: "--- Seleccioná una Partida Final ---" if x == "" else x,
+                    key="reg_presup"
+                )
+            else:
+                f_presup = ""
+        else:
+            f_padre = ""
+            f_presup = ""
+            st.info("💡 Seleccioná un Objeto de Gasto arriba para desplegar las Cuentas Padre.")
 
     st.markdown("---")
     col3, col4, col5 = st.columns(3)
     with col3:
         f_total = st.number_input("PRESUPUESTO / VALOR ($):", min_value=0.0, step=100.0)
-        f_fuente = st.selectbox("F.FIN:", opciones_fuente_fin)
+        f_fuente = st.selectbox("F.FIN:", [""] + opciones_fuente_fin, format_func=lambda x: "--- Elegí F.Fin ---" if x == "" else x)
     with col4:
-        f_clase = st.selectbox("CLASE:", opciones_clase)
-        f_tipo = st.selectbox("TIPO:", opciones_tipo)
+        f_clase = st.selectbox("CLASE:", [""] + opciones_clase, format_func=lambda x: "--- Elegí Clase ---" if x == "" else x)
+        f_tipo = st.selectbox("TIPO:", [""] + opciones_tipo, format_func=lambda x: "--- Elegí Tipo ---" if x == "" else x)
     with col5:
-        f_finan = st.selectbox("FINALIDAD:", opciones_finalidad)
+        f_finan = st.selectbox("FINALIDAD:", [""] + opciones_financiamiento, format_func=lambda x: "--- Elegí Finalidad ---" if x == "" else x)
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    # El botón de guardar solo se activa si ABSOLUTAMENTE TODOS los campos fueron seleccionados correctamente
+    campos_completos = (f_sec != "") and (f_sub != "") and (f_dest is not None and f_dest != "") and (f_obj != "") and (f_padre != "") and (f_presup != "") and (f_fuente != "") and (f_clase != "") and (f_tipo != "") and (f_finan != "")
     
-    deshabilitar_boton = f_dest is None
-    boton_guardar = st.button("💾 GUARDAR REGISTRO INMEDIATO", type="primary", use_container_width=True, disabled=deshabilitar_boton)
+    boton_guardar = st.button("💾 GUARDAR REGISTRO INMEDIATO", type="primary", use_container_width=True, disabled=not campos_completos)
     
-    if boton_guardar:
-        if f_total > 0 and f_presup and f_dest:
-            conn = sqlite3.connect(DB_NAME)
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO egresos_sistema 
-                (secretaria, subsecretaria, destino, objeto_gasto, cuenta_padre, cuenta_presupuestaria, total, fuente_fin, clase, tipo, financiamiento)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (f_sec, f_sub, f_dest, f_obj, f_padre, f_presup, f_total, f_fuente, f_clase, f_tipo, f_finan))
-            conn.commit()
-            conn.close()
-            st.success(f"✅ ¡Registro insertado en el destino '{f_dest}' correctamente!")
-            st.rerun()
-        else:
-            st.error("❌ Por favor, ingresá un monto mayor a $0 y detallá la partida de imputación.")
+    if boton_guardar and f_total > 0:
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO egresos_sistema (secretaria, subsecretaria, destino, objeto_gasto, cuenta_padre, cuenta_presupuestaria, total, fuente_fin, clase, tipo, financiamiento)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (f_sec, f_sub, f_dest, f_obj, f_padre, f_presup, f_total, f_fuente, f_clase, f_tipo, f_finan))
+        conn.commit()
+        conn.close()
+        st.success("✅ ¡Renglón presupuestario guardado con éxito!")
+        st.rerun()
+    elif boton_guardar and f_total <= 0:
+        st.error("❌ Por favor, ingresá un monto presupuestario mayor a $0.")
 
 # =====================================================================
 # PESTAÑA 2: ABM DE DESTINOS DINÁMICOS DESDE CERO

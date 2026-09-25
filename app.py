@@ -397,15 +397,17 @@ with tab_registros:
             df_grupo_copy = df_grupo.copy()
             df_grupo_copy["partida_vertical"] = df_grupo_copy.apply(lambda r: f"{r['objeto_gasto']}\n↳ {r['cuenta_padre']}\n  ↳ {r['cuenta_presupuestaria']}", axis=1)
             
-            df_bloque_vista = pd.DataFrame({
-                "ID": df_grupo_copy["id"], 
-                "PARTIDA": df_grupo_copy["partida_vertical"], 
-                "PRESUPUESTO ($)": df_grupo_copy["total"].map(lambda x: f"${x:,.2f}" if pd.notnull(x) else "$0.00"), 
-                "F.FIN": df_grupo_copy["fuente_fin"], 
-                "CLASE": df_grupo_copy["clase"], 
-                "TIPO": df_grupo_copy["tipo"], 
-                "FINALIDAD": df_grupo_copy["finalidad"]
-            })
+        col_finalidad_bloque = df_grupo_copy["finalidad"] if "finalidad" in df_grupo_copy.columns else df_grupo_copy["financiamiento"]
+        df_bloque_vista = pd.DataFrame({
+             "ID": df_grupo_copy["id"], 
+             "PARTIDA": df_grupo_copy["partida_vertical"], 
+             "PRESUPUESTO ($)": df_grupo_copy["total"].map(lambda x: f"${x:,.2f}" if pd.notnull(x) else "$0.00"), 
+             "F.FIN": df_grupo_copy["fuente_fin"], 
+             "CLASE": df_grupo_copy["clase"], 
+             "TIPO": df_grupo_copy["tipo"], 
+             "FINALIDAD": col_finalidad_bloque
+         })
+
             st.dataframe(df_bloque_vista, use_container_width=True, hide_index=True)
             st.markdown(f'<div style="text-align: right; font-weight: bold; border-top: 1px solid #dcdcdc; padding-top: 5px; margin-bottom: 15px;">Total Destino: <span style="color: #2e7d32;">${df_grupo_copy["total"].sum():,.2f}</span></div>', unsafe_allow_html=True)
             

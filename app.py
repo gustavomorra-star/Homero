@@ -487,6 +487,7 @@ with tab_oficial:
         else:
             st.info("No hay transacciones registradas para este destino.")
  # =====================================================================
+    # =====================================================================
         # 📥 GENERADOR NATIVO DE PDF DIRECTO (.PDF REAL EN SOLAPA 5 CORREGIDO)
         # =====================================================================
         st.markdown("<br>", unsafe_allow_html=True)
@@ -556,26 +557,25 @@ with tab_oficial:
                 Paragraph("<b>FINANCIAMIENTO</b>", B_C)
             ]]
             
-            # 4. Inyección segura de datos estructurados para celdas de ReportLab
-            if not df_filtrado_oficial.empty:
-                for objeto, df_objeto in df_filtrado_oficial.groupby("objeto_gasto"):
-                    tot_obj = df_objeto["total"].sum()
-                    t_data.append([Paragraph(f"<b>{objeto}</b>", L), Paragraph(f"<b>${tot_obj:,.2f}</b>", C), Paragraph("", C), Paragraph("", C), Paragraph("", C), Paragraph("", C)])
+            # 4. Inyección desde el array de filas de la planilla directo a celdas PDF
+            if filas_planilla:
+                for f in filas_planilla:
+                    txt_partida = f["OBJETO DEL GASTO"].replace("&nbsp;", " ").replace("<b>", "").replace("</b>", "")
+                    txt_monto = f["PRESUPUESTO"].replace("<b>", "").replace("</b>", "")
                     
-                    for padre, df_padre in df_objeto.groupby("cuenta_padre"):
-                        tot_pad = df_padre["total"].sum()
-                        t_data.append([Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{padre}</b>", B_L), Paragraph(f"<b>${tot_pad:,.2f}</b>", C), Paragraph("", C), Paragraph("", C), Paragraph("", C), Paragraph("", C)])
-                        
-                        for _, fila in df_padre.iterrows():
-                            v_fin = fila["finalidad"] if "finalidad" in df_filtrado_oficial.columns else fila["financiamiento"]
-                            t_data.append([
-                                Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{fila['cuenta_presupuestaria']}", L), 
-                                Paragraph(f"${fila['total']:,.2f}", C), 
-                                Paragraph(str(fila["fuente_fin"]), C), 
-                                Paragraph(str(fila["clase"]), C), 
-                                Paragraph(str(fila["tipo"]), C), 
-                                Paragraph(str(v_fin), C)
-                            ])
+                    # Determinamos el estilo de fuente si la celda original venía con negrita HTML
+                    es_negrita = "<b>" in f["OBJETO DEL GASTO"]
+                    estilo_partida = B_L if es_negrita else L
+                    estilo_valores = B_C if es_negrita else C
+                    
+                    t_data.append([
+                        Paragraph(txt_partida, estilo_partida), 
+                        Paragraph(txt_monto, estilo_valores), 
+                        Paragraph(str(f["F.FIN"]), estilo_valores), 
+                        Paragraph(str(f["CLASE"]), estilo_valores), 
+                        Paragraph(str(f["TIPO"]), estilo_valores), 
+                        Paragraph(str(f["FINANCIAMIENTO"]), estilo_valores)
+                    ])
             
             w1, w2, w3, w4, w5, w6 = 225, 65, 50, 55, 50, 70
             medidas_columnas_grilla = [w1, w2, w3, w4, w5, w6]

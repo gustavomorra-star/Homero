@@ -171,11 +171,13 @@ with tab_agregar_destino:
         if not df_dt.empty: st.dataframe(df_dt, use_container_width=True, hide_index=True)
 
 with tab_egresos:
+    with tab_egresos:
     st.subheader("📊 Consulta de Reportes Presupuestarios por Destino")
     conn = sqlite3.connect(DB_NAME)
     df_egr = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
     conn.close()
-    if df_egr.empty: st.info("No hay movimientos registrados para armar los reportes.")
+    if df_egr.empty: 
+        st.info("No hay movimientos registrados para armar los reportes.")
     else:
         destino_seleccionado = st.selectbox("🔍 BUSCAR Y SELECCIONAR DESTINO:", options=[""] + df_egr["destino"].dropna().unique().tolist(), format_func=lambda x: "--- Elegí un destino ---" if x == "" else str(x).upper())
         if destino_seleccionado != "":
@@ -192,14 +194,70 @@ with tab_registros:
     conn = sqlite3.connect(DB_NAME)
     df_auditoria = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
     conn.close()
-    if df_auditoria.empty:
+    if df_auditoria.empty: 
         st.info("No hay registros en la base de datos actualmente.")
     else:
+        # 1. Visualización por bloques limpios institucionales
         for (sec, sub, dest), df_grupo in df_auditoria.groupby(["secretaria", "subsecretaria", "destino"]):
             st.markdown(f'<div style="background-color: #f0f2f6; padding: 10px; border-radius: 4px; margin-top: 15px;"><b>🏛️ JURISDICCIÓN:</b> {sec}<br><b>🏢 SUBSEC:</b> {sub} | <b>🎯 DESTINO:</b> {dest}</div>', unsafe_allow_html=True)
             col_finalidad = df_grupo["finalidad"] if "finalidad" in df_grupo.columns else df_grupo["financiamiento"]
-            df_bloque_vista = pd.DataFrame({"CUENTA PADRE": df_grupo["cuenta_padre"], "PARTIDA": df_grupo["cuenta_presupuestaria"], "PRESUPUESTO ($)": df_grupo["total"].map(lambda x: f"${x:,.2f}"), "F.FIN": df_grupo["fuente_fin"], "CLASE": df_grupo["clase"], "TIPO": df_grupo["tipo"], "FINALIDAD": col_finalidad})
+            df_bloque_vista = pd.DataFrame({"ID": df_grupo["id"], "CUENTA PADRE": df_grupo["cuenta_padre"], "PARTIDA": df_grupo["cuenta_presupuestaria"], "PRESUPUESTO ($)": df_grupo["total"].map(lambda x: f"${x:,.2f}"), "F.FIN": df_grupo["fuente_fin"], "CLASE": df_grupo["clase"], "TIPO": df_grupo["tipo"], "FINALIDAD": col_finalidad})
             st.dataframe(df_bloque_vista, use_container_width=True, hide_index=True)
             st.markdown(f'<div style="text-align: right; font-weight: bold; border-top: 1px solid #dcdcdc; padding-top: 5px; margin-bottom: 15px;">Total Destino: <span style="color: #2e7d32;">${df_grupo["total"].sum():,.2f}</span></div>', unsafe_allow_html=True)
         st.markdown("---")
-        st.metric(label="📊 TOTAL GENERAL ACUMULADO MUNICIPAL", value=f"${df_auditoria['total'].sum():,.2f}")
+        st.metric(label="📊 TOTAL GENERAL ACUMULADO", value=f"${df_auditoria['total'].sum():,.2f}")
+        
+        # 2. PANEL SUPERVISOR DE EDICIÓN Y BORRADO INDIVIDUAL
+        st.markdown("---")
+        st.markdown("### 🛠️ Panel Supervisor de Modificaciones")
+        st.caption("Elegí el número de ID de la fila que querés corregir o dar de baja (el ID figura en la primera columna de las tablas de arriba).")
+        
+        df_auditoria["Texto_Descriptivo"] = df_auditoria.apply(lambda r: f"ID: {r['id']} | Destino: {r['destino']} | Monto: ${r['total']:,.2f}", axis=1)
+        linea_seleccionada = st.selectbox("Seleccioná el registro a modificar por su ID:", df_auditoria["Texto_Descriptivo"].tolist(), key="select_modificar_auditoria")
+        
+        fila_real = df_auditoria[df_auditoria["Texto_Descriptivo"] == linea_seleccionada].iloc[0]
+        id_registro = int(fila_real["id"])
+        
+        col_ed1, col_ed2, col_ed3 = st.columns(3)
+        with col_ed1:
+            nuevo_total = st.number_input("Corregir Monto ($):", min_value=0.0, value=float(fila_real["total"]), key=f"tot_{id_registro}")
+            nueva_fuente = st.selectbox("Cambiar F.Fin:", opciones_fuente_fin, index=opciones_fuente_fin.index(fila_real["fuente_fin"]) if fila_real["fuente_fin"] in opciones_fuente_fin else 0, key=f"fuente_{id_registro}")
+        with col_ed2:
+            nueva_clase = st.selectbox("Cambiar Clase:", opciones_clase, index=opciones_clase.index(fila_real["clase"]) if fila_real["clase"] in opciones_clase else 0, key=f"clase_{id_registro}")
+            nuevo_tipo = st.selectbox("Cambiar Tipo:", opciones_tipo, index=opciones_tipo.index(fila_real["tipo"]) if fila_real["tipo"] in opciones_tipo else 0, key=f"tipo_{id_registro}")
+        with col_ed3:
+            val_actual_finalidad = fila_real["finalidad"] if "finalidad" in fila_real else fila_real["financiamiento"]
+            nuevo_finan = st.selectbox("Cambiar Finalidad:", opciones_finalidad, index=opciones_finalidad.index(val_actual_finalidad) if val_actual_finalidad in opciones_finalidad else 0, key=f"finalidad_{id_registro}")
+            
+        st.markdown("<br>", unsafe_allow_html=True)
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            if st.button("🔄 ACTUALIZAR REGISTRO SELECCIONADO", type="primary", use_container_width=True, key=f"btn_upd_{id_registro}"):
+                conn = sqlite3.connect(DB_NAME)
+                cursor = conn.cursor()
+                columna_destino_finalidad = "finalidad" if "finalidad" in df_auditoria.columns else "financiamiento"
+                cursor.execute(f"UPDATE egresos_sistema SET total = ?, fuente_fin = ?, clase = ?, tipo = ?, {columna_destino_finalidad} = ? WHERE id = ?", (nuevo_total, nueva_fuente, nueva_clase, nuevo_tipo, nuevo_finan, id_registro))
+                conn.commit()
+                conn.close()
+                st.success(f"✅ ¡Registro ID {id_registro} modificado correctamente!")
+                st.rerun()
+        with col_btn2:
+            if st.button("🗑️ ELIMINAR REGISTRO INDIVIDUAL", type="secondary", use_container_width=True, key=f"btn_del_{id_registro}"):
+                conn = sqlite3.connect(DB_NAME)
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM egresos_sistema WHERE id = ?", (id_registro,))
+                conn.commit()
+                conn.close()
+                st.warning(f"🗑️ El registro ID {id_registro} fue eliminado por completo.")
+                st.rerun()
+
+st.sidebar.header("⚙️ Herramientas")
+if st.sidebar.button("⚠️ Vaciar Base de Datos Completa"):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM egresos_sistema")
+    cursor.execute("DELETE FROM destinos_sistema")
+    conn.commit()
+    conn.close()
+    st.sidebar.success("Base de datos limpia.")
+    st.rerun()

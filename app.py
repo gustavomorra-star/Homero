@@ -470,30 +470,114 @@ with tab_oficial:
         # 3. RENDERIZACIÓN DE LA PLANILLA CUADRICULADA
         st.dataframe(df_mostrar_oficial, use_container_width=True, hide_index=True)
 
-         # 4. EXPORTADOR DIRECTO NATIVO (EVITA ERRORES DE LIBRERÍAS)
+          # =====================================================================
+        # 📄 MÓDULO EXPORTADOR OFICIAL IMPRIMIBLE A PDF (FIDELIDAD 100%)
+        # =====================================================================
         st.markdown("---")
+        st.markdown("#### 🖨️ Centro de Impresión Municipal")
         
-        # Generamos un archivo CSV con codificación Excel y tabulación por comas
-        csv_oficial_excel = df_mostrar_oficial.to_csv(index=False).encode('utf-8-sig')
+        # Estructuramos el código HTML y CSS nativo de impresión contable para el PDF
+        html_imprimible = f"""
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #000000; padding: 20px; }}
+                .container-membrete {{ border: 1px solid #000000; padding: 15px; margin-bottom: 20px; }}
+                .tabla-header {{ width: 100%; border-collapse: collapse; }}
+                .tabla-header td {{ border: none; padding: 5px; vertical-align: middle; }}
+                .titulo-principal {{ margin: 0; font-size: 16px; font-weight: bold; text-align: center; letter-spacing: 0.5px; }}
+                .sub-ano {{ margin: 3px 0 0 0; text-align: center; font-size: 12px; }}
+                .box-total {{ border: 1px solid #000000; background-color: #f5f5f5; text-align: center; vertical-align: middle; }}
+                .total-label {{ font-size: 11px; font-weight: bold; border-bottom: 1px solid #000000; padding: 4px 0; }}
+                .total-monto {{ font-size: 15px; font-weight: bold; padding: 8px 0; }}
+                .linea-institucional {{ width: 100%; border-collapse: collapse; margin-top: 10px; border-top: 1px solid #000000; font-size: 11px; }}
+                .linea-institucional td {{ padding-top: 8px; border: none; }}
+                .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }}
+                .tabla-datos th {{ border-bottom: 2px solid #000000; padding: 8px 5px; text-align: left; font-weight: bold; }}
+                .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 8px 5px; vertical-align: top; white-space: pre-line; }}
+                .partida-celda {{ line-height: 1.4; }}
+            </style>
+        </head>
+        <body>
+            <div class="container-membrete">
+                <table class="tabla-header">
+                    <tr>
+                        <td style="width: 25%; font-size: 10px; line-height: 1.3;">
+                            <b>Municipalidad de Sunchales</b><br>
+                            <span style="color: #555;">2026 - Año Internacional de las Cooperativas<br>"Las Cooperativas construyen un mundo mejor"</span>
+                        </td>
+                        <td style="width: 50%;">
+                            <div class="titulo-principal">PRESUPUESTO DE GASTO POR DESTINO</div>
+                            <div class="sub-ano">-2026-</div>
+                            <div style="text-align: center; font-size: 9px; color: #555; margin-top: 2px;">-140 Años-</div>
+                        </td>
+                        <td style="width: 25%;" class="box-total">
+                            <div class="total-label">Total Destino</div>
+                            <div class="total-monto">${total_acumulado_destino:,.2f}</div>
+                        </td>
+                    </tr>
+                </table>
+                <table class="linea-institucional">
+                    <tr>
+                        <td><b>SECRETARÍA:</b> {sec_sel}</td>
+                        <td><b>SUBSECRETARÍA:</b> {sub_sel}</td>
+                        <td style="text-align: right;"><b>DESTINO:</b> {str(dest_sel).upper()}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <table class="tabla-datos">
+                <thead>
+                    <tr>
+                        <th style="width: 45%;">OBJETO DEL GASTO</th>
+                        <th style="width: 13%;">PRESUPUESTO</th>
+                        <th style="width: 10%;">F.FIN</th>
+                        <th style="width: 10%;">CLASE</th>
+                        <th style="width: 10%;">TIPO</th>
+                        <th style="width: 12%;">FINANCIAMIENTO</th>
+                    </tr>
+                </thead>
+                <tbody>
+        """
         
-        col_down_ex, col_down_csv = st.columns(2)
-        with col_down_ex:
-            # Este botón descarga el archivo directamente con extensión .xls para que Excel lo abra limpio en columnas y en vertical
-            st.download_button(
-                label="📗 Descargar Presupuesto Oficial para Excel (.xls)", 
-                data=csv_oficial_excel, 
-                file_name=f"Presupuesto_{str(dest_sel).replace(' ', '_')}.xls", 
-                mime="application/vnd.ms-excel", 
-                use_container_width=True,
-                key="btn_oficial_excel_nativo"
-            )
-        with col_down_csv:
-            # Copia exacta imprimible para mandar directo a PDF
-            st.download_button(
-                label="📄 Exportar Planilla Imprimible / PDF (CSV)", 
-                data=csv_oficial_excel, 
-                file_name=f"Presupuesto_{str(dest_sel).replace(' ', '_')}.csv", 
-                mime="text/csv", 
-                use_container_width=True,
-                key="btn_oficial_csv_nativo"
-            )
+        # Inyectamos de forma dinámica cada fila de la base de datos respetando los saltos de línea verticales exactos
+        if not df_filtrado_oficial.empty:
+            for _, fila in df_filtrado_oficial.iterrows():
+                val_finalidad_pdf = fila["finalidad"] if "finalidad" in df_filtrado_oficial.columns else fila["financiamiento"]
+                partida_formateada_html = f"{fila['objeto_gasto']}<br>&nbsp;&nbsp;↳ {fila['cuenta_padre']}<br>&nbsp;&nbsp;&nbsp;&nbsp;↳ {fila['cuenta_presupuestaria']}"
+                
+                html_imprimible += f"""
+                    <tr>
+                        <td class="partida-celda">{partida_formateada_html}</td>
+                        <td><b>${fila['total']:,.2f}</b></td>
+                        <td>{fila['fuente_fin']}</td>
+                        <td>{fila['clase']}</td>
+                        <td>{fila['tipo']}</td>
+                        <td>{val_finalidad_pdf}</td>
+                    </tr>
+                """
+        else:
+            html_imprimible += """
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 20px; color: #666;">Sin movimientos registrados para la combinación seleccionada.</td>
+                </tr>
+            """
+            
+        html_imprimible += """
+                </tbody>
+            </table>
+        </body>
+        </html>
+        """
+        
+        # Botón nativo de impresión de Streamlit que abre el cuadro oficial de descarga PDF de tu computadora
+        st.download_button(
+            label="📄 IMPRIMIR COMPROBANTE OFICIAL (PDF)",
+            data=html_imprimible,
+            file_name=f"Presupuesto_Oficial_{str(dest_sel).replace(' ', '_')}.html",
+            mime="text/html",
+            use_container_width=True,
+            key="btn_oficial_pdf_impresion"
+        )
+        st.info("💡 Al hacer clic en el botón, se descargará el documento oficial. Podés abrirlo y presionar 'Ctrl + P' en tu teclado para guardarlo como PDF o mandarlo directo a la impresora de la Municipalidad.")

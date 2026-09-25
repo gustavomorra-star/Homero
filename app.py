@@ -486,103 +486,98 @@ with tab_oficial:
         else:
             st.info("No hay transacciones registradas para este destino en la base de datos.")
 # =====================================================================
-      # =====================================================================
-        # 📄 MÓDULO EXPORTADOR OFICIAL IMPRIMIBLE A PDF (CENTRADO DE COLUMNAS Y 2027)
+# 3. RENDERIZACIÓN DE LA PLANILLA EN PANTALLA
+        if filas_planilla:
+            st.write(pd.DataFrame(filas_planilla).to_html(escape=False, index=False), unsafe_allow_html=True)
+        else:
+            st.info("No hay transacciones registradas para este destino.")
+
+        # =====================================================================
+        # 📥 GENERADOR NATIVO DE PDF DIRECTO (.PDF REAL EN SOLAPA 5)
         # =====================================================================
         st.markdown("<br>", unsafe_allow_html=True)
-        
-        html_imprimible = f"""
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                @page {{
-                    size: A4 portrait;
-                    margin: 15mm 15mm 15mm 15mm;
-                }}
-                body {{ 
-                    font-family: Arial, sans-serif; 
-                    color: #000000; 
-                    margin: 0 auto; 
-                    padding: 0;
-                    width: 100%;
-                    max-width: 800px;
-                }}
-                .container-membrete {{ 
-                    border: 1px solid #000000; 
-                    padding: 12px; 
-                    margin-bottom: 20px;
-                    width: 100%;
-                    box-sizing: border-box;
-                }}
-                .tabla-header {{ width: 100%; border-collapse: collapse; }}
-                .tabla-header td {{ border: none; padding: 5px; vertical-align: middle; }}
-                .titulo-principal {{ margin: 0; font-size: 16px; font-weight: bold; text-align: center; }}
-                .box-total {{ border: 1px solid #000000; background-color: #f5f5f5; text-align: center; }}
-                .total-label {{ font-size: 11px; font-weight: bold; border-bottom: 1px solid #000000; padding: 4px 0; }}
-                .total-monto {{ font-size: 14px; font-weight: bold; padding: 6px 0; }}
-                .linea-institucional {{ width: 100%; border-collapse: collapse; margin-top: 10px; border-top: 1px solid #000000; font-size: 11px; }}
-                .linea-institucional td {{ padding-top: 8px; border: none; }}
-                .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }}
-                .tabla-datos th {{ 
-                    border-bottom: 2px solid #000000; 
-                    padding: 8px 5px; 
-                    text-align: center; 
-                    font-weight: bold; 
-                }}
-                .tabla-datos td {{ 
-                    border-bottom: 1px solid #e0e0e0; 
-                    padding: 8px 5px; 
-                    vertical-align: middle; 
-                    text-align: center; 
-                }}
-                .tabla-datos th:first-child,
-                .tabla-datos td:first-child {{
-                    text-align: left !important;
-                    padding-left: 10px;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="container-membrete">
-                <table class="tabla-header">
-                    <tr>
-                        <td style="width: 25%; font-size: 10px; line-height: 1.3; text-align: left;">
-                            <b>Municipalidad de Sunchales</b><br>
-                            <span style="color: #555; font-size: 8px;">Presupuesto Oficial 2027</span>
-                        </td>
-                        <td style="width: 50%; text-align: center; vertical-align: middle;">
-                            <div class="titulo-principal" style="text-align: center;">PRESUPUESTO DE GASTO POR DESTINO</div>
-                            <div class="sub-ano" style="text-align: center; font-size: 12px; margin-top: 3px; font-weight: normal;">-2027-</div>
-                        </td>
-                        <td style="width: 25%;" class="box-total">
-                            <div class="total-label">Total Destino</div>
-                            <div class="total-monto">${total_acumulado_destino:,.2f}</div>
-                        </td>
-                    </tr>
-                </table>
-                <table class="linea-institucional">
-                    <tr>
-                        <td><b>SECRETARÍA:</b> {sec_sel}</td>
-                        <td><b>SUBSECRETARÍA:</b> {sub_sel}</td>
-                        <td style="text-align: right;"><b>DESTINO:</b> {str(dest_sel).upper()}</td>
-                    </tr>
-                </table>
-            </div>
-            <table class="tabla-datos">
-                <thead><tr><th>OBJETO DEL GASTO</th><th>PRESUPUESTO</th><th>F.FIN</th><th>CLASE</th><th>TIPO</th><th>FINANCIAMIENTO</th></tr></thead>
-                <tbody>{html_filas_pdf}</tbody>
-            </table>
-        </body>
-        </html>
-        """
-        
-        st.download_button(
-            label="📄 IMPRIMIR COMPROBANTE OFICIAL (PDF)",
-            data=html_imprimible,
-            file_name=f"Presupuesto_Oficial_{str(dest_sel).replace(' ', '_')}.html",
-            mime="text/html",
-            use_container_width=True,
-            key="btn_oficial_pdf_impresion_final"
-        )
-        st.info("💡 Al hacer clic en el botón se descargará el comprobante oficial. Abrilo en tu navegador y presioná 'Ctrl + P' para guardarlo como PDF o imprimirlo. Las jerarquías contables y sumas automáticas se mantendrán idénticas a tu hoja municipal.")
+        try:
+            from reportlab.lib.pagesizes import A4
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib import colors
+
+            buf = io.BytesIO()
+            doc = SimpleDocTemplate(buf, pagesize=A4, rightMargin=35, leftMargin=45, topMargin=35, bottomMargin=35)
+            story = []
+            
+            sty = getSampleStyleSheet()
+            L = ParagraphStyle('L', parent=sty['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=0)
+            B_L = ParagraphStyle('BL', parent=sty['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, alignment=0)
+            C = ParagraphStyle('C', parent=sty['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=1)
+            B_C = ParagraphStyle('BC', parent=sty['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, alignment=1)
+            
+            # 1. Membrete Superior 2027
+            h_data = [[
+                Paragraph("<b>Municipalidad de Sunchales</b><br><font color='#555' size='7'>Presupuesto Oficial 2027</font>", L),
+                Paragraph("<b>PRESUPUESTO DE GASTO POR DESTINO</b><br><font size='10'>-2027-</font>", C),
+                Paragraph("<b>Total Destino</b><br><font size='12'><b>$" + f"{total_acumulado_destino:,.2f}" + "</b></font>", B_C)
+            ]]
+            h_tab = Table(h_data, colWidths=[130, 240, 140])
+            h_tab.setStyle(TableStyle([
+                ('BOX', (0,0), (-1,-1), 1, colors.black),
+                ('INNERGRID', (0,0), (-1,-1), 0.5, colors.black),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('BACKGROUND', (2,0), (2,0), colors.HexColor('#f5f5f5')),
+                ('PADDING', (0,0), (-1,-1), 8),
+            ]))
+            story.append(h_tab)
+            story.append(Spacer(1, 8))
+            
+            # 2. Datos del Destino
+            m_data = [[Paragraph(f"<b>SECRETARÍA:</b> {sec_sel}", L), Paragraph(f"<b>SUBSECRETARÍA:</b> {sub_sel}", L), Paragraph(f"<b>DESTINO:</b> {str(dest_sel).upper()}", C)]]
+            m_tab = Table(m_data, colWidths=[185, 185, 140])
+            m_tab.setStyle(TableStyle([('BOX', (0,0), (-1,-1), 1, colors.black), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('PADDING', (0,0), (-1,-1), 5)]))
+            story.append(m_tab)
+            story.append(Spacer(1, 15))
+            
+            # 3. Encabezados de Columnas Centrados
+            t_data = [[Paragraph("<b>OBJETO DEL GASTO</b>", B_C), Paragraph("<b>PRESUPUESTO</b>", B_C), Paragraph("<b>F.FIN</b>", B_C), Paragraph("<b>CLASE</b>", B_C), Paragraph("<b>TIPO</b>", B_C), Paragraph("<b>FINANCIAMIENTO</b>", B_C)]]
+            
+            # 4. Inyección del árbol de sumas automáticas hacia el PDF
+            if not df_filtrado_oficial.empty:
+                for objeto, df_objeto in df_filtrado_oficial.groupby("objeto_gasto"):
+                    tot_obj = df_objeto["total"].sum()
+                    t_data.append([Paragraph(f"<b>{objeto}</b>", L), Paragraph(f"<b>${tot_obj:,.2f}</b>", C), "", "", "", ""])
+                    
+                    for padre, df_padre in df_objeto.groupby("cuenta_padre"):
+                        tot_pad = df_padre["total"].sum()
+                        t_data.append([Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{padre}</b>", B_L), Paragraph(f"<b>${tot_pad:,.2f}</b>", C), "", "", "", ""])
+                        
+                        for _, fila in df_padre.iterrows():
+                            v_fin = fila["finalidad"] if "finalidad" in df_filtrado_oficial.columns else fila["financiamiento"]
+                            t_data.append([
+                                Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{fila['cuenta_presupuestaria']}", L),
+                                Paragraph(f"${fila['total']:,.2f}", C), Paragraph(str(fila["fuente_fin"]), C),
+                                Paragraph(str(fila["clase"]), C), Paragraph(str(fila["tipo"]), C), Paragraph(str(v_fin), C)
+                            ])
+            
+            # Distribución simétrica de anchos para la hoja vertical A4
+            d_tab = Table(t_data, colWidths=[200, 75, 55, 55, 55, 70])
+            d_tab.setStyle(TableStyle([
+                ('LINEBELOW', (0,0), (-1,0), 1.5, colors.black),
+                ('LINEBELOW', (0,1), (-1,-1), 0.5, colors.lightgrey),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('TOPPADDING', (0,0), (-1,-1), 5),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+            ]))
+            story.append(d_tab)
+            
+            doc.build(story)
+            pdf_bytes = buf.getvalue()
+            
+            st.download_button(
+                label="📄 DESCARGAR INFORME OFICIAL EN PDF DIRECTO",
+                data=pdf_bytes,
+                file_name=f"Presupuesto_Oficial_2027_{str(dest_sel).replace(' ', '_')}.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+                key="btn_pdf_directo_real_final"
+            )
+        except:
+            st.error("Error al compilar el archivo PDF de descarga.")

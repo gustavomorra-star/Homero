@@ -188,7 +188,7 @@ with tab_egresos:
             st.dataframe(df_rep, use_container_width=True, hide_index=True)
 
 with tab_registros:
-    st.subheader("📋 Planilla de Consulta de Datos Guardados (Formato R.A.F.A.M.)")
+    st.subheader("📋 Planilla de Consulta de Datos Guardados")
     conn = sqlite3.connect(DB_NAME)
     df_auditoria = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
     conn.close()

@@ -39,8 +39,8 @@ st.write("📍 Municipalidad de Sunchales | Filtros en Cascada")
 ESTRUCTURA_CASCADA = {
     "SECRETARÍA DE GESTIÓN AMBIENTAL Y TERRITORIAL": {
         "SUBSECRETARÍA DE OBRAS": [
-            "MANTENIMIENTO DE ESPACIOS PÚBLICOS",
-            "INTERVENCIONES URBANAS DE SANEAMIENTO"
+            "N/N",
+        
         ],
         "SUBSECRETARÍA DE AMBIENTE Y ACCIÓN CLIMÁTICA": [
             "FONDO PLANTA DE RESIDUOS URBANOS",
@@ -50,23 +50,32 @@ ESTRUCTURA_CASCADA = {
     },
     "SECRETARÍA DE GOBIERNO": {
         "SUBSECRETARÍA DE GESTIÓN Y DESARROLLO": [
-            "PUNTO GOB Y EDIFICIOS GENERALES",
-            "CONECTIVIDAD URBANA"
+            " ",
+            " "
         ],
-        "SUBSECRETARÍA DE CULTURA": [
-            "EVENTOS CULTURALES MUNICIPALES",
-            "TALLERES LICEO"
-        ]
+      
     },
     "SECRETARÍA DE DESARROLLO Y PROMOCIÓN DE DDHH": {
         "SUBSECRETARÍA DE PROMOCIÓN DE DDHH": [
             "EQUIPO DE POLITICAS DE ADULTOS MAYORES",
             "CENTRO CUIDADO INFANTIL (CAIF)"
         ],
+          "SUBSECRETARÍA DE CULTURA": [
+            "EVENTOS CULTURALES MUNICIPALES",
+            "TALLERES LICEO"
+        ]
+    },
+    "SECRETARÍA DE PRODUCCIÓN Y EMPLEO":{
         "SUBSECRETARÍA DE ECONOMÍA SOCIAL Y SOLIDARIA": [
             "APOYO A EMPRENDEDORES",
             "HUERTAS COMUNITARIAS"
+        ],
+        "SUBSECRETARÍA DE DESARROLLO ECONÓMICO Y PRODUCTIVO":[
+            "CASA DEL EMPRENDEDOR",
+            "TURISMO",
         ]
+    },
+        
     },
     "AGENCIA MUNICIPAL DE SEGURIDAD": {
         "AGENCIA MUNICIPAL DE SEGURIDAD": [
@@ -75,8 +84,16 @@ ESTRUCTURA_CASCADA = {
         ]
     },
     "INTENDENCIA": {
+        "INTENDENCIA":[
+            "INTENDENCIA"
+        ]
+    },
+
+    },
+    "SUBSECRETARÍA DE HACIENDA Y FINANZAS":{
         "SUBSECRETARÍA DE HACIENDA Y FINANZAS": [
-            "GASTOS CENTRALES DE ADMINISTRACIÓN"
+            "SUBSECRETARÍA DE HACIENDA Y FINANZAS",
+            "COMPRAS Y CONTRATACIONES",
         ]
     }
 }

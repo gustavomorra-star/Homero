@@ -202,7 +202,7 @@ MAPEO_ESTRUCTURA = {
 }
 
 opciones_secretarias = list(MAPEO_ESTRUCTURA.keys())
-opciones_objetos = list(MAPEO_GASTOS.KEYS())
+opciones_objetos = list(MAPEO_GASTOS.keys())
 opciones_fuente_fin = ["Municipal", "Provincial", "Nacional"]
 opciones_clase = ["Corriente", "Capital"]
 opciones_tipo = ["Libre","Afectado"]

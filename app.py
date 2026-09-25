@@ -1,0 +1,2 @@
+pandas
+pysqlite3-binary

@@ -224,11 +224,11 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown("**📍 1. Ubicación Institucional**")
         
-        f_sec = st.selectbox(
-            "SECRETARÍA:", 
-            options=[""] + opciones_secretarias,
-            format_func=lambda x: "--- Seleccioná una Secretaría ---" if x == "" else x,
-            key="reg_sec"
+    f_sec = st.selectbox(
+        "SECRETARÍA:", 
+        options=[""] + opciones_secretarias,
+        format_func=lambda x: "--- Seleccioná una Secretaría ---" if x == "" else x,
+        key="reg_sec"
         )
         
         if f_sec != "":

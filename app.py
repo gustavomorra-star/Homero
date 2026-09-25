@@ -405,15 +405,15 @@ with tab_oficial:
         df_filtrado_oficial = df_oficial_base[(df_oficial_base["secretaria"] == sec_sel) & (df_oficial_base["subsecretaria"] == sub_sel) & (df_oficial_base["destino"] == dest_sel)].copy()
         total_acumulado_destino = df_filtrado_oficial["total"].sum() if not df_filtrado_oficial.empty else 0.0
 
-        # 1. REPRODUCCIÓN DEL ENCABEZADO SUPERIOR CON RECUADRO DE TOTAL DESTINO
+        # 1. REPRODUCCIÓN DEL ENCABEZADO SUPERIOR CON RECUADRO DE TOTAL DESTINO (PANTALLA)
         st.markdown(
             f"""
             <div style="border: 1px solid #000000; padding: 0px; border-radius: 2px; background-color: #ffffff; margin-top: 15px; margin-bottom: 20px; font-family: Arial, sans-serif;">
                 <table style="width: 100%; border-collapse: collapse; margin: 0;">
                     <tr>
-                        <td style="width: 30%; text-align: left; font-size: 11px; color: #555; padding: 15px; border-right: 1px solid #000000;">
+                        <td style="width: 25%; text-align: left; font-size: 11px; color: #555; padding: 15px; border-right: 1px solid #000000;">
                             <b>Municipalidad de Sunchales</b><br>
-                            <span style="font-size: 9px; color: #777;">PRESUPUESTO MUNICIPAL 2027 </span>
+                            <span style="font-size: 9px; color: #777;">Presupuesto Oficial 2027</span>
                         </td>
                         <td style="width: 55%; text-align: center; padding: 15px; border-right: 1px solid #000000; vertical-align: middle;">
                             <h2 style="margin: 0; padding: 0; color: #000000; font-size: 18px; font-weight: bold;">PRESUPUESTO DE GASTO POR DESTINO</h2>
@@ -464,95 +464,81 @@ with tab_oficial:
             st.write(pd.DataFrame(filas_planilla).to_html(escape=False, index=False), unsafe_allow_html=True)
         else:
             st.info("No hay transacciones registradas para este destino en la base de datos.")
-
-        # =====================================================================
-        # 📄 MÓDULO EXPORTADOR OFICIAL IMPRIMIBLE A PDF (FIDELIDAD MULTINIVEL 100%)
+# =====================================================================
+        # 📄 MÓDULO EXPORTADOR OFICIAL IMPRIMIBLE A PDF (CENTRADO ABSOLUTO Y 2027)
         # =====================================================================
         st.markdown("<br>", unsafe_allow_html=True)
+        
         html_imprimible = f"""
         <html>
         <head>
             <meta charset="utf-8">
             <style>
-                @page {
+                @page {{
                     size: A4 portrait;
                     margin: 15mm 15mm 15mm 15mm;
-                }
-                body { 
+                }}
+                body {{ 
                     font-family: Arial, sans-serif; 
                     color: #000000; 
                     margin: 0 auto; 
                     padding: 0;
                     width: 100%;
-                    max-width: 800px; /* Centra el cuerpo del reporte en la hoja */
-                }
-                .container-membrete { 
+                    max-width: 800px;
+                }}
+                .container-membrete {{ 
                     border: 1px solid #000000; 
                     padding: 12px; 
                     margin-bottom: 20px;
                     width: 100%;
                     box-sizing: border-box;
-                }
-                .tabla-header { 
-                    width: 100%; 
-                    border-collapse: collapse; 
-                }
-                .tabla-header td { 
-                    border: none; 
-                    padding: 5px; 
-                    vertical-align: middle; 
-                }
-                .titulo-principal { 
-                    margin: 0; 
-                    font-size: 16px; 
-                    font-weight: bold; 
-                    text-align: center; 
-                }
-                .box-total { 
-                    border: 1px solid #000000; 
-                    background-color: #f5f5f5; 
-                    text-align: center; 
-                }
-                .total-label { 
-                    font-size: 11px; 
-                    font-weight: bold; 
-                    border-bottom: 1px solid #000000; 
-                    padding: 4px 0; 
-                }
-                .total-monto { 
-                    font-size: 14px; 
-                    font-weight: bold; 
-                    padding: 6px 0; 
-                }
-                .linea-institucional { 
-                    width: 100%; 
-                    border-collapse: collapse; 
-                    margin-top: 10px; 
-                    border-top: 1px solid #000000; 
-                    font-size: 11px; 
-                }
-                .linea-institucional td { 
-                    padding-top: 8px; 
-                    border: none; 
-                }
-                .tabla-datos { 
-                    width: 100%; 
-                    border-collapse: collapse; 
-                    margin-top: 15px; 
-                    font-size: 11px; 
-                }
-                .tabla-datos th { 
-                    border-bottom: 2px solid #000000; 
-                    padding: 8px 5px; 
-                    text-align: left; 
-                    font-weight: bold; 
-                }
-                .tabla-datos td { 
-                    border-bottom: 1px solid #e0e0e0; 
-                    padding: 8px 5px; 
-                    vertical-align: middle; 
-                }
+                }}
+                .tabla-header {{ width: 100%; border-collapse: collapse; }}
+                .tabla-header td {{ border: none; padding: 5px; vertical-align: middle; }}
+                .titulo-principal {{ margin: 0; font-size: 16px; font-weight: bold; text-align: center; }}
+                .box-total {{ border: 1px solid #000000; background-color: #f5f5f5; text-align: center; }}
+                .total-label {{ font-size: 11px; font-weight: bold; border-bottom: 1px solid #000000; padding: 4px 0; }}
+                .total-monto {{ font-size: 14px; font-weight: bold; padding: 6px 0; }}
+                .linea-institucional {{ width: 100%; border-collapse: collapse; margin-top: 10px; border-top: 1px solid #000000; font-size: 11px; }}
+                .linea-institucional td {{ padding-top: 8px; border: none; }}
+                .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }}
+                .tabla-datos th {{ border-bottom: 2px solid #000000; padding: 8px 5px; text-align: left; font-weight: bold; }}
+                .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 8px 5px; vertical-align: middle; }}
             </style>
+        </head>
+        <body>
+            <div class="container-membrete">
+                <table class="tabla-header">
+                    <tr>
+                        <td style="width: 25%; font-size: 10px; line-height: 1.3;">
+                            <b>Municipalidad de Sunchales</b><br>
+                            <span style="color: #555; font-size: 8px;">Presupuesto Oficial 2027</span>
+                        </td>
+                        <td style="width: 50%;">
+                            <div class="titulo-principal">PRESUPUESTO DE GASTO POR DESTINO</div>
+                            <div class="sub-ano" style="text-align: center; font-size: 12px; margin-top: 3px;">-2027-</div>
+                        </td>
+                        <td style="width: 25%;" class="box-total">
+                            <div class="total-label">Total Destino</div>
+                            <div class="total-monto">${total_acumulado_destino:,.2f}</div>
+                        </td>
+                    </tr>
+                </table>
+                <table class="linea-institucional">
+                    <tr>
+                        <td><b>SECRETARÍA:</b> {sec_sel}</td>
+                        <td><b>SUBSECRETARÍA:</b> {sub_sel}</td>
+                        <td style="text-align: right;"><b>DESTINO:</b> {str(dest_sel).upper()}</td>
+                    </tr>
+                </table>
+            </div>
+            <table class="tabla-datos">
+                <thead><tr><th>OBJETO DEL GASTO</th><th>PRESUPUESTO</th><th>F.FIN</th><th>CLASE</th><th>TIPO</th><th>FINANCIAMIENTO</th></tr></thead>
+                <tbody>{html_filas_pdf}</tbody>
+            </table>
+        </body>
+        </html>
+        """
         
         st.download_button(
             label="📄 IMPRIMIR COMPROBANTE OFICIAL (PDF)",
@@ -562,3 +548,4 @@ with tab_oficial:
             use_container_width=True,
             key="btn_oficial_pdf_impresion_final"
         )
+        st.info("💡 Al hacer clic en el botón se descargará el comprobante oficial. Abrilo en tu navegador y presioná 'Ctrl + P' para guardarlo como PDF o imprimirlo. Las jerarquías contables y sumas automáticas se mantendrán idénticas a tu hoja municipal.")

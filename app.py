@@ -390,65 +390,57 @@ with tab_agregar_destino:
 # =====================================================================
 # PESTAÑA 3: HISTORIAL DE REGISTROS DE EGRESOS
 # =====================================================================
-    st.subheader("📋 Panel de Control y Modificación de Cargas")
+    st.subheader("📋 Planilla de Consulta de Datos Guardados (Formato R.A.F.A.M.)")
+    st.caption("Visualización del presupuesto ejecutado y partidas agrupadas por estructura institucional.")
     
     conn = sqlite3.connect(DB_NAME)
     df_auditoria = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
     conn.close()
     
     if df_auditoria.empty:
-        st.info("No hay registros en la base de datos para modificar.")
+        st.info("No hay registros cargados en el sistema actualmente.")
     else:
-        st.markdown("**1. Elegí el registro que querés Corregir o Eliminar:**")
+        # Agrupamos los datos para armar bloques limpios por Secretaría, Subsecretaría y Destino
+        grupos_institucionales = df_auditoria.groupby(["secretaria", "subsecretaria", "destino"])
         
-        df_auditoria["Visualizar"] = df_auditoria.apply(
-            lambda r: f"ID: {r['id']} | Destino: {r['destino']} | Partida: {str(r['cuenta_presupuestaria'])[:30]}... | Monto: ${r['total']:,.2f}", axis=1
-        )
-        
-        opciones_lineas = df_auditoria["Visualizar"].tolist()
-        linea_seleccionada = st.selectbox("Seleccioná un movimiento de la lista:", opciones_lineas)
-        
-        fila_real = df_auditoria[df_auditoria["Visualizar"] == linea_seleccionada].iloc[0]
-        id_registro = int(fila_real["id"])
-        
-        st.markdown("---")
-        st.markdown(f"🛠️ **Formulario de Corrección para el ID: {id_registro}**")
-        
-        opciones_finalidad = ["Legislativa", "Judicial", "Dirección Superior Ejecutiva", "Relaciones Exteriores", "Seguridad de la Estructura"]
-        
-        col_ed1, col_ed2, col_ed3 = st.columns(3)
-        with col_ed1:
-            nuevo_total = st.number_input("Corregir Monto ($):", min_value=0.0, value=float(fila_real["total"]), key=f"tot_{id_registro}")
-            nueva_fuente = st.selectbox("Cambiar F.Fin:", opciones_fuente_fin, index=opciones_fuente_fin.index(fila_real["fuente_fin"]) if fila_real["fuente_fin"] in opciones_fuente_fin else 0)
-        with col_ed2:
-            nueva_clase = st.selectbox("Cambiar Clase:", opciones_clase, index=opciones_clase.index(fila_real["clase"]) if fila_real["clase"] in opciones_clase else 0)
-            nuevo_tipo = st.selectbox("Cambiar Tipo:", opciones_tipo, index=opciones_tipo.index(fila_real["tipo"]) if fila_real["tipo"] in opciones_tipo else 0)
-        with col_ed3:
-            nuevo_finan = st.selectbox("Cambiar Finalidad:", opciones_finalidad, index=opciones_finalidad.index(fila_real["financiamiento"]) if fila_real["financiamiento"] in opciones_finalidad else 0)
+        for (sec, sub, dest), df_grupo in grupos_institucionales:
+            # ENCABEZADO GRIS INSTITUCIONAL TIPO R.A.F.A.M.
+            st.markdown(
+                f"""
+                <div style="background-color: #f0f2f6; padding: 10px; border-radius: 4px; margin-top: 20px; margin-bottom: 10px;">
+                    <span style="font-weight: bold; color: #1c1d21;">🏛️ JURISDICCIÓN:</span> {sec} <br>
+                    <span style="font-weight: bold; color: #1c1d21;">🏢 SUBSECRETARÍA:</span> {sub} | 
+                    <span style="font-weight: bold; color: #1c1d21;">🎯 DESTINO:</span> {dest}
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
             
-        st.markdown("<br>", unsafe_allow_html=True)
-        col_btn1, col_btn2 = st.columns(2)
-        
-        with col_btn1:
-            if st.button("🔄 ACTUALIZAR REGISTRO", type="primary", use_container_width=True):
-                conn = sqlite3.connect(DB_NAME)
-                cursor = conn.cursor()
-                cursor.execute("""
-                    UPDATE egresos_sistema 
-                    SET total = ?, fuente_fin = ?, clase = ?, tipo = ?, financiamiento = ?
-                    WHERE id = ?
-                """, (nuevo_total, nueva_fuente, nueva_clase, nuevo_tipo, nuevo_finan, id_registro))
-                conn.commit()
-                conn.close()
-                st.success(f"✅ ¡ID {id_registro} actualizado correctamente!")
-                st.rerun()
-                
-        with col_btn2:
-            if st.button("🗑️ ELIMINAR REGISTRO TOTALMENTE", type="secondary", use_container_width=True):
-                conn = sqlite3.connect(DB_NAME)
-                cursor = conn.cursor()
-                cursor.execute("DELETE FROM egresos_sistema WHERE id = ?", (id_registro,))
-                conn.commit()
-                conn.close()
-                st.warning(f"💥 El registro ID {id_registro} fue eliminado del sistema.")
-                st.rerun()
+            # Armando la cuadrícula con las columnas contables solicitadas
+            df_bloque_vista = pd.DataFrame({
+                "CUENTA PADRE": df_grupo["cuenta_padre"],
+                "IMPUTACIÓN / PARTIDA": df_grupo["cuenta_presupuestaria"],
+                "PRESUPUESTO ($)": df_grupo["total"].map(lambda x: f"${x:,.2f}" if pd.notnull(x) else "$0.00"),
+                "F.FIN": df_grupo["fuente_fin"],
+                "CLASE": df_grupo["clase"],
+                "TIPO": df_grupo["tipo"],
+                "FINALIDAD": df_grupo["finalidad"] if "finalidad" in df_grupo.columns else df_grupo["financiamiento"]
+            })
+            
+            # Desplegar la planilla limpia, ancha y sin números de índice
+            st.dataframe(df_bloque_vista, use_container_width=True, hide_index=True)
+            
+            # Cálculo del subtotal del bloque con línea contable inferior
+            total_del_bloque = df_grupo["total"].sum()
+            st.markdown(
+                f"""
+                <div style="text-align: right; font-weight: bold; font-size: 16px; margin-top: 5px; margin-bottom: 25px; border-top: 1px solid #dcdcdc; padding-top: 5px;">
+                    Total Destino / Jurisdicción: <span style="color: #2e7d32;">${total_del_bloque:,.2f}</span>
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
+            
+        # Totalizador General Histórico al fondo de la pantalla
+        st.markdown("---")
+        st.metric(label="📊 TOTAL GENERAL ACUMULADO EN EL SISTEMA", value=f"${df_auditoria['total'].sum():,.2f}")

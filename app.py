@@ -171,7 +171,6 @@ with tab_agregar_destino:
         if not df_dt.empty: st.dataframe(df_dt, use_container_width=True, hide_index=True)
 
 with tab_egresos:
-    with tab_egresos:
     st.subheader("📊 Consulta de Reportes Presupuestarios por Destino")
     conn = sqlite3.connect(DB_NAME)
     df_egr = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)

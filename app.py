@@ -474,41 +474,85 @@ with tab_oficial:
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: Arial, sans-serif; color: #000000; padding: 20px; }}
-                .container-membrete {{ border: 1px solid #000000; padding: 15px; margin-bottom: 20px; }}
-                .tabla-header {{ width: 100%; border-collapse: collapse; }}
-                .tabla-header td {{ border: none; padding: 5px; vertical-align: middle; }}
-                .titulo-principal {{ margin: 0; font-size: 16px; font-weight: bold; text-align: center; }}
-                .box-total {{ border: 1px solid #000000; background-color: #f5f5f5; text-align: center; }}
-                .total-label {{ font-size: 11px; font-weight: bold; border-bottom: 1px solid #000000; padding: 4px 0; }}
-                .total-monto {{ font-size: 15px; font-weight: bold; padding: 8px 0; }}
-                .linea-institucional {{ width: 100%; border-collapse: collapse; margin-top: 10px; border-top: 1px solid #000000; font-size: 11px; }}
-                .linea-institucional td {{ padding-top: 8px; border: none; }}
-                .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }}
-                .tabla-datos th {{ border-bottom: 2px solid #000000; padding: 8px 5px; text-align: left; font-weight: bold; }}
-                .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 8px 5px; vertical-align: middle; }}
+                @page {
+                    size: A4 portrait;
+                    margin: 15mm 15mm 15mm 15mm;
+                }
+                body { 
+                    font-family: Arial, sans-serif; 
+                    color: #000000; 
+                    margin: 0 auto; 
+                    padding: 0;
+                    width: 100%;
+                    max-width: 800px; /* Centra el cuerpo del reporte en la hoja */
+                }
+                .container-membrete { 
+                    border: 1px solid #000000; 
+                    padding: 12px; 
+                    margin-bottom: 20px;
+                    width: 100%;
+                    box-sizing: border-box;
+                }
+                .tabla-header { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                }
+                .tabla-header td { 
+                    border: none; 
+                    padding: 5px; 
+                    vertical-align: middle; 
+                }
+                .titulo-principal { 
+                    margin: 0; 
+                    font-size: 16px; 
+                    font-weight: bold; 
+                    text-align: center; 
+                }
+                .box-total { 
+                    border: 1px solid #000000; 
+                    background-color: #f5f5f5; 
+                    text-align: center; 
+                }
+                .total-label { 
+                    font-size: 11px; 
+                    font-weight: bold; 
+                    border-bottom: 1px solid #000000; 
+                    padding: 4px 0; 
+                }
+                .total-monto { 
+                    font-size: 14px; 
+                    font-weight: bold; 
+                    padding: 6px 0; 
+                }
+                .linea-institucional { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    margin-top: 10px; 
+                    border-top: 1px solid #000000; 
+                    font-size: 11px; 
+                }
+                .linea-institucional td { 
+                    padding-top: 8px; 
+                    border: none; 
+                }
+                .tabla-datos { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    margin-top: 15px; 
+                    font-size: 11px; 
+                }
+                .tabla-datos th { 
+                    border-bottom: 2px solid #000000; 
+                    padding: 8px 5px; 
+                    text-align: left; 
+                    font-weight: bold; 
+                }
+                .tabla-datos td { 
+                    border-bottom: 1px solid #e0e0e0; 
+                    padding: 8px 5px; 
+                    vertical-align: middle; 
+                }
             </style>
-        </head>
-        <body>
-            <div class="container-membrete">
-                <table class="tabla-header">
-                    <tr>
-                        <td style="width: 30%; font-size: 10px;"><b>Municipalidad de Sunchales</b></td>
-                        <td style="width: 60%;"><div class="titulo-principal">PRESUPUESTO DE GASTO POR DESTINO 2027</div></td>
-                        <td style="width: 25%;" class="box-total"><div class="total-label">Total Destino</div><div class="total-monto">${total_acumulado_destino:,.2f}</div></td>
-                    </tr>
-                </table>
-                <table class="linea-institucional">
-                    <tr><td><b>SECRETARÍA:</b> {sec_sel}</td><td><b>SUBSECRETARÍA:</b> {sub_sel}</td><td style="text-align: right;"><b>DESTINO:</b> {str(dest_sel).upper()}</td></tr>
-                </table>
-            </div>
-            <table class="tabla-datos">
-                <thead><tr><th>OBJETO DEL GASTO</th><th>PRESUPUESTO</th><th>F.FIN</th><th>CLASE</th><th>TIPO</th><th>FINANCIAMIENTO</th></tr></thead>
-                <tbody>{html_filas_pdf}</tbody>
-            </table>
-        </body>
-        </html>
-        """
         
         st.download_button(
             label="📄 IMPRIMIR COMPROBANTE OFICIAL (PDF)",

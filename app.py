@@ -298,7 +298,7 @@ col1, col2 = st.columns(2)
             st.info("💡 Seleccioná un Objeto de Gasto arriba para desplegar las Cuentas Padre.")
 
 st.markdown("---")
-    col3, col4, col5 = st.columns(3)
+col3, col4, col5 = st.columns(3)
     with col3:
         f_total = st.number_input("PRESUPUESTO / VALOR ($):", min_value=0.0, step=100.0)
         f_fuente = st.selectbox("F.FIN:", [""] + opciones_fuente_fin, format_func=lambda x: "--- Elegí F.Fin ---" if x == "" else x)
@@ -306,9 +306,9 @@ st.markdown("---")
         f_clase = st.selectbox("CLASE:", [""] + opciones_clase, format_func=lambda x: "--- Elegí Clase ---" if x == "" else x)
         f_tipo = st.selectbox("TIPO:", [""] + opciones_tipo, format_func=lambda x: "--- Elegí Tipo ---" if x == "" else x)
     with col5:
-        f_finan = st.selectbox("FINALIDAD:", [""] + opciones_financiamiento, format_func=lambda x: "--- Elegí Finalidad ---" if x == "" else x)
+        f_finalidad = st.selectbox("FINALIDAD:", [""] + opciones_finalidad, format_func=lambda x: "--- Elegí Finalidad ---" if x == "" else x)
 
-    campos_completos = (f_sec != "") and (f_sub != "") and (f_dest is not None and f_dest != "") and (f_obj != "") and (f_padre != "") and (f_presup != "") and (f_fuente != "") and (f_clase != "") and (f_tipo != "") and (f_finan != "")
+    campos_completos = (f_sec != "") and (f_sub != "") and (f_dest is not None and f_dest != "") and (f_obj != "") and (f_padre != "") and (f_presup != "") and (f_fuente != "") and (f_clase != "") and (f_tipo != "") and (f_finalidad != "")
     
     boton_guardar = st.button("💾 GUARDAR REGISTRO INMEDIATO", type="primary", use_container_width=True, disabled=not campos_completos)
     
@@ -318,14 +318,13 @@ st.markdown("---")
         cursor.execute("""
             INSERT INTO egresos_sistema (secretaria, subsecretaria, destino, objeto_gasto, cuenta_padre, cuenta_presupuestaria, total, fuente_fin, clase, tipo, financiamiento)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (f_sec, f_sub, f_dest, f_obj, f_padre, f_presup, f_total, f_fuente, f_clase, f_tipo, f_finan))
+        """, (f_sec, f_sub, f_dest, f_obj, f_padre, f_presup, f_total, f_fuente, f_clase, f_tipo, f_finalidad))
         conn.commit()
         conn.close()
         st.success("✅ ¡Renglón presupuestario guardado con éxito!")
         st.rerun()
     elif boton_guardar and f_total <= 0:
         st.error("❌ Por favor, ingresá un monto presupuestario mayor a $0.")
-
 
 # =====================================================================
 # PESTAÑA 2: ABM DE DESTINOS DINÁMICOS DESDE CERO

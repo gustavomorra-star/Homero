@@ -502,8 +502,8 @@ with tab_oficial:
                 .linea-institucional {{ width: 100%; border-collapse: collapse; margin-top: 10px; border-top: 1px solid #000000; font-size: 11px; }}
                 .linea-institucional td {{ padding-top: 8px; border: none; }}
                 .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }}
-                .tabla-datos th {{ border-bottom: 2px solid #000000; padding: 8px 5px; text-align: left; font-weight: bold; }}
-                .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 8px 5px; vertical-align: middle; }}
+                .tabla-datos th { border-bottom: 2px solid #000000; padding: 8px 5px; text-align: left; font-weight: bold; }
+                .tabla-datos td { border-bottom: 1px solid #e0e0e0; padding: 8px 5px; vertical-align: middle; }
             </style>
         </head>
         <body>

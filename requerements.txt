@@ -1,2 +1,3 @@
 pandas
 pysqlite3-binary
+openpyxl

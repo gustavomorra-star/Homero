@@ -354,10 +354,10 @@ with tab_agregar_destino:
 # PESTAÑA 3: REPORTES AUTOMÁTICOS CON DESGLOSE VERTICAL
 # =====================================================================
 with tab_egresos:
-st.subheader("📋 Planilla de Consulta de Datos Guardados")
-conn = sqlite3.connect(DB_NAME)
-df_auditoria = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
-conn.close()
+    st.subheader("📋 Planilla de Consulta de Datos Guardados")
+    conn = sqlite3.connect(DB_NAME)
+    df_auditoria = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
+    conn.close()
     
 if df_auditoria.empty: 
     st.info("No hay registros en la base de datos actualmente.")

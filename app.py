@@ -341,7 +341,7 @@ with tab_agregar_destino:
 # =====================================================================
 # PESTAÑA 3: HISTORIAL DE REGISTROS DE EGRESOS
 # =====================================================================
-     st.subheader("📋 Panel de Control y Modificación de Cargas")
+    st.subheader("📋 Panel de Control y Modificación de Cargas")
     
     conn = sqlite3.connect(DB_NAME)
     df_auditoria = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
@@ -352,7 +352,6 @@ with tab_agregar_destino:
     else:
         st.markdown("**1. Elegí el registro que querés Corregir o Eliminar:**")
         
-        # Adaptado para mostrar "finalidad" en la previsualización del listado
         df_auditoria["Visualizar"] = df_auditoria.apply(
             lambda r: f"ID: {r['id']} | Destino: {r['destino']} | Partida: {str(r['cuenta_presupuestaria'])[:30]}... | Monto: ${r['total']:,.2f}", axis=1
         )
@@ -360,17 +359,14 @@ with tab_agregar_destino:
         opciones_lineas = df_auditoria["Visualizar"].tolist()
         linea_seleccionada = st.selectbox("Seleccioná un movimiento de la lista:", opciones_lineas)
         
-        # Extraer los datos reales de la fila elegida
         fila_real = df_auditoria[df_auditoria["Visualizar"] == linea_seleccionada].iloc[0]
         id_registro = int(fila_real["id"])
         
         st.markdown("---")
         st.markdown(f"🛠️ **Formulario de Corrección para el ID: {id_registro}**")
         
-        # Aquí definimos las opciones de finalidad de tu formulario para que el editor no falle
         opciones_finalidad = ["Legislativa", "Judicial", "Dirección Superior Ejecutiva", "Relaciones Exteriores", "Seguridad de la Estructura"]
         
-        # Cuadrícula para editar los valores
         col_ed1, col_ed2, col_ed3 = st.columns(3)
         with col_ed1:
             nuevo_total = st.number_input("Corregir Monto ($):", min_value=0.0, value=float(fila_real["total"]), key=f"tot_{id_registro}")
@@ -379,7 +375,6 @@ with tab_agregar_destino:
             nueva_clase = st.selectbox("Cambiar Clase:", opciones_clase, index=opciones_clase.index(fila_real["clase"]) if fila_real["clase"] in opciones_clase else 0)
             nuevo_tipo = st.selectbox("Cambiar Tipo:", opciones_tipo, index=opciones_tipo.index(fila_real["tipo"]) if fila_real["tipo"] in opciones_tipo else 0)
         with col_ed3:
-            # Corrección del KeyError: Mapeamos el componente gráfico a la columna real 'financiamiento' de la Base de Datos
             nuevo_finan = st.selectbox("Cambiar Finalidad:", opciones_finalidad, index=opciones_finalidad.index(fila_real["financiamiento"]) if fila_real["financiamiento"] in opciones_finalidad else 0)
             
         st.markdown("<br>", unsafe_allow_html=True)
@@ -389,7 +384,6 @@ with tab_agregar_destino:
             if st.button("🔄 ACTUALIZAR REGISTRO", type="primary", use_container_width=True):
                 conn = sqlite3.connect(DB_NAME)
                 cursor = conn.cursor()
-                # Modifica la base de datos guardando el nuevo valor seleccionado en la columna financiamiento
                 cursor.execute("""
                     UPDATE egresos_sistema 
                     SET total = ?, fuente_fin = ?, clase = ?, tipo = ?, financiamiento = ?

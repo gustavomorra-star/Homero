@@ -90,7 +90,7 @@ opciones_clase = ["Corriente", "Capital"]
 opciones_tipo = ["Libre", "Afectado"]
 opciones_finalidad = ["Legislativa", "Salud"]
 
-tab_formulario, tab_agregar_destino, tab_egresos, tab_registros = st.tabs([
+tab_formulario, tab_agregar_destino, tab_egresos, tab_registros, tab_oficial = st.tabs([
     "📝 FORMULARIO DE REGISTRO", 
     "➕ GESTIÓN DE DESTINOS",
     "📉 EGRESOS (Reporte Tipo Sheet)",

@@ -354,79 +354,86 @@ with tab_agregar_destino:
 # PESTAÑA 3: REPORTES AUTOMÁTICOS CON DESGLOSE VERTICAL
 # =====================================================================
 with tab_egresos:
-    st.subheader("📋 Planilla de Consulta de Datos Guardados")
+    st.subheader("📊 Consulta de Reportes Presupuestarios por Destino")
     conn = sqlite3.connect(DB_NAME)
-    df_auditoria = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
+    df_egr = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
     conn.close()
-    
-if df_auditoria.empty: 
-    st.info("No hay registros en la base de datos actualmente.")
-else:
-    # 1. Visualización por bloques limpios institucionales
-    for (sec, sub, dest), df_grupo in df_auditoria.groupby(["secretaria", "subsecretaria", "destino"]):
-        st.markdown(f'<div style="background-color: #f0f2f6; padding: 10px; border-radius: 4px; margin-top: 15px;"><b>🏛️ JURISDICCIÓN:</b> {sec}<br><b>🏢 SUBSEC:</b> {sub} | <b>🎯 DESTINO:</b> {dest}</div>', unsafe_allow_html=True)
+
+    if df_egr.empty:
+        st.info("No hay movimientos registrados para armar los reportes.")
+    else:
+        destino_seleccionado = st.selectbox("🔍 BUSCAR Y SELECCIONAR DESTINO:", options=[""] + df_egr["destino"].dropna().unique().tolist(), format_func=lambda x: "--- Elegí un destino ---" if x == "" else str(x).upper())
+        if destino_seleccionado != "":
+            df_f = df_egr[df_egr["destino"] == destino_seleccionado].copy()
+            col_izq, col_der = st.columns(2)
+            with col_izq: st.markdown(f"### 🎯 DESTINO: {str(destino_seleccionado).upper()}")
+            with col_der: st.metric(label="📋 TOTAL DESTINO", value=f"${df_f['total'].sum():,.2f}")
             
-        df_grupo_copy = df_grupo.copy()
-        df_grupo_copy["partida_vertical"] = df_grupo_copy.apply(lambda r: f"{r['objeto_gasto']}\n↳ {r['cuenta_padre']}\n  ↳ {r['cuenta_presupuestaria']}", axis=1)
+            # Formato Vertical para la visualización en pantalla
+            df_f["partida_vertical"] = df_f.apply(lambda r: f"{r['objeto_gasto']}\n↳ {r['cuenta_padre']}\n  ↳ {r['cuenta_presupuestaria']}", axis=1)
+            col_finalidad_rep = df_f["finalidad"] if "finalidad" in df_f.columns else df_f["financiamiento"]
             
-        col_finalidad_bloque = df_grupo_copy["finalidad"] if "finalidad" in df_grupo_copy.columns else df_grupo_copy["financiamiento"]
-        df_bloque_vista = pd.DataFrame({
-            "ID": df_grupo_copy["id"], 
-            "PARTIDA": df_grupo_copy["partida_vertical"], 
-            "PRESUPUESTO ($)": df_grupo_copy["total"].map(lambda x: f"${x:,.2f}" if pd.notnull(x) else "$0.00"), 
-            "F.FIN": df_grupo_copy["fuente_fin"], 
-            "CLASE": df_grupo_copy["clase"], 
-            "TIPO": df_grupo_copy["tipo"], 
-            "FINALIDAD": col_finalidad_bloque
-        })
-        st.dataframe(df_bloque_vista, use_container_width=True, hide_index=True)
-        st.markdown(f'<div style="text-align: right; font-weight: bold; border-top: 1px solid #dcdcdc; padding-top: 5px; margin-bottom: 15px;">Total Destino: <span style="color: #2e7d32;">${df_grupo_copy["total"].sum():,.2f}</span></div>', unsafe_allow_html=True)
+            df_rep = pd.DataFrame({
+                "PARTIDA": df_f["partida_vertical"], 
+                "PRESUPUESTO": df_f["total"].map(lambda x: f"${x:,.2f}"), 
+                "F.FIN": df_f["fuente_fin"], 
+                "CLASE": df_f["clase"], 
+                "TIPO": df_f["tipo"], 
+                "FINALIDAD": col_finalidad_rep
+            })
+            st.dataframe(df_rep, use_container_width=True, hide_index=True)
             
-    st.markdown("---")
-    st.metric(label="📊 TOTAL GENERAL ACUMULADO MUNICIPAL", value=f"${df_auditoria['total'].sum():,.2f}")
-        
- # 2. Panel Supervisor de Modificaciones
-    st.markdown("---")
-    st.markdown("### 🛠️ Panel Supervisor de Modificaciones")
-    st.caption("Elegí la fila que querés corregir o dar de baja (el número de ID figura en la primera columna de las tablas de arriba).")
-        
-    df_auditoria["Texto_Descriptivo"] = df_auditoria.apply(lambda r: f"ID: {r['id']} | Destino: {r['destino']} | Monto: ${r['total']:,.2f}", axis=1)
-    linea_seleccionada = st.selectbox("Seleccioná el registro a modificar por su descripción de ID:", df_auditoria["Texto_Descriptivo"].tolist(), key="select_modificar_auditoria")
-        
-    fila_real = df_auditoria[df_auditoria["Texto_Descriptivo"] == linea_seleccionada]
-    id_registro = int(fila_real["id"].values[0])
-        
-    col_ed1, col_ed2, col_ed3 = st.columns(3)
-    with col_ed1:
-        nuevo_total = st.number_input("Corregir Monto ($):", min_value=0.0, value=float(fila_real["total"].values[0]), key=f"tot_{id_registro}")
-        val_fuente = str(fila_real["fuente_fin"].values[0])
-        nueva_fuente = st.selectbox("Cambiar F.Fin:", opciones_fuente_fin, index=opciones_fuente_fin.index(val_fuente) if val_fuente in opciones_fuente_fin else 0, key=f"fuente_{id_registro}")
-    with col_ed2:
-        val_clase = str(fila_real["clase"].values[0])
-        nueva_clase = st.selectbox("Cambiar Clase:", opciones_clase, index=opciones_clase.index(val_clase) if val_clase in opciones_clase else 0, key=f"clase_{id_registro}")
-        val_tipo = str(fila_real["tipo"].values[0])
-        nuevo_tipo = st.selectbox("Cambiar Tipo:", opciones_tipo, index=opciones_tipo.index(val_tipo) if val_tipo in opciones_tipo else 0, key=f"tipo_{id_registro}")
-    with col_ed3:
-        val_actual_finalidad = str(fila_real["finalidad"].values[0] if "finalidad" in fila_real.columns else fila_real["financiamiento"].values[0])
-        nuevo_finan = st.selectbox("Cambiar Finalidad:", opciones_finalidad, index=opciones_finalidad.index(val_actual_finalidad) if val_actual_finalidad in opciones_finalidad else 0, key=f"finalidad_{id_registro}")
+            # =====================================================================
+            # 📥 MÓDULO EXPORTADOR: FORMATO HOJA DE CÁLCULO NORMALIZADO
+            # =====================================================================
+            st.markdown("---")
+            st.markdown("#### 📥 Exportar Documentos Oficiales")
             
-    st.markdown("<br>", unsafe_allow_html=True)
-    col_btn1, col_btn2 = st.columns(2)
-    with col_btn1:
-        if st.button("🔄 ACTUALIZAR REGISTRO SELECCIONADO", type="primary", use_container_width=True, key=f"btn_upd_{id_registro}"):
-            conn = sqlite3.connect(DB_NAME)
-            cursor = conn.cursor()
-            cursor.execute("UPDATE egresos_sistema SET total = ?, fuente_fin = ?, clase = ?, tipo = ?, finalidad = ? WHERE id = ?", (nuevo_total, nueva_fuente, nueva_clase, nuevo_tipo, nuevo_finan, id_registro))
-            conn.commit()
-            conn.close()
-            st.success(f"✅ ¡Registro ID {id_registro} modificado correctamente!")
-            st.rerun()
-    with col_btn2:
-        if st.button("🗑️ ELIMINAR REGISTRO INDIVIDUAL", type="secondary", use_container_width=True, key=f"btn_del_{id_registro}"):
-            conn = sqlite3.connect(DB_NAME)
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM egresos_sistema WHERE id = ?", (id_registro,))
-            conn.commit()
-            conn.close()
-            st.warning(f"🗑️ El registro ID {id_registro} fue eliminado por completo del sistema.")
-            st.rerun()
+            # Creamos la estructura en columnas independientes y planas para la descarga como planilla real
+            df_descarga_plana = pd.DataFrame({
+                "ID Registro": df_f["id"],
+                "Secretaría": df_f["secretaria"],
+                "Subsecretaría": df_f["subsecretaria"],
+                "Destino Municipal": df_f["destino"],
+                "Cod. Objeto": df_f["objeto_gasto"],
+                "Cuenta Padre": df_f["cuenta_padre"],
+                "Partida Específica": df_f["cuenta_presupuestaria"],
+                "Monto Presupuestado ($)": df_f["total"],
+                "Fuente Financiación": df_f["fuente_fin"],
+                "Clase Gasto": df_f["clase"],
+                "Tipo Fondo": df_f["tipo"],
+                "Finalidad": col_finalidad_rep
+            })
+            
+            col_down1, col_down2 = st.columns(2)
+            
+            with col_down1:
+                # 📗 EXPORTADOR EXCEL (.xlsx) EN COLUMNAS PLANAS
+                try:
+                    import io
+                    output_excel = io.BytesIO()
+                    with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
+                        df_descarga_plana.to_excel(writer, index=False, sheet_name="Presupuesto")
+                    excel_data = output_excel.getvalue()
+                    
+                    st.download_button(
+                        label="📗 Descargar Planilla Excel (.xlsx)",
+                        data=excel_data,
+                        file_name=f"Presupuesto_{str(destino_seleccionado).replace(' ', '_')}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True
+                    )
+                except Exception as e:
+                    st.error("Error al generar el archivo Excel.")
+            
+            with col_down2:
+                # 📄 EXPORTADOR IMPRIMIBLE (.csv plano compatible con PDF contable)
+                # Nota: El formato CSV abre directo las columnas limpias en sistemas de impresión locales
+                csv_data = df_descarga_plana.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📄 Exportar Planilla Imprimible (CSV)",
+                    data=csv_data,
+                    file_name=f"Planilla_{str(destino_seleccionado).replace(' ', '_')}.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )

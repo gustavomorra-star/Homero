@@ -256,7 +256,7 @@ with tab_egresos:
             with col_izq: st.markdown(f"### 🎯 DESTINO: {str(destino_seleccionado).upper()}")
             with col_der: st.metric(label="📋 TOTAL DESTINO", value=f"${df_f['total'].sum():,.2f}")
             
-            # Formato Vertical en celda escalonado
+            # Formato Vertical en celda
             df_f["partida_vertical"] = df_f.apply(lambda r: f"{r['objeto_gasto']}\n↳ {r['cuenta_padre']}\n  ↳ {r['cuenta_presupuestaria']}", axis=1)
             col_finalidad_rep = df_f["finalidad"] if "finalidad" in df_f.columns else df_f["financiamiento"]
             
@@ -271,31 +271,19 @@ with tab_egresos:
             st.dataframe(df_rep, use_container_width=True, hide_index=True)
             
             # =====================================================================
-            # 📥 EXPORTADOR SEGURO CORREGIDO PARA EVITAR CAÍDAS DEL CONVERTIDOR
+            # 📥 EXPORTADOR DIRECTO NATIVO SEGURO (EVITA ERRORES DE LIBRERÍAS)
             # =====================================================================
             st.markdown("---")
-            import io
-            
-            # Forzamos a que el DataFrame se procese estrictamente como texto plano sanitizado
-            df_excel_seguro = df_rep.copy()
-            df_excel_seguro["PARTIDA"] = df_excel_seguro["PARTIDA"].astype(str)
-            
-            output_excel = io.BytesIO()
-            # Usamos openpyxl con parámetros de buffer crudo para saltear bloqueos de caracteres mutados
-            with pd.ExcelWriter(output_excel, engine='openpyxl', mode='w') as writer:
-                df_excel_seguro.to_excel(writer, index=False, sheet_name="Reporte_Egresos")
-            
-            excel_data = output_excel.getvalue()
+            csv_sheet_excel = df_rep.to_csv(index=False).encode('utf-8-sig')
             
             st.download_button(
-                label=" Green 📗 Descargar Planilla Sheet en Excel (.xlsx)", 
-                data=excel_data, 
-                file_name=f"Planilla_{str(destino_seleccionado).replace(' ', '_')}.xlsx", 
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+                label="📗 Descargar Planilla Sheet para Excel (.xls)", 
+                data=csv_sheet_excel, 
+                file_name=f"Planilla_{str(destino_seleccionado).replace(' ', '_')}.xls", 
+                mime="application/vnd.ms-excel", 
                 use_container_width=True,
-                key=f"btn_descarga_excel_{str(destino_seleccionado).replace(' ', '_')}"
+                key=f"btn_sheet_excel_nativo_{str(destino_seleccionado).replace(' ', '_')}"
             )
-
 # =====================================================================
 # PESTAÑA 4: CONSULTA COMPLETA POR BLOQUES Y PANEL DE EDICIÓN SEGURO
 # =====================================================================

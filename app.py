@@ -187,29 +187,18 @@ with tab_egresos:
             st.dataframe(df_rep, use_container_width=True, hide_index=True)
 
 with tab_registros:
-    st.subheader("📋 Planilla de Consulta de Datos Guardados")
+        st.subheader("📋 Planilla de Consulta de Datos Guardados (Formato R.A.F.A.M.)")
     conn = sqlite3.connect(DB_NAME)
     df_auditoria = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
     conn.close()
-    if df_auditoria.empty: st.info("No hay registros en la base de datos actualmente.")
+    if df_auditoria.empty: st.info("No hay registros.")
     else:
         for (sec, sub, dest), df_grupo in df_auditoria.groupby(["secretaria", "subsecretaria", "destino"]):
             st.markdown(f'<div style="background-color: #f0f2f6; padding: 10px; border-radius: 4px; margin-top: 15px;"><b>🏛️ JURISDICCIÓN:</b> {sec}<br><b>🏢 SUBSEC:</b> {sub} | <b>🎯 DESTINO:</b> {dest}</div>', unsafe_allow_html=True)
             col_finalidad = df_grupo["finalidad"] if "finalidad" in df_grupo.columns else df_grupo["financiamiento"]
-         df_bloque_vista = pd.DataFrame({"CUENTA PADRE": df_grupo["cuenta_padre"], "PARTIDA": df_grupo["cuenta_presupuestaria"], "PRESUPUESTO ($)": df_grupo["total"].map(lambda x: f"${x:,.2f}"), "F.FIN": df_grupo["fuente_fin"], "CLASE": df_grupo["clase"], "TIPO": df_grupo["tipo"], "FINALIDAD": col_finalidad})
+            df_bloque_vista = pd.DataFrame({"CUENTA PADRE": df_grupo["cuenta_padre"], "PARTIDA": df_grupo["cuenta_presupuestaria"], "PRESUPUESTO ($)": df_grupo["total"].map(lambda x: f"${x:,.2f}"), "F.FIN": df_grupo["fuente_fin"], "CLASE": df_grupo["clase"], "TIPO": df_grupo["tipo"], "FINALIDAD": col_finalidad})
             st.dataframe(df_bloque_vista, use_container_width=True, hide_index=True)
             st.markdown(f'<div style="text-align: right; font-weight: bold; border-top: 1px solid #dcdcdc; padding-top: 5px; margin-bottom: 15px;">Total Destino: <span style="color: #2e7d32;">${df_grupo["total"].sum():,.2f}</span></div>', unsafe_allow_html=True)
         st.markdown("---")
         st.metric(label="📊 TOTAL GENERAL ACUMULADO", value=f"${df_auditoria['total'].sum():,.2f}")
-
-st.sidebar.header("⚙️ Herramientas")
-if st.sidebar.button("⚠️ Vaciar Base de Datos Completa"):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM egresos_sistema")
-    cursor.execute("DELETE FROM destinos_sistema")
-    conn.commit()
-    conn.close()
-    st.sidebar.success("Base de datos limpia.")
-    st.rerun()
 

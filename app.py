@@ -476,7 +476,7 @@ with tab_oficial:
                     for _, fila in df_padre.iterrows():
                         val_fin = fila["finalidad"] if "finalidad" in df_filtrado_oficial.columns else fila["financiamiento"]
                         filas_planilla.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{fila['cuenta_presupuestaria']}", "PRESUPUESTO": f"${fila['total']:,.2f}", "F.FIN": fila["fuente_fin"], "CLASE": fila["clase"], "TIPO": fila["tipo"], "FINANCIAMIENTO": val_fin})
-    # 3. RENDERIZACIÓN DE LA PLANILLA EN PANTALLA
+   # 3. RENDERIZACIÓN DE LA PLANILLA EN PANTALLA
         if filas_planilla:
             st.write(pd.DataFrame(filas_planilla).to_html(escape=False, index=False), unsafe_allow_html=True)
         else:
@@ -493,7 +493,7 @@ with tab_oficial:
             from reportlab.lib import colors
 
             buf = io.BytesIO()
-            # Margen izquierdo de 45 puntos y derecho de 35 puntos para centrar el bloque A4
+            # Configuración simétrica de márgenes para centrado absoluto en papel A4
             doc = SimpleDocTemplate(buf, pagesize=A4, rightMargin=35, leftMargin=45, topMargin=35, bottomMargin=35)
             story = []
             
@@ -503,28 +503,13 @@ with tab_oficial:
             C = ParagraphStyle('C', parent=sty['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=1)
             B_C = ParagraphStyle('BC', parent=sty['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, alignment=1)
             
-            # Reinyectamos de forma dinámica el árbol matemático con sangrías al PDF
-            if not df_filtrado_oficial.empty:
-                for objeto, df_objeto in df_filtrado_oficial.groupby("objeto_gasto"):
-                    tot_obj = df_objeto["total"].sum()
-                    html_filas_pdf += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="padding-left: 5px; text-align: left;">{objeto}</td><td style="text-align: center;">${tot_obj:,.2f}</td><td></td><td></td><td></td><td></td></tr>'
-                    
-                    for padre, df_padre in df_objeto.groupby("cuenta_padre"):
-                        tot_pad = df_padre["total"].sum()
-                        html_filas_pdf += f'<tr style="font-weight: bold; color: #333333;"><td style="padding-left: 25px; text-align: left;">{padre}</td><td style="text-align: center;">${tot_pad:,.2f}</td><td></td><td></td><td></td><td></td></tr>'
-                        
-                        for _, fila in df_padre.iterrows():
-                            v_fin = fila["finalidad"] if "finalidad" in df_filtrado_oficial.columns else fila["financiamiento"]
-                            html_filas_pdf += f'<tr><td style="padding-left: 45px; text-align: left; color: #555555;">{fila["cuenta_presupuestaria"]}</td><td style="text-align: center;">${fila["total"]:,.2f}</td><td style="text-align: center;">{fila["fuente_fin"]}</td><td style="text-align: center;">{fila["clase"]}</td><td style="text-align: center;">{fila["tipo"]}</td><td style="text-align: center;">{v_fin}</td></tr>'
-
-            # 1. Membrete Superior 2027 Calibrado
+            # 1. Membrete Superior Oficial 2027 Calibrado (Ancho Total: 515 puntos)
             h_data = [[
                 Paragraph("<b>Municipalidad de Sunchales</b><br><font color='#555' size='7'>Presupuesto Oficial 2027</font>", L),
                 Paragraph("<b>PRESUPUESTO DE GASTO POR DESTINO</b><br><font size='10'>-2027-</font>", C),
                 Paragraph("<b>Total Destino</b><br><font size='12'><b>$" + f"{total_acumulado_destino:,.2f}" + "</b></font>", B_C)
             ]]
-            # Medidas exactas en puntos para las 3 columnas del membrete (Total: 515 puntos)
-            h_tab = Table(h_data, colWidths=[130, 255, 130])
+            h_tab = Table(h_data, colWidths=[140, 240, 135])
             h_tab.setStyle(TableStyle([
                 ('BOX', (0,0), (-1,-1), 1, colors.black),
                 ('INNERGRID', (0,0), (-1,-1), 0.5, colors.black),
@@ -535,17 +520,17 @@ with tab_oficial:
             story.append(h_tab)
             story.append(Spacer(1, 8))
             
-            # 2. Datos del Destino Seleccionado
+            # 2. Línea de Jurisdicciones (Ancho Total: 515 puntos)
             m_data = [[Paragraph(f"<b>SECRETARÍA:</b> {sec_sel}", L), Paragraph(f"<b>SUBSECRETARÍA:</b> {sub_sel}", L), Paragraph(f"<b>DESTINO:</b> {str(dest_sel).upper()}", C)]]
-            m_tab = Table(m_data, colWidths=[185, 185, 145])
+            m_tab = Table(m_data, colWidths=[190, 190, 135])
             m_tab.setStyle(TableStyle([('BOX', (0,0), (-1,-1), 1, colors.black), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('PADDING', (0,0), (-1,-1), 5)]))
             story.append(m_tab)
             story.append(Spacer(1, 15))
             
-            # 3. Encabezados de Columnas de Datos Centrados
+            # 3. Encabezados de la Planilla de Cuentas
             t_data = [[Paragraph("<b>OBJETO DEL GASTO</b>", B_C), Paragraph("<b>PRESUPUESTO</b>", B_C), Paragraph("<b>F.FIN</b>", B_C), Paragraph("<b>CLASE</b>", B_C), Paragraph("<b>TIPO</b>", B_C), Paragraph("<b>FINANCIAMIENTO</b>", B_C)]]
             
-            # 4. Inyección del árbol matemático hacia la grilla del PDF
+            # 4. Inyección del árbol contable jerárquico al PDF
             if not df_filtrado_oficial.empty:
                 for objeto, df_objeto in df_filtrado_oficial.groupby("objeto_gasto"):
                     tot_obj = df_objeto["total"].sum()
@@ -563,9 +548,8 @@ with tab_oficial:
                                 Paragraph(str(fila["clase"]), C), Paragraph(str(fila["tipo"]), C), Paragraph(str(v_fin), C)
                             ])
             
-            # Distribución simétrica exacta de anchos de columnas para hoja A4 (Total: 515 puntos)
-            # Columna 1 ancha (225) a la izquierda, y las otras 5 columnas (de 50 a 65) centradas
-            d_tab = Table(t_data, colWidths=[225, 65, 55, 50, 55, 65])
+            # Distribución exacta de columnas: Partida a la izquierda (225) y las de números centradas (50 a 65)
+            d_tab = Table(t_data, colWidths=[225, 60, 50, 55, 60, 65])
             d_tab.setStyle(TableStyle([
                 ('LINEBELOW', (0,0), (-1,0), 1.5, colors.black),
                 ('LINEBELOW', (0,1), (-1,-1), 0.5, colors.lightgrey),

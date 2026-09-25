@@ -231,72 +231,71 @@ with col1:
         key="reg_sec"
         )
         
-        if f_sec != "":
-            opciones_sub_filtradas = MAPEO_ESTRUCTURA[f_sec]
-            f_sub = st.selectbox(
-                "SUBSECRETARÍA:", 
-                options=[""] + opciones_sub_filtradas,
-                format_func=lambda x: "--- Seleccioná una Subsecretaría ---" if x == "" else x,
-                key="reg_sub"
-            )
+    if f_sec != "":
+        opciones_sub_filtradas = MAPEO_ESTRUCTURA[f_sec]
+        f_sub = st.selectbox(
+            "SUBSECRETARÍA:", 
+            options=[""] + opciones_sub_filtradas,
+            format_func=lambda x: "--- Seleccioná una Subsecretaría ---" if x == "" else x,
+            key="reg_sub"
+        )
             
-            if f_sub != "":
-                conn = sqlite3.connect(DB_NAME)
-                df_d = pd.read_sql_query("SELECT nombre_destino FROM destinos_sistema WHERE secretaria = ? AND subsecretaria = ?", conn, params=(f_sec, f_sub))
-                conn.close()
-                lista_d = df_d["nombre_destino"].tolist()
+        if f_sub != "":
+            conn = sqlite3.connect(DB_NAME)
+            df_d = pd.read_sql_query("SELECT nombre_destino FROM destinos_sistema WHERE secretaria = ? AND subsecretaria = ?", conn, params=(f_sec, f_sub))
+            conn.close()
+            lista_d = df_d["nombre_destino"].tolist()
                 
-                if not lista_d:
-                    st.warning("⚠️ Sin destinos creados para esta área. Crealo primero en '➕ GESTIÓN DE DESTINOS'.")
-                    f_dest = None
-                else:
-                    f_dest = st.selectbox(
-                        "DESTINO SELECCIONADO:", 
-                        options=[""] + lista_d,
-                        format_func=lambda x: "--- Seleccioná un Destino ---" if x == "" else str(x).upper(),
-                        key="reg_dest"
-                    )
-            else:
-                f_dest = None
-        else:
-            f_sub = ""
+        if not lista_d:
+            st.warning("⚠️ Sin destinos creados para esta área. Crealo primero en '➕ GESTIÓN DE DESTINOS'.")
             f_dest = None
-            st.info("💡 Seleccioná una Secretaría arriba para desplegar las Subsecretarías.")
-        
+        else:
+            f_dest = st.selectbox(
+                "DESTINO SELECCIONADO:", 
+                options=[""] + lista_d,
+                format_func=lambda x: "--- Seleccioná un Destino ---" if x == "" else str(x).upper(),
+                key="reg_dest"
+                    )
+    else:
+        f_dest = None
+else:
+    f_sub = ""
+    f_dest = None
+    st.info("💡 Seleccioná una Secretaría arriba para desplegar las Subsecretarías.")
+    
 with col2:
     st.markdown("**📊 2. Imputación de Partida**")
         
-        f_obj = st.selectbox(
-            "OBJETO DE GASTO:", 
-            options=[""] + opciones_objetos,
-            format_func=lambda x: "--- Seleccioná un Objeto de Gasto ---" if x == "" else x,
-            key="reg_obj"
-        )
+    f_obj = st.selectbox(
+        "OBJETO DE GASTO:", 
+        options=[""] + opciones_objetos,
+        format_func=lambda x: "--- Seleccioná un Objeto de Gasto ---" if x == "" else x,
+        key="reg_obj"
+    )
         
-        if f_obj != "":
-            diccionario_cuentas_padre = MAPEO_GASTOS[f_obj]
-            f_padre = st.selectbox(
-                "CUENTA PADRE:", 
-                options=[""] + list(diccionario_cuentas_padre.keys()),
-                format_func=lambda x: "--- Seleccioná una Cuenta Padre ---" if x == "" else x,
-                key="reg_padre"
-            )
+    if f_obj != "":
+        diccionario_cuentas_padre = MAPEO_GASTOS[f_obj]
+        f_padre = st.selectbox(
+            "CUENTA PADRE:", 
+            options=[""] + list(diccionario_cuentas_padre.keys()),
+            format_func=lambda x: "--- Seleccioná una Cuenta Padre ---" if x == "" else x,
+            key="reg_padre"
+        )
             
-            if f_padre != "":
-                lista_imputaciones_filtradas = diccionario_cuentas_padre[f_padre]
-                f_presup = st.selectbox(
-                    "CUENTA DE IMPUTACIÓN / PARTIDA:", 
-                    options=[""] + lista_imputaciones_filtradas,
-                    format_func=lambda x: "--- Seleccioná una Partida Final ---" if x == "" else x,
-                    key="reg_presup"
-                )
-            else:
-                f_presup = ""
+        if f_padre != "":
+            lista_imputaciones_filtradas = diccionario_cuentas_padre[f_padre]
+            f_presup = st.selectbox(
+                 "CUENTA DE IMPUTACIÓN / PARTIDA:", 
+                options=[""] + lista_imputaciones_filtradas,
+                format_func=lambda x: "--- Seleccioná una Partida Final ---" if x == "" else x,
+                key="reg_presup"
+            )
         else:
-            f_padre = ""
             f_presup = ""
-            st.info("💡 Seleccioná un Objeto de Gasto arriba para desplegar las Cuentas Padre.")
-
+    else:
+        f_padre = ""
+        f_presup = ""
+        st.info("💡 Seleccioná un Objeto de Gasto arriba para desplegar las Cuentas Padre.")
 st.markdown("---")
 col3, col4, col5 = st.columns(3)
 with col3:

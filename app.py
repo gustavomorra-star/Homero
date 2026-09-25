@@ -242,9 +242,10 @@ with tab_formulario:
             f_dest = st.selectbox("3. DESTINO SELECCIONADO:", lista_destinos_disponibles, key="reg_dest")
         
     with col2:
-        f_obj = st.selectbox("OBJETO DE GASTO:", opciones_objetos)
-        f_padre = st.text_input("CUENTA PADRE (Ej: 21.1.0.0.00.000):")
-        f_presup = st.text_input("DETALLE PARTIDA / IMPUTACIÓN:")
+        f_obj = st.selectbox("OBJETO DE GASTO:", opciones_objetos, key="reg_obj")
+        f_padre = st.selectbox("CUENTA PADRE:", list(MAPEO_GASTOS[f_obj].keys()), key="reg_padre")
+        f_presup = st.selectbox("CUENTA DE IMPUTACIÓN / PARTIDA:", MAPEO_GASTOS[f_obj][f_padre], key="reg_presup")
+
 
     st.markdown("---")
     col3, col4, col5 = st.columns(3)

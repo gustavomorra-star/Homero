@@ -94,7 +94,8 @@ tab_formulario, tab_agregar_destino, tab_egresos, tab_registros = st.tabs([
     "📝 FORMULARIO DE REGISTRO", 
     "➕ GESTIÓN DE DESTINOS",
     "📉 EGRESOS (Reporte Tipo Sheet)",
-    "📊 VER DATOS GUARDADOS"
+    "📊 VER DATOS GUARDADOS",
+    "🏛️ REPORTE OFICIAL POR DESTINO"
 ])
 # =====================================================================
 # PESTAÑA 1: FORMULARIO PRINCIPAL DE REGISTRO
@@ -385,3 +386,132 @@ if st.sidebar.button("⚠️ Vaciar Base de Datos Completa"):
     conn.close()
     st.sidebar.success("Base de datos limpia por completo.")
     st.rerun()
+# =====================================================================
+# 🏛️ PESTAÑA 5: INFORME OFICIAL - PRESUPUESTO DE GASTO POR DESTINO
+# =====================================================================
+with tab_oficial:
+    st.subheader("📋 Consulta de Presupuesto de Gasto por Destino Oficial")
+    st.caption("Filtre mediante los selectores en cascada para estructurar la planilla con el formato normativo del municipio.")
+    
+    conn = sqlite3.connect(DB_NAME)
+    df_oficial_base = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
+    conn.close()
+
+    # Selectores en triple cascada limpia e independiente
+    col_f1, col_f2, col_f3 = st.columns(3)
+    with col_f1:
+        sec_sel = st.selectbox("1. SELECCIONÁ SECRETARÍA:", options=[""] + opciones_secretarias, key="oficial_sec")
+    with col_f2:
+        if sec_sel != "":
+            sub_sel = st.selectbox("2. SELECCIONÁ SUBSECRETARÍA:", options=[""] + MAPEO_ESTRUCTURA[sec_sel], key="oficial_sub")
+        else:
+            sub_sel = st.selectbox("2. SELECCIONÁ SUBSECRETARÍA:", options=[""], key="oficial_sub")
+    with col_f3:
+        if sec_sel != "" and sub_sel != "":
+            conn = sqlite3.connect(DB_NAME)
+            df_d_of = pd.read_sql_query("SELECT nombre_destino FROM destinos_sistema WHERE secretaria = ? AND subsecretaria = ?", conn, params=(sec_sel, sub_sel))
+            conn.close()
+            dest_sel = st.selectbox("3. SELECCIONÁ DESTINO:", options=[""] + df_d_of["nombre_destino"].tolist(), format_func=lambda x: "--- Seleccioná ---" if x == "" else str(x).upper(), key="oficial_dest")
+        else:
+            dest_sel = st.selectbox("3. SELECCIONÁ DESTINO:", options=[""], key="oficial_dest")
+
+    # Si se selecciona el destino final, renderizamos la réplica exacta de tu imagen
+    if sec_sel != "" and sub_sel != "" and dest_sel != "":
+        df_filtrado_oficial = df_oficial_base[(df_oficial_base["secretaria"] == sec_sel) & (df_oficial_base["subsecretaria"] == sub_sel) & (df_oficial_base["destino"] == dest_sel)].copy()
+        total_acumulado_destino = df_filtrado_oficial["total"].sum() if not df_filtrado_oficial.empty else 0.0
+
+        # 1. REPRODUCCIÓN DEL ENCABEZADO SUPERIOR CON RECUADRO DE TOTAL DESTINO
+        st.markdown(
+            f"""
+            <div style="border: 1px solid #000000; padding: 0px; border-radius: 2px; background-color: #ffffff; margin-top: 15px; margin-bottom: 20px; font-family: Arial, sans-serif;">
+                <table style="width: 100%; border-collapse: collapse; margin: 0;">
+                    <tr>
+                        <td style="width: 20%; text-align: left; font-size: 11px; color: #555; padding: 15px; border-right: 1px solid #000000;">
+                            🏛️ <b>Municipalidad de Sunchales</b><br>
+                            <span style="font-size: 9px; color: #777;">2026 - Año Internacional de las Cooperativas<br>"Las Cooperativas construyen un mundo mejor"</span>
+                        </td>
+                        <td style="width: 55%; text-align: center; padding: 15px; border-right: 1px solid #000000; vertical-align: middle;">
+                            <h2 style="margin: 0; padding: 0; color: #000000; font-size: 18px; font-weight: bold; letter-spacing: 0.5px;">PRESUPUESTO DE GASTO POR DESTINO</h2>
+                            <h4 style="margin: 4px 0 0 0; padding: 0; font-size: 13px; font-weight: normal; color: #000000;">-2026-</h4>
+                            <span style="font-size: 9px; color: #777;">-140 Años-</span>
+                        </td>
+                        <td style="width: 25%; text-align: center; padding: 0; margin: 0; vertical-align: middle; background-color: #f5f5f5;">
+                            <div style="font-size: 13px; font-weight: bold; color: #000000; border-bottom: 1px solid #000000; padding: 6px 0;">Total Destino</div>
+                            <div style="font-size: 18px; font-weight: bold; color: #000000; padding: 10px 0;">${total_acumulado_destino:,.2f}</div>
+                        </td>
+                    </tr>
+                </table>
+                <div style="border-top: 1px solid #000000; background-color: #ffffff; font-size: 11px; padding: 6px 10px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 35%; padding: 2px;"><b>SECRETARÍA:</b> {sec_sel}</td>
+                            <td style="width: 35%; padding: 2px;"><b>SUBSECRETARÍA:</b> {sub_sel}</td>
+                            <td style="width: 30%; padding: 2px; text-align: right;"><b>DESTINO:</b> {str(dest_sel).upper()}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+
+        # 2. CONSTRUCCIÓN Y DESGLOSE VERTICAL DE LA PLANILLA DE DATOS
+        if df_filtrado_oficial.empty:
+            st.info("No hay transacciones registradas para este destino en la base de datos.")
+            df_mostrar_oficial = pd.DataFrame({
+                "OBJETO DEL GASTO": ["Sin partidas cargadas para este destino"],
+                "PRESUPUESTO": ["$0.00"], "F.FIN": ["-"], "CLASE": ["-"], "TIPO": ["-"], "FINANCIAMIENTO": ["-"]
+            })
+        else:
+            # Creamos el desglose en cascada vertical (Renglón por renglón adentro de la celda de la partida)
+            df_filtrado_oficial["partida_vertical_oficial"] = df_filtrado_oficial.apply(
+                lambda r: f"{r['objeto_gasto']}\n↳ {r['cuenta_padre']}\n  ↳ {r['cuenta_presupuestaria']}", axis=1
+            )
+            col_finalidad_dinamica = df_filtrado_oficial["finalidad"] if "finalidad" in df_filtrado_oficial.columns else df_filtrado_oficial["financiamiento"]
+            
+            # Estructuramos las 6 columnas exactas de tu foto de Sunchales
+            df_mostrar_oficial = pd.DataFrame({
+                "OBJETO DEL GASTO": df_filtrado_oficial["partida_vertical_oficial"],
+                "PRESUPUESTO": df_filtrado_oficial["total"].map(lambda x: f"${x:,.2f}"),
+                "F.FIN": df_filtrado_oficial["fuente_fin"],
+                "CLASE": df_filtrado_oficial["clase"],
+                "TIPO": df_filtrado_oficial["tipo"],
+                "FINANCIAMIENTO": col_finalidad_dinamica
+            })
+
+        # 3. RENDERIZACIÓN DE LA PLANILLA CUADRICULADA
+        st.dataframe(df_mostrar_oficial, use_container_width=True, hide_index=True)
+
+        # 4. EXPORTADOR DIRECTO FIDELIDAD 100% (TAL CUAL SE VE EN LA WEB)
+        st.markdown("---")
+        import io
+        
+        try:
+            output_oficial_excel = io.BytesIO()
+            with pd.ExcelWriter(output_oficial_excel, engine='openpyxl') as writer:
+                df_mostrar_oficial.to_excel(writer, index=False, sheet_name="Presupuesto_Destino")
+            excel_oficial_data = output_oficial_excel.getvalue()
+            
+            col_down_ex, col_down_csv = st.columns(2)
+            with col_down_ex:
+                st.download_button(
+                    label=" Green 📗 Descargar Presupuesto Oficial a Excel (.xlsx)", 
+                    data=excel_oficial_data, 
+                    file_name=f"Presupuesto_{str(dest_sel).replace(' ', '_')}.xlsx", 
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+                    use_container_width=True,
+                    key="btn_oficial_excel_final"
+                )
+            with col_down_csv:
+                # El formato CSV exporta las cadenas verticales para impresión o volcado directo a PDF
+                csv_oficial_data = df_mostrar_oficial.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📄 Exportar Planilla Imprimible / PDF (CSV)", 
+                    data=csv_oficial_data, 
+                    file_name=f"Presupuesto_{str(dest_sel).replace(' ', '_')}.csv", 
+                    mime="text/csv", 
+                    use_container_width=True,
+                    key="btn_oficial_csv_final"
+                )
+        except:
+            st.error("Error al estructurar los archivos de descarga.")

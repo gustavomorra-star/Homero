@@ -379,7 +379,7 @@ if st.sidebar.button("⚠️ Vaciar Base de Datos Completa"):
 # =====================================================================
 with tab_oficial:
     st.subheader("📋 Consulta de Presupuesto de Gasto por Destino Oficial")
-    st.caption("Filtre mediante los selectores en cascada para estructurar la planilla con el formato normativo del municipio.")
+    st.caption("Filtre mediante los selectores en cascada para estructurar la planilla con el formato normativo y sumas jerárquicas.")
     
     conn = sqlite3.connect(DB_NAME)
     df_oficial_base = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
@@ -390,10 +390,8 @@ with tab_oficial:
     with col_f1:
         sec_sel = st.selectbox("1. SELECCIONÁ SECRETARÍA:", options=[""] + opciones_secretarias, key="oficial_sec")
     with col_f2:
-        if sec_sel != "":
-            sub_sel = st.selectbox("2. SELECCIONÁ SUBSECRETARÍA:", options=[""] + MAPEO_ESTRUCTURA[sec_sel], key="oficial_sub")
-        else:
-            sub_sel = st.selectbox("2. SELECCIONÁ SUBSECRETARÍA:", options=[""], key="oficial_sub")
+        sub_opts = [""] + MAPEO_ESTRUCTURA[sec_sel] if sec_sel != "" else [""]
+        sub_sel = st.selectbox("2. SELECCIONÁ SUBSECRETARÍA:", options=sub_opts, key="oficial_sub")
     with col_f3:
         if sec_sel != "" and sub_sel != "":
             conn = sqlite3.connect(DB_NAME)
@@ -403,7 +401,6 @@ with tab_oficial:
         else:
             dest_sel = st.selectbox("3. SELECCIONÁ DESTINO:", options=[""], key="oficial_dest")
 
-    # Si se selecciona el destino final, renderizamos la réplica exacta de tu imagen
     if sec_sel != "" and sub_sel != "" and dest_sel != "":
         df_filtrado_oficial = df_oficial_base[(df_oficial_base["secretaria"] == sec_sel) & (df_oficial_base["subsecretaria"] == sub_sel) & (df_oficial_base["destino"] == dest_sel)].copy()
         total_acumulado_destino = df_filtrado_oficial["total"].sum() if not df_filtrado_oficial.empty else 0.0
@@ -415,17 +412,16 @@ with tab_oficial:
                 <table style="width: 100%; border-collapse: collapse; margin: 0;">
                     <tr>
                         <td style="width: 20%; text-align: left; font-size: 11px; color: #555; padding: 15px; border-right: 1px solid #000000;">
-                            🏛️ <b>Municipalidad de Sunchales</b><br>
-                            <span style="font-size: 9px; color: #777;">2026 - Año Internacional de las Cooperativas<br>"Las Cooperativas construyen un mundo mejor"</span>
+                            <b>Municipalidad de Sunchales</b><br>
+                            <span style="font-size: 9px; color: #777;">2027 </span>
                         </td>
                         <td style="width: 55%; text-align: center; padding: 15px; border-right: 1px solid #000000; vertical-align: middle;">
-                            <h2 style="margin: 0; padding: 0; color: #000000; font-size: 18px; font-weight: bold; letter-spacing: 0.5px;">PRESUPUESTO DE GASTO POR DESTINO</h2>
-                            <h4 style="margin: 4px 0 0 0; padding: 0; font-size: 13px; font-weight: normal; color: #000000;">-2026-</h4>
-                            <span style="font-size: 9px; color: #777;">-140 Años-</span>
+                            <h2 style="margin: 0; padding: 0; color: #000000; font-size: 18px; font-weight: bold;">PRESUPUESTO DE GASTO POR DESTINO</h2>
+                            <h4 style="margin: 4px 0 0 0; padding: 0; font-size: 13px; font-weight: normal;">-2027-</h4>
                         </td>
                         <td style="width: 25%; text-align: center; padding: 0; margin: 0; vertical-align: middle; background-color: #f5f5f5;">
-                            <div style="font-size: 13px; font-weight: bold; color: #000000; border-bottom: 1px solid #000000; padding: 6px 0;">Total Destino</div>
-                            <div style="font-size: 18px; font-weight: bold; color: #000000; padding: 10px 0;">${total_acumulado_destino:,.2f}</div>
+                            <div style="font-size: 13px; font-weight: bold; border-bottom: 1px solid #000000; padding: 6px 0;">Total Destino</div>
+                            <div style="font-size: 18px; font-weight: bold; padding: 10px 0;">${total_acumulado_destino:,.2f}</div>
                         </td>
                     </tr>
                 </table>
@@ -443,141 +439,82 @@ with tab_oficial:
             unsafe_allow_html=True
         )
 
-        # 2. CONSTRUCCIÓN Y DESGLOSE VERTICAL DE LA PLANILLA DE DATOS
-        if df_filtrado_oficial.empty:
-            st.info("No hay transacciones registradas para este destino en la base de datos.")
-            df_mostrar_oficial = pd.DataFrame({
-                "OBJETO DEL GASTO": ["Sin partidas cargadas para este destino"],
-                "PRESUPUESTO": ["$0.00"], "F.FIN": ["-"], "CLASE": ["-"], "TIPO": ["-"], "FINANCIAMIENTO": ["-"]
-            })
+        # 2. PROCESAMIENTO CONTABLE ARBÓREO MATEMÁTICO (SUBTOTALES AUTOMÁTICOS)
+        filas_planilla = []
+        html_filas_pdf = ""
+
+        if not df_filtrado_oficial.empty:
+            for objeto, df_objeto in df_filtrado_oficial.groupby("objeto_gasto"):
+                tot_obj = df_objeto["total"].sum()
+                filas_planilla.append({"OBJETO DEL GASTO": f"<b>{objeto}</b>", "PRESUPUESTO": f"<b>${tot_obj:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
+                html_filas_pdf += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="padding-left: 5px;">{objeto}</td><td>${tot_obj:,.2f}</td><td></td><td></td><td></td><td></td></tr>'
+                
+                for padre, df_padre in df_objeto.groupby("cuenta_padre"):
+                    tot_pad = df_padre["total"].sum()
+                    filas_planilla.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{padre}</b>", "PRESUPUESTO": f"<b>${tot_pad:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
+                    html_filas_pdf += f'<tr style="font-weight: bold; color: #333333;"><td style="padding-left: 25px;">{padre}</td><td>${tot_pad:,.2f}</td><td></td><td></td><td></td><td></td></tr>'
+                    
+                    for _, fila in df_padre.iterrows():
+                        val_fin = fila["finalidad"] if "finalidad" in df_filtrado_oficial.columns else fila["financiamiento"]
+                        filas_planilla.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{fila['cuenta_presupuestaria']}", "PRESUPUESTO": f"${fila['total']:,.2f}", "F.FIN": fila["fuente_fin"], "CLASE": fila["clase"], "TIPO": fila["tipo"], "FINANCIAMIENTO": val_fin})
+                        html_filas_pdf += f'<tr><td style="padding-left: 45px; color: #555555;">{fila["cuenta_presupuestaria"]}</td><td>${fila["total"]:,.2f}</td><td>{fila["fuente_fin"]}</td><td>{fila["clase"]}</td><td>{fila["tipo"]}</td><td>{val_fin}</td></tr>'
+
+        # 3. RENDERIZACIÓN DE LA PLANILLA INTERACTIVA EN PANTALLA
+        if filas_planilla:
+            st.write(pd.DataFrame(filas_planilla).to_html(escape=False, index=False), unsafe_allow_html=True)
         else:
-            # Creamos el desglose en cascada vertical (Renglón por renglón adentro de la celda de la partida)
-            df_filtrado_oficial["partida_vertical_oficial"] = df_filtrado_oficial.apply(
-                lambda r: f"{r['objeto_gasto']}\n↳ {r['cuenta_padre']}\n  ↳ {r['cuenta_presupuestaria']}", axis=1
-            )
-            col_finalidad_dinamica = df_filtrado_oficial["finalidad"] if "finalidad" in df_filtrado_oficial.columns else df_filtrado_oficial["financiamiento"]
-            
-            # Estructuramos las 6 columnas exactas de tu foto de Sunchales
-            df_mostrar_oficial = pd.DataFrame({
-                "OBJETO DEL GASTO": df_filtrado_oficial["partida_vertical_oficial"],
-                "PRESUPUESTO": df_filtrado_oficial["total"].map(lambda x: f"${x:,.2f}"),
-                "F.FIN": df_filtrado_oficial["fuente_fin"],
-                "CLASE": df_filtrado_oficial["clase"],
-                "TIPO": df_filtrado_oficial["tipo"],
-                "FINANCIAMIENTO": col_finalidad_dinamica
-            })
+            st.info("No hay transacciones registradas para este destino en la base de datos.")
 
-        # 3. RENDERIZACIÓN DE LA PLANILLA CUADRICULADA
-        st.dataframe(df_mostrar_oficial, use_container_width=True, hide_index=True)
-
-          # =====================================================================
-        # 📄 MÓDULO EXPORTADOR OFICIAL IMPRIMIBLE A PDF (FIDELIDAD 100%)
         # =====================================================================
-        st.markdown("---")
-        st.markdown("#### 🖨️ Centro de Impresión Municipal")
-        
-        # Estructuramos el código HTML y CSS nativo de impresión contable para el PDF
+        # 📄 MÓDULO EXPORTADOR OFICIAL IMPRIMIBLE A PDF (FIDELIDAD MULTINIVEL 100%)
+        # =====================================================================
+        st.markdown("<br>", unsafe_allow_html=True)
         html_imprimible = f"""
         <html>
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #000000; padding: 20px; }}
+                body {{ font-family: Arial, sans-serif; color: #000000; padding: 20px; }}
                 .container-membrete {{ border: 1px solid #000000; padding: 15px; margin-bottom: 20px; }}
                 .tabla-header {{ width: 100%; border-collapse: collapse; }}
                 .tabla-header td {{ border: none; padding: 5px; vertical-align: middle; }}
-                .titulo-principal {{ margin: 0; font-size: 16px; font-weight: bold; text-align: center; letter-spacing: 0.5px; }}
-                .sub-ano {{ margin: 3px 0 0 0; text-align: center; font-size: 12px; }}
-                .box-total {{ border: 1px solid #000000; background-color: #f5f5f5; text-align: center; vertical-align: middle; }}
+                .titulo-principal {{ margin: 0; font-size: 16px; font-weight: bold; text-align: center; }}
+                .box-total {{ border: 1px solid #000000; background-color: #f5f5f5; text-align: center; }}
                 .total-label {{ font-size: 11px; font-weight: bold; border-bottom: 1px solid #000000; padding: 4px 0; }}
                 .total-monto {{ font-size: 15px; font-weight: bold; padding: 8px 0; }}
                 .linea-institucional {{ width: 100%; border-collapse: collapse; margin-top: 10px; border-top: 1px solid #000000; font-size: 11px; }}
                 .linea-institucional td {{ padding-top: 8px; border: none; }}
                 .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }}
                 .tabla-datos th {{ border-bottom: 2px solid #000000; padding: 8px 5px; text-align: left; font-weight: bold; }}
-                .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 8px 5px; vertical-align: top; white-space: pre-line; }}
-                .partida-celda {{ line-height: 1.4; }}
+                .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 8px 5px; vertical-align: middle; }}
             </style>
         </head>
         <body>
             <div class="container-membrete">
                 <table class="tabla-header">
                     <tr>
-                        <td style="width: 25%; font-size: 10px; line-height: 1.3;">
-                            <b>Municipalidad de Sunchales</b><br>
-                            <span style="color: #555;">2026 - Año Internacional de las Cooperativas<br>"Las Cooperativas construyen un mundo mejor"</span>
-                        </td>
-                        <td style="width: 50%;">
-                            <div class="titulo-principal">PRESUPUESTO DE GASTO POR DESTINO</div>
-                            <div class="sub-ano">-2026-</div>
-                            <div style="text-align: center; font-size: 9px; color: #555; margin-top: 2px;">-140 Años-</div>
-                        </td>
-                        <td style="width: 25%;" class="box-total">
-                            <div class="total-label">Total Destino</div>
-                            <div class="total-monto">${total_acumulado_destino:,.2f}</div>
-                        </td>
+                        <td style="width: 25%; font-size: 10px;"><b>Municipalidad de Sunchales</b></td>
+                        <td style="width: 50%;"><div class="titulo-principal">PRESUPUESTO DE GASTO POR DESTINO</div></td>
+                        <td style="width: 25%;" class="box-total"><div class="total-label">Total Destino</div><div class="total-monto">${total_acumulado_destino:,.2f}</div></td>
                     </tr>
                 </table>
                 <table class="linea-institucional">
-                    <tr>
-                        <td><b>SECRETARÍA:</b> {sec_sel}</td>
-                        <td><b>SUBSECRETARÍA:</b> {sub_sel}</td>
-                        <td style="text-align: right;"><b>DESTINO:</b> {str(dest_sel).upper()}</td>
-                    </tr>
+                    <tr><td><b>SECRETARÍA:</b> {sec_sel}</td><td><b>SUBSECRETARÍA:</b> {sub_sel}</td><td style="text-align: right;"><b>DESTINO:</b> {str(dest_sel).upper()}</td></tr>
                 </table>
             </div>
-
             <table class="tabla-datos">
-                <thead>
-                    <tr>
-                        <th style="width: 45%;">OBJETO DEL GASTO</th>
-                        <th style="width: 13%;">PRESUPUESTO</th>
-                        <th style="width: 10%;">F.FIN</th>
-                        <th style="width: 10%;">CLASE</th>
-                        <th style="width: 10%;">TIPO</th>
-                        <th style="width: 12%;">FINANCIAMIENTO</th>
-                    </tr>
-                </thead>
-                <tbody>
-        """
-        
-        # Inyectamos de forma dinámica cada fila de la base de datos respetando los saltos de línea verticales exactos
-        if not df_filtrado_oficial.empty:
-            for _, fila in df_filtrado_oficial.iterrows():
-                val_finalidad_pdf = fila["finalidad"] if "finalidad" in df_filtrado_oficial.columns else fila["financiamiento"]
-                partida_formateada_html = f"{fila['objeto_gasto']}<br>&nbsp;&nbsp;↳ {fila['cuenta_padre']}<br>&nbsp;&nbsp;&nbsp;&nbsp;↳ {fila['cuenta_presupuestaria']}"
-                
-                html_imprimible += f"""
-                    <tr>
-                        <td class="partida-celda">{partida_formateada_html}</td>
-                        <td><b>${fila['total']:,.2f}</b></td>
-                        <td>{fila['fuente_fin']}</td>
-                        <td>{fila['clase']}</td>
-                        <td>{fila['tipo']}</td>
-                        <td>{val_finalidad_pdf}</td>
-                    </tr>
-                """
-        else:
-            html_imprimible += """
-                <tr>
-                    <td colspan="6" style="text-align: center; padding: 20px; color: #666;">Sin movimientos registrados para la combinación seleccionada.</td>
-                </tr>
-            """
-            
-        html_imprimible += """
-                </tbody>
+                <thead><tr><th>OBJETO DEL GASTO</th><th>PRESUPUESTO</th><th>F.FIN</th><th>CLASE</th><th>TIPO</th><th>FINANCIAMIENTO</th></tr></thead>
+                <tbody>{html_filas_pdf}</tbody>
             </table>
         </body>
         </html>
         """
         
-        # Botón nativo de impresión de Streamlit que abre el cuadro oficial de descarga PDF de tu computadora
         st.download_button(
             label="📄 IMPRIMIR COMPROBANTE OFICIAL (PDF)",
             data=html_imprimible,
             file_name=f"Presupuesto_Oficial_{str(dest_sel).replace(' ', '_')}.html",
             mime="text/html",
             use_container_width=True,
-            key="btn_oficial_pdf_impresion"
+            key="btn_oficial_pdf_impresion_final"
         )
-        st.info("💡 Al hacer clic en el botón, se descargará el documento oficial. Podés abrirlo y presionar 'Ctrl + P' en tu teclado para guardarlo como PDF o mandarlo directo a la impresora de la Municipalidad.")

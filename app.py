@@ -1,5 +1,6 @@
-st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="https://wikimedia.org")
-st.title("🍩 Homero - Sistema de Registro Presupuestario")
+import sqlite3
+import pandas as pd
+import streamlit as st
 
 import streamlit as st
 

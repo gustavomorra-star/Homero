@@ -516,6 +516,11 @@ with tab_oficial:
                     padding: 8px 5px; 
                     vertical-align: middle; 
                     text-align: center; 
+
+                 .tabla-datos th:first-child,
+                 .tabla-datos td:first-child {
+                 text-align: left !important;
+                 padding-left: 10px;
                 }}
             </style>
         </head>

@@ -242,6 +242,8 @@ with tab_agregar_destino:
 # =====================================================================
 with tab_egresos:
     st.subheader("📊 Consulta de Reportes Presupuestarios por Destino")
+    st.caption("Planilla de datos extendida con desglose completo de imputaciones en columnas independientes.")
+    
     conn = sqlite3.connect(DB_NAME)
     df_egr = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
     conn.close()
@@ -249,57 +251,65 @@ with tab_egresos:
     if df_egr.empty:
         st.info("No hay movimientos registrados para armar los reportes.")
     else:
+        # Selector para buscar por destino
         destino_seleccionado = st.selectbox("🔍 BUSCAR Y SELECCIONAR DESTINO MUNICIPAL:", options=[""] + df_egr["destino"].dropna().unique().tolist(), format_func=lambda x: "--- Elegí un destino ---" if x == "" else str(x).upper())
         if destino_seleccionado != "":
             df_f = df_egr[df_egr["destino"] == destino_seleccionado].copy()
+            
             col_izq, col_der = st.columns(2)
             with col_izq: st.markdown(f"### 🎯 DESTINO: {str(destino_seleccionado).upper()}")
             with col_der: st.metric(label="📋 TOTAL DESTINO", value=f"${df_f['total'].sum():,.2f}")
             
-            # 1. En la pantalla web mantenemos el formato visual de árbol vertical que te gustó
-            df_f["partida_vertical"] = df_f.apply(lambda r: f"{r['objeto_gasto']}\n↳ {r['cuenta_padre']}\n  ↳ {r['cuenta_presupuestaria']}", axis=1)
+            # Sincronizamos la columna de finalidad/financiamiento
             col_finalidad_rep = df_f["finalidad"] if "finalidad" in df_f.columns else df_f["financiamiento"]
             
-            df_rep_pantalla = pd.DataFrame({
-                "PARTIDA": df_f["partida_vertical"], 
-                "PRESUPUESTO": df_f["total"].map(lambda x: f"${x:,.2f}"), 
-                "F.FIN": df_f["fuente_fin"], 
-                "CLASE": df_f["clase"], 
-                "TIPO": df_f["tipo"], 
-                "FINALIDAD": col_finalidad_rep
+            # CONSTRUCCIÓN DE LA PLANILLA PLANTA DE 11 COLUMNAS IDENTICA A TU CAPTURA DE PANTALLA
+            df_plano_11_cols = pd.DataFrame({
+                "SECRETARIA": df_f["secretaria"],
+                "SUBSECRETARIA": df_f["subsecretaria"],
+                "DESTINO": df_f["destino"],
+                "OBJETO DEL GASTO": df_f["objeto_gasto"],
+                "CUENTA PADRE": df_f["cuenta_padre"],
+                "CUENTA IMPUTACIÓN": df_f["cuenta_presupuestaria"],
+                "TOTAL": df_f["total"].map(lambda x: f"${x:,.2f}" if pd.notnull(x) else "$0.00"),
+                "FUENTE FIN.": df_f["fuente_fin"],
+                "CLASE": df_f["clase"],
+                "TIPO": df_f["tipo"],
+                "FINALIDAD/FUNCIÓN": col_finalidad_rep
             })
-            st.dataframe(df_rep_pantalla, use_container_width=True, hide_index=True)
+            
+            # Desplegamos la tabla ancha y plana directamente en la pantalla de Streamlit
+            st.dataframe(df_plano_11_cols, use_container_width=True, hide_index=True)
             
             # =====================================================================
-            # 📥 EXPORTADOR EXCEL EN 11 COLUMNAS PLANAS INDEPENDIENTES
+            # 📥 EXPORTADOR DIRECTO NATIVO DE TEXTO PLANO PARA EXCEL (.XLS)
             # =====================================================================
             st.markdown("---")
             
-            # Armamos el DataFrame con el orden estricto de columnas que solicitaste
-            df_excel_11_columnas = pd.DataFrame({
-                "Secretaría": df_f["secretaria"],
-                "Subsecretaría": df_f["subsecretaria"],
-                "Destino": df_f["destino"],
-                "Objeto del Gasto": df_f["objeto_gasto"],
-                "Cuenta Padre": df_f["cuenta_padre"],
-                "Cuenta Imputación": df_f["cuenta_presupuestaria"],
-                "Presupuesto": df_f["total"], # Número puro para que Excel pueda sumar
-                "F. Financiamiento": df_f["fuente_fin"],
-                "Clase": df_f["clase"],
-                "Tipo": df_f["tipo"],
-                "Finalidad": col_finalidad_rep
+            # Para el archivo Excel dejamos los números sin el signo $ para que puedas aplicar fórmulas matemáticas sumatorias
+            df_excel_puro = pd.DataFrame({
+                "SECRETARIA": df_f["secretaria"],
+                "SUBSECRETARIA": df_f["subsecretaria"],
+                "DESTINO": df_f["destino"],
+                "OBJETO DEL GASTO": df_f["objeto_gasto"],
+                "CUENTA PADRE": df_f["cuenta_padre"],
+                "CUENTA IMPUTACIÓN": df_f["cuenta_presupuestaria"],
+                "TOTAL": df_f["total"],
+                "FUENTE FIN.": df_f["fuente_fin"],
+                "CLASE": df_f["clase"],
+                "TIPO": df_f["tipo"],
+                "FINALIDAD/FUNCIÓN": col_finalidad_rep
             })
             
-            # Conversión nativa segura a formato binario (Evita caídas de openpyxl)
-            csv_11_cols = df_excel_11_columnas.to_csv(index=False).encode('utf-8-sig')
+            csv_data_sheet = df_excel_puro.to_csv(index=False).encode('utf-8-sig')
             
             st.download_button(
-                label="📗 Descargar Reporte Sheet en 11 Columnas para Excel (.xls)", 
-                data=csv_11_cols, 
-                file_name=f"Reporte_Sheet_{str(destino_seleccionado).replace(' ', '_')}.xls", 
+                label="📗 Descargar Reporte Sheet en 11 Columnas Planas para Excel (.xls)", 
+                data=csv_data_sheet, 
+                file_name=f"Planilla_Sheet_{str(destino_seleccionado).replace(' ', '_')}.xls", 
                 mime="application/vnd.ms-excel", 
                 use_container_width=True,
-                key=f"btn_sheet_11cols_{str(destino_seleccionado).replace(' ', '_')}"
+                key=f"btn_sheet_flat_11cols_{str(destino_seleccionado).replace(' ', '_')}"
             )
 # =====================================================================
 # PESTAÑA 4: CONSULTA COMPLETA POR BLOQUES Y PANEL DE EDICIÓN SEGURO

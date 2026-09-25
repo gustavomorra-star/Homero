@@ -394,11 +394,11 @@ else:
     linea_seleccionada = st.selectbox("Seleccioná el registro a modificar por su descripción de ID:", df_auditoria["Texto_Descriptivo"].tolist(), key="select_modificar_auditoria")
         
     fila_real = df_auditoria[df_auditoria["Texto_Descriptivo"] == linea_seleccionada]
-    id_registro = int(fila_real["id"].values)
+    id_registro = int(fila_real["id"].values[0])
         
     col_ed1, col_ed2, col_ed3 = st.columns(3)
     with col_ed1:
-        nuevo_total = st.number_input("Corregir Monto ($):", min_value=0.0, value=float(fila_real["total"].values), key=f"tot_{id_registro}")
+        nuevo_total = st.number_input("Corregir Monto ($):", min_value=0.0, value=float(fila_real["total"].values[0]), key=f"tot_{id_registro}")
         val_fuente = str(fila_real["fuente_fin"].values[0])
         nueva_fuente = st.selectbox("Cambiar F.Fin:", opciones_fuente_fin, index=opciones_fuente_fin.index(val_fuente) if val_fuente in opciones_fuente_fin else 0, key=f"fuente_{id_registro}")
     with col_ed2:

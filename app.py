@@ -256,7 +256,7 @@ with tab_formulario:
         f_clase = st.selectbox("CLASE:", opciones_clase)
         f_tipo = st.selectbox("TIPO:", opciones_tipo)
     with col5:
-        f_finan = st.selectbox("FINANCIAMIENTO:", opciones_financiamiento)
+        f_finan = st.selectbox("FINALIDAD:", opciones_finalidad)
 
     st.markdown("<br>", unsafe_allow_html=True)
     

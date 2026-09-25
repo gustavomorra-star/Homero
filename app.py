@@ -465,9 +465,7 @@ with tab_oficial:
         else:
             st.info("No hay transacciones registradas para este destino en la base de datos.")
 # =====================================================================
-        # 📄 MÓDULO EXPORTADOR OFICIAL IMPRIMIBLE A PDF (CENTRADO ABSOLUTO Y 2027)
-        # =====================================================================
-        # =====================================================================
+      # =====================================================================
         # 📄 MÓDULO EXPORTADOR OFICIAL IMPRIMIBLE A PDF (CENTRADO DE COLUMNAS Y 2027)
         # =====================================================================
         st.markdown("<br>", unsafe_allow_html=True)
@@ -516,11 +514,11 @@ with tab_oficial:
                     padding: 8px 5px; 
                     vertical-align: middle; 
                     text-align: center; 
-
-                 .tabla-datos th:first-child,
-                 .tabla-datos td:first-child {
-                 text-align: left !important;
-                 padding-left: 10px;
+                }}
+                .tabla-datos th:first-child,
+                .tabla-datos td:first-child {{
+                    text-align: left !important;
+                    padding-left: 10px;
                 }}
             </style>
         </head>

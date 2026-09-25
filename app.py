@@ -26,7 +26,7 @@ def inicializar_base_datos():
         )
     """)
     
-    # 2. Nueva tabla para registrar Destinos de forma dinámica
+    # 2. Tabla para registrar Destinos de forma dinámica (Inicia completamente vacía)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS destinos_sistema (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,21 +36,6 @@ def inicializar_base_datos():
         )
     """)
     
-    # Insertar destinos base si la tabla está vacía para que no empiece en blanco
-    cursor.execute("SELECT COUNT(*) FROM destinos_sistema")
-    if cursor.fetchone()[0] == 0:
-        destinos_iniciales = [
-            ("SECRETARÍA DE DESARROLLO Y PROMOCIÓN DE DDHH", "SUBSECRETARÍA DE PROMOCIÓN DE DDHH", "EQUIPO DE POLITICAS DE ADULTOS MAYORES"),
-            ("SECRETARÍA DE DESARROLLO Y PROMOCIÓN DE DDHH", "SUBSECRETARÍA DE PROMOCIÓN DE DDHH", "CENTRO CUIDADO INFANTIL (CAIF)"),
-            ("SECRETARÍA DE GESTIÓN AMBIENTAL Y TERRITORIAL", "SUBSECRETARÍA DE AMBIENTE Y ACCIÓN CLIMÁTICA", "FONDO PLANTA DE RESIDUOS URBANOS"),
-            ("SECRETARÍA DE GESTIÓN AMBIENTAL Y TERRITORIAL", "SUBSECRETARÍA DE OBRAS", "MANTENIMIENTO DE ESPACIOS PÚBLICOS"),
-            ("SECRETARÍA DE GESTIÓN AMBIENTAL Y TERRITORIAL", "SUBSECRETARÍA DE AMBIENTE Y ACCIÓN CLIMÁTICA", "OBJETIVO DENGUE")
-        ]
-        cursor.executemany("""
-            INSERT OR IGNORE INTO destinos_sistema (secretaria, subsecretaria, nombre_destino)
-            VALUES (?, ?, ?)
-        """, destinos_iniciales)
-        
     conn.commit()
     conn.close()
 
@@ -58,16 +43,18 @@ inicializar_base_datos()
 
 st.set_page_config(layout="wide")
 st.title("💼 Homero - Sistema de Registro Presupuestario")
-st.write("📍 Municipalidad de Sunchales | Base de Datos Dinámica")
+st.write("📍 Municipalidad de Sunchales | Base de Datos Limpia de Cero")
 
-# --- Estructura fija de Secretarías y Subsecretarías de la Municipalidad ---
+# --- Estructura institucional fija de la Municipalidad ---
 MAPEO_ESTRUCTURA = {
     "SECRETARÍA DE GESTIÓN AMBIENTAL Y TERRITORIAL": ["SUBSECRETARÍA DE OBRAS", "SUBSECRETARÍA DE AMBIENTE Y ACCIÓN CLIMÁTICA"],
-    "SECRETARÍA DE GOBIERNO": ["SUBSECRETARÍA DE GESTIÓN Y DESARROLLO", "SUBSECRETARÍA DE CULTURA"],
-    "SECRETARÍA DE DESARROLLO Y PROMOCIÓN DE DDHH": ["SUBSECRETARÍA DE PROMOCIÓN DE DDHH", "SUBSECRETARÍA DE ECONOMÍA SOCIAL Y SOLIDARIA"],
+    "SECRETARÍA DE GOBIERNO": ["SUBSECRETARÍA DE GESTIÓN Y DESARROLLO"],
+    "SECRETARÍA DE DESARROLLO Y PROMOCIÓN DE DDHH": ["SUBSECRETARÍA DE PROMOCIÓN DE DDHH", "SUBSECRETARÍA DE CULTURA"],
+    "SECRETARÍA DE PRODUCCIÓN Y EMPLEO":["SUBSECRETARÍA DE DESARROLLO ECONÓMICO Y PRODUCTIVO","SUBSECRETARÍA DE ECONOMÍA SOCIAL Y SOLIDARIA"],
     "AGENCIA MUNICIPAL DE SEGURIDAD": ["AGENCIA MUNICIPAL DE SEGURIDAD"],
-    "INTENDENCIA": ["SUBSECRETARÍA DE HACIENDA Y FINANZAS"],
-    "HCD": ["SECRETARÍA PARLAMENTARIA"]
+    "INTENDENCIA": ["INTENDENCIA"],
+    "SUBSECRETARÍA DE HACIENDA Y FINANZAS":["SUBSECRETARÍA DE HACIENDA Y FINANZAS"],
+    "HCD": ["HCD"]
 }
 
 opciones_secretarias = list(MAPEO_ESTRUCTURA.keys())
@@ -77,10 +64,9 @@ opciones_clase = ["Corriente", "Capital"]
 opciones_tipo = ["Municipal", "Provincial", "Nacional"]
 opciones_financiamiento = ["RTAS GLES", "FONDOS AFECTADOS"]
 
-# Creación de Pestañas (Añadimos la de Gestión de Destinos)
 tab_formulario, tab_agregar_destino, tab_registros = st.tabs([
     "📝 FORMULARIO DE REGISTRO", 
-    "➕ AGREGAR DESTINOS",
+    "➕ GESTIÓN DE DESTINOS",
     "📊 VER DATOS GUARDADOS"
 ])
 
@@ -97,8 +83,7 @@ with tab_formulario:
         opciones_sub_filtradas = MAPEO_ESTRUCTURA[f_sec]
         f_sub = st.selectbox("2. SUBSECRETARÍA:", opciones_sub_filtradas, key="reg_sub")
         
-        # --- CRUCE DE DATOS MÁGICO ---
-        # Buscamos en la base de datos los destinos cargados para esta Secretaría y Subsecretaría exacta
+        # Consulta dinámica a la base de datos
         conn = sqlite3.connect(DB_NAME)
         query_destinos = "SELECT nombre_destino FROM destinos_sistema WHERE secretaria = ? AND subsecretaria = ?"
         df_destinos_db = pd.read_sql_query(query_destinos, conn, params=(f_sec, f_sub))
@@ -107,7 +92,7 @@ with tab_formulario:
         lista_destinos_disponibles = df_destinos_db["nombre_destino"].tolist()
         
         if not lista_destinos_disponibles:
-            st.warning("⚠️ No hay destinos creados para esta Subsecretaría. Creá uno en la pestaña '➕ AGREGAR DESTINOS'.")
+            st.warning("⚠️ No hay destinos creados para esta Subsecretaría. Registralo primero en la pestaña '➕ GESTIÓN DE DESTINOS'.")
             f_dest = None
         else:
             f_dest = st.selectbox("3. DESTINO SELECCIONADO:", lista_destinos_disponibles, key="reg_dest")
@@ -130,7 +115,6 @@ with tab_formulario:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Deshabilitar botón si no hay destino válido creado
     deshabilitar_boton = f_dest is None
     boton_guardar = st.button("💾 GUARDAR REGISTRO INMEDIATO", type="primary", use_container_width=True, disabled=deshabilitar_boton)
     
@@ -151,20 +135,21 @@ with tab_formulario:
             st.error("❌ Por favor, ingresá un monto mayor a $0 y detallá la partida de imputación.")
 
 # =====================================================================
-# PESTAÑA 2: NUEVO ABM DE DESTINOS (ADMINISTRADOR DE DESTINOS)
+# PESTAÑA 2: ABM DE DESTINOS DINÁMICOS DESDE CERO
 # =====================================================================
 with tab_agregar_destino:
-    st.subheader("⚙️ Panel de Creación de Destinos Municipales")
-    st.write("Registrá acá los destinos para que aparezcan automáticamente en las opciones del formulario principal.")
+    st.subheader("⚙️ Panel de Configuración de Destinos")
+    st.caption("Cargá las dependencias específicas de cada área. Se guardarán en la base de datos y quedarán activas en el formulario.")
     
-    col_a, col_b = st.columns(2)
+    col_a, col_b = st.columns([1, 1.2])
     with col_a:
+        st.markdown("**➕ Registrar Nuevo Destino**")
         d_sec = st.selectbox("Asociar a SECRETARÍA:", opciones_secretarias, key="dest_sec")
         opciones_sub_dest = MAPEO_ESTRUCTURA[d_sec]
         d_sub = st.selectbox("Asociar a SUBSECRETARÍA:", opciones_sub_dest, key="dest_sub")
-        d_nombre = st.text_input("Nombre del NUEVO DESTINO (Ej: CAMINOS ESCOLARES SEGUROS):").strip().upper()
+        d_nombre = st.text_input("Nombre del Destino (Ej: OBJETIVO DENGUE):").strip().upper()
         
-        boton_crear_destino = st.button("✨ Guardar Nuevo Destino", type="secondary")
+        boton_crear_destino = st.button("✨ Registrar Destino", type="secondary", use_container_width=True)
         if boton_crear_destino:
             if d_nombre:
                 try:
@@ -176,19 +161,37 @@ with tab_agregar_destino:
                     """, (d_sec, d_sub, d_nombre))
                     conn.commit()
                     conn.close()
-                    st.success(f"🎯 ¡Destino '{d_nombre}' creado con éxito para la subsecretaría {d_sub}!")
+                    st.success(f"🎯 Destino '{d_nombre}' añadido correctamente.")
                     st.rerun()
                 except sqlite3.IntegrityError:
-                    st.error("❌ Ese destino ya existe en el sistema.")
+                    st.error("❌ Este destino ya se encuentra registrado.")
             else:
-                st.error("❌ Por favor, escribí un nombre para el destino.")
+                st.error("❌ El campo de texto no puede estar vacío.")
 
     with col_b:
-        st.markdown("**Destinos cargados actualmente en el sistema:**")
+        st.markdown("**📋 Listado de Destinos Activos**")
         conn = sqlite3.connect(DB_NAME)
-        df_destinos_totales = pd.read_sql_query("SELECT secretaria, subsecretaria, nombre_destino AS [DESTINOS REGISTRADOS] FROM destinos_sistema", conn)
+        df_destinos_totales = pd.read_sql_query("SELECT id, subsecretaria AS [SUBSECRETARÍA], nombre_destino AS [DESTINO] FROM destinos_sistema ORDER BY secretaria, subsecretaria", conn)
         conn.close()
-        st.dataframe(df_destinos_totales, use_container_width=True, hide_index=True)
+        
+        if df_destinos_totales.empty:
+            st.info("No hay destinos creados todavía. Toda la configuración está limpia.")
+        else:
+            # Mostrar la tabla de consulta sin mostrar el ID técnico
+            st.dataframe(df_destinos_totales.drop(columns=["id"]), use_container_width=True, hide_index=True)
+            
+            # Selector rápido para eliminar destinos mal cargados
+            st.markdown("---")
+            st.markdown("**🗑️ Eliminar un Destino**")
+            destino_a_borrar = st.selectbox("Seleccioná el destino que querés remover:", df_destinos_totales["DESTINO"].tolist())
+            if st.button("❌ Dar de Baja Destino", type="secondary"):
+                conn = sqlite3.connect(DB_NAME)
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM destinos_sistema WHERE nombre_destino = ?", (destino_a_borrar,))
+                conn.commit()
+                conn.close()
+                st.success(f"Destino '{destino_a_borrar}' eliminado.")
+                st.rerun()
 
 # =====================================================================
 # PESTAÑA 3: HISTORIAL DE REGISTROS DE EGRESOS
@@ -203,14 +206,14 @@ with tab_registros:
     else:
         st.dataframe(df_actual.drop(columns=["id"]), use_container_width=True, hide_index=True)
 
-# Barra lateral
+# Barra lateral - Limpieza total por si querés resetear en el futuro
 st.sidebar.header("⚙️ Herramientas")
 if st.sidebar.button("⚠️ Vaciar Base de Datos Completa"):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM egresos_sistema")
-    cursor.execute("DELETE FROM destinos_sistema")  # Resetea también los destinos creados
+    cursor.execute("DELETE FROM destinos_sistema")
     conn.commit()
     conn.close()
-    st.sidebar.success("Base de datos e historial limpios.")
+    st.sidebar.success("Base de datos e historial limpios por completo.")
     st.rerun()

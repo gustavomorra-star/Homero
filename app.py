@@ -488,110 +488,108 @@ with tab_oficial:
             st.info("No hay transacciones registradas para este destino.")
  # =====================================================================
  # =====================================================================
-        # 📥 GENERADOR NATIVO DE PDF DIRECTO (BLINDADO CONTRA CORTES)
+        # 🖨️ CENTRO DE IMPRESIÓN MUNICIPAL AUTOMATIZADO A PDF (2027)
         # =====================================================================
-        st.markdown("<br>", unsafe_allow_html=True)
-        try:
-            from reportlab.lib.pagesizes import A4
-            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-            from reportlab.lib import colors
+        st.markdown("---")
+        st.markdown("#### 🖨️ Centro de Impresión Municipal")
 
-            buf = io.BytesIO()
-            doc = SimpleDocTemplate(buf, pagesize=A4, rightMargin=35, leftMargin=45, topMargin=35, bottomMargin=35)
-            story = []
-            
-            sty = getSampleStyleSheet()
-            L = ParagraphStyle('L', parent=sty['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=0)
-            B_L = ParagraphStyle('BL', parent=sty['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, alignment=0)
-            C = ParagraphStyle('C', parent=sty['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=1)
-            B_C = ParagraphStyle('BC', parent=sty['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, alignment=1)
-            
-            # 1. Cabecera del Membrete Oficial Municipal 2027
-            h_data = [[
-                Paragraph("<b>Municipalidad de Sunchales</b><br><font color='#555' size='7'>Presupuesto Oficial 2027</font>", L), 
-                Paragraph("<b>PRESUPUESTO DE GASTO POR DESTINO</b><br><font size='10'>-2027-</font>", C), 
-                Paragraph("<b>Total Destino</b><br><font size='12'><b>$" + f"{total_acumulado_destino:,.2f}" + "</b></font>", B_C)
-            ]]
-            
-            # Usamos el autoajuste nativo de ReportLab para evitar el uso de variables con corchetes
-            h_tab = Table(h_data)
-            h_tab.setStyle(TableStyle([
-                ('BOX', (0,0), (-1,-1), 1, colors.black),
-                ('INNERGRID', (0,0), (-1,-1), 0.5, colors.black),
-                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                ('BACKGROUND', (2,0), (2,0), colors.HexColor('#f5f5f5')),
-                ('PADDING', (0,0), (-1,-1), 8)
-            ]))
-            story.append(h_tab)
-            story.append(Spacer(1, 8))
-            
-            # 2. Línea de Jurisdicciones
-            m_data = [[
-                Paragraph(f"<b>SECRETARÍA:</b> {sec_sel}", L), 
-                Paragraph(f"<b>SUBSECRETARÍA:</b> {sub_sel}", L), 
-                Paragraph(f"<b>DESTINO:</b> {str(dest_sel).upper()}", C)
-            ]]
-            
-            m_tab = Table(m_data)
-            m_tab.setStyle(TableStyle([
-                ('BOX', (0,0), (-1,-1), 1, colors.black), 
-                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), 
-                ('PADDING', (0,0), (-1,-1), 5)
-            ]))
-            story.append(m_tab)
-            story.append(Spacer(1, 15))
-            
-            # 3. Títulos de las Columnas de la Planilla
-            t_data = [[
-                Paragraph("<b>OBJETO DEL GASTO</b>", B_C), 
-                Paragraph("<b>PRESUPUESTO</b>", B_C), 
-                Paragraph("<b>F.FIN</b>", B_C), 
-                Paragraph("<b>CLASE</b>", B_C), 
-                Paragraph("<b>TIPO</b>", B_C), 
-                Paragraph("<b>FINANCIAMIENTO</b>", B_C)
-            ]]
-            
-            # 4. Volcado lineal de la base de datos de pantalla al PDF
-            if filas_planilla:
-                for f in filas_planilla:
-                    txt_partida = f["OBJETO DEL GASTO"].replace("&nbsp;", " ").replace("<b>", "").replace("</b>", "")
-                    txt_monto = f["PRESUPUESTO"].replace("<b>", "").replace("</b>", "")
-                    
-                    es_negrita = "<b>" in f["OBJETO DEL GASTO"]
-                    estilo_partida = B_L if es_negrita else L
-                    estilo_valores = B_C if es_negrita else C
-                    
-                    t_data.append([
-                        Paragraph(txt_partida, estilo_partida), 
-                        Paragraph(txt_monto, estilo_valores), 
-                        Paragraph(str(f["F.FIN"]), estilo_valores), 
-                        Paragraph(str(f["CLASE"]), estilo_valores), 
-                        Paragraph(str(f["TIPO"]), estilo_valores), 
-                        Paragraph(str(f["FINANCIAMIENTO"]), estilo_valores)
-                    ])
-            
-            # Autoajuste de grilla sin colWidths para asegurar la compilación directa en el servidor
-            d_tab = Table(t_data)
-            d_tab.setStyle(TableStyle([
-                ('LINEBELOW', (0,0), (-1,0), 1.5, colors.black), 
-                ('LINEBELOW', (0,1), (-1,-1), 0.5, colors.lightgrey), 
-                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), 
-                ('TOPPADDING', (0,0), (-1,-1), 5), 
-                ('BOTTOMPADDING', (0,0), (-1,-1), 5)
-            ]))
-            story.append(d_tab)
-            
-            doc.build(story)
-            pdf_bytes = buf.getvalue()
-            
-            st.download_button(
-                label="📄 DESCARGAR INFORME OFICIAL EN PDF DIRECTO", 
-                data=pdf_bytes, 
-                file_name=f"Presupuesto_Oficial_2027_{str(dest_sel).replace(' ', '_')}.pdf", 
-                mime="application/pdf", 
-                use_container_width=True, 
-                key="btn_pdf_directo_real_final_seguro"
-            )
-        except Exception as e:
-            st.error("Error al compilar el archivo PDF de descarga.")
+        # Construimos el código HTML/CSS con una orden de auto-impresión nativa (window.print)
+        html_imprimible = f"""
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Presupuesto Oficial 2027 - {str(dest_sel).upper()}</title>
+            <style>
+                @page {{ size: A4 portrait; margin: 15mm; }}
+                body {{ font-family: Arial, sans-serif; color: #000000; margin: 0 auto; padding: 0; width: 100%; max-width: 800px; }}
+                .container-membrete {{ border: 1px solid #000000; padding: 12px; margin-bottom: 20px; box-sizing: border-box; }}
+                .tabla-header {{ width: 100%; border-collapse: collapse; }}
+                .tabla-header td {{ border: none; padding: 5px; vertical-align: middle; }}
+                .titulo-principal {{ margin: 0; font-size: 16px; font-weight: bold; text-align: center; }}
+                .box-total {{ border: 1px solid #000000; background-color: #f5f5f5; text-align: center; }}
+                .total-label {{ font-size: 11px; font-weight: bold; border-bottom: 1px solid #000000; padding: 4px 0; }}
+                .total-monto {{ font-size: 14px; font-weight: bold; padding: 6px 0; }}
+                .linea-institucional {{ width: 100%; border-collapse: collapse; margin-top: 10px; border-top: 1px solid #000000; font-size: 11px; }}
+                .linea-institucional td {{ padding-top: 8px; border: none; }}
+                .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }}
+                .tabla-datos th {{ border-bottom: 2px solid #000000; padding: 8px 5px; text-align: center; font-weight: bold; }}
+                .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 8px 5px; vertical-align: middle; text-align: center; }}
+                .tabla-datos th:first-child, .tabla-datos td:first-child {{ text-align: left !important; padding-left: 10px; }}
+            </style>
+        </head>
+        <body onload="window.print();">
+            <div class="container-membrete">
+                <table class="tabla-header">
+                    <tr>
+                        <td style="width: 25%; font-size: 10px; line-height: 1.3; text-align: left;">
+                            <b>Municipalidad de Sunchales</b><br>
+                            <span style="color: #555; font-size: 8px;">Presupuesto Oficial 2027</span>
+                        </td>
+                        <td style="width: 50%; text-align: center; vertical-align: middle;">
+                            <div class="titulo-principal">PRESUPUESTO DE GASTO POR DESTINO</div>
+                            <div style="text-align: center; font-size: 12px; margin-top: 3px;">-2027-</div>
+                        </td>
+                        <td style="width: 25%;" class="box-total">
+                            <div class="total-label">Total Destino</div>
+                            <div class="total-monto">${total_acumulado_destino:,.2f}</div>
+                        </td>
+                    </tr>
+                </table>
+                <table class="linea-institucional">
+                    <tr>
+                        <td><b>SECRETARÍA:</b> {sec_sel}</td>
+                        <td><b>SUBSECRETARÍA:</b> {sub_sel}</td>
+                        <td style="text-align: right;"><b>DESTINO:</b> {str(dest_sel).upper()}</td>
+                    </tr>
+                </table>
+            </div>
+            <table class="tabla-datos">
+                <thead>
+                    <tr>
+                        <th>OBJETO DEL GASTO</th>
+                        <th>PRESUPUESTO</th>
+                        <th>F.FIN</th>
+                        <th>CLASE</th>
+                        <th>TIPO</th>
+                        <th>FINANCIAMIENTO</th>
+                    </tr>
+                </thead>
+                <tbody>
+        """
+
+        # Volcado dinámico de las filas con las sangrías contables intactas
+        if filas_planilla:
+            for f in filas_planilla:
+                txt_partida = f["OBJETO DEL GASTO"]
+                txt_monto = f["PRESUPUESTO"]
+                es_negrita = "<b>" in txt_partida
+                style_row = "font-weight: bold; background-color: #f9f9f5;" if es_negrita else ""
+                
+                html_imprimible += f"""
+                    <tr style="{style_row}">
+                        <td>{txt_partida}</td>
+                        <td>{txt_monto}</td>
+                        <td>{f["F.FIN"]}</td>
+                        <td>{f["CLASE"]}</td>
+                        <td>{f["TIPO"]}</td>
+                        <td>{f["FINANCIAMIENTO"]}</td>
+                    </tr>
+                """
+
+        html_imprimible += """
+                </tbody>
+            </table>
+        </body>
+        </html>
+        """
+
+        # Botón de descarga directa del documento imprimible
+        st.download_button(
+            label="🖨️ GENERAR Y ABRIR REPORTE IMPRIMIBLE A PDF",
+            data=html_imprimible,
+            file_name=f"Presupuesto_Oficial_{str(dest_sel).replace(' ', '_')}.html",
+            mime="text/html",
+            use_container_width=True,
+            key="btn_oficial_impresion_final_centrada"
+        )
+        st.info("💡 Al hacer clic, se descargará el reporte optimizado. Abrilo y se desplegará en el acto la ventana de impresión para guardarlo como PDF o imprimirlo en papel, con los números centrados y las cuentas alineadas.")

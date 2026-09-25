@@ -75,8 +75,6 @@ ESTRUCTURA_CASCADA = {
             "TURISMO",
         ]
     },
-        
-    },
     "AGENCIA MUNICIPAL DE SEGURIDAD": {
         "AGENCIA MUNICIPAL DE SEGURIDAD": [
             "CAMINOS ESCOLARES SEGUROS",
@@ -87,8 +85,6 @@ ESTRUCTURA_CASCADA = {
         "INTENDENCIA":[
             "INTENDENCIA"
         ]
-    },
-
     },
     "SUBSECRETARÍA DE HACIENDA Y FINANZAS":{
         "SUBSECRETARÍA DE HACIENDA Y FINANZAS": [

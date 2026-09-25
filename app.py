@@ -500,8 +500,8 @@ with tab_oficial:
             <meta charset="utf-8">
             <title>Presupuesto Oficial 2027 - {str(dest_sel).upper()}</title>
             <style>
-                @page {{ size: A4 portrait; margin: 15mm; }}
-                body {{ font-family: Arial, sans-serif; color: #000000; margin: 0 auto; padding: 0; width: 100%; max-width: 800px; }}
+                @page {{ size: A4 landscape; margin: 15mm; }}
+                body {{ font-family: Arial, sans-serif; color: #000000; margin: 0 auto; padding: 0; width: 100%; max-width: 1050px; }}
                 .container-membrete {{ border: 1px solid #000000; padding: 12px; margin-bottom: 20px; box-sizing: border-box; }}
                 .tabla-header {{ width: 100%; border-collapse: collapse; }}
                 .tabla-header td {{ border: none; padding: 5px; vertical-align: middle; }}

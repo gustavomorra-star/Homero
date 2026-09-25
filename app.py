@@ -217,14 +217,13 @@ tab_formulario, tab_agregar_destino, tab_registros = st.tabs([
 # =====================================================================
 # PESTAÑA 1: FORMULARIO PRINCIPAL DE REGISTRO (CON CRUCE DINÁMICO)
 # =====================================================================
-    st.subheader("📥 Cargar Nuevo Renglón Presupuestario")
-    st.caption("Los campos se encuentran vacíos por defecto. Seleccioná una opción para activar las cascadas de imputación.")
+st.subheader("📥 Cargar Nuevo Renglón Presupuestario")
+st.caption("Los campos se encuentran vacíos por defecto. Seleccioná una opción para activar las cascadas de imputación.")
     
-    col1, col2 = st.columns(2)
+col1, col2 = st.columns(2)
     with col1:
         st.markdown("**📍 1. Ubicación Institucional**")
         
-        # Secretaría arranca vacía
         f_sec = st.selectbox(
             "SECRETARÍA:", 
             options=[""] + opciones_secretarias,
@@ -232,7 +231,6 @@ tab_formulario, tab_agregar_destino, tab_registros = st.tabs([
             key="reg_sec"
         )
         
-        # Subsecretaría y Destino solo se activan si se elige una Secretaría
         if f_sec != "":
             opciones_sub_filtradas = MAPEO_ESTRUCTURA[f_sec]
             f_sub = st.selectbox(
@@ -268,7 +266,6 @@ tab_formulario, tab_agregar_destino, tab_registros = st.tabs([
     with col2:
         st.markdown("**📊 2. Imputación de Partida**")
         
-        # Objeto de Gasto arranca vacío
         f_obj = st.selectbox(
             "OBJETO DE GASTO:", 
             options=[""] + opciones_objetos,
@@ -276,7 +273,6 @@ tab_formulario, tab_agregar_destino, tab_registros = st.tabs([
             key="reg_obj"
         )
         
-        # Cuenta Padre y Partida solo se activan si se elige un Objeto de Gasto
         if f_obj != "":
             diccionario_cuentas_padre = MAPEO_GASTOS[f_obj]
             f_padre = st.selectbox(
@@ -301,7 +297,7 @@ tab_formulario, tab_agregar_destino, tab_registros = st.tabs([
             f_presup = ""
             st.info("💡 Seleccioná un Objeto de Gasto arriba para desplegar las Cuentas Padre.")
 
-    st.markdown("---")
+st.markdown("---")
     col3, col4, col5 = st.columns(3)
     with col3:
         f_total = st.number_input("PRESUPUESTO / VALOR ($):", min_value=0.0, step=100.0)
@@ -312,7 +308,6 @@ tab_formulario, tab_agregar_destino, tab_registros = st.tabs([
     with col5:
         f_finan = st.selectbox("FINALIDAD:", [""] + opciones_financiamiento, format_func=lambda x: "--- Elegí Finalidad ---" if x == "" else x)
 
-    # El botón de guardar solo se activa si ABSOLUTAMENTE TODOS los campos fueron seleccionados correctamente
     campos_completos = (f_sec != "") and (f_sub != "") and (f_dest is not None and f_dest != "") and (f_obj != "") and (f_padre != "") and (f_presup != "") and (f_fuente != "") and (f_clase != "") and (f_tipo != "") and (f_finan != "")
     
     boton_guardar = st.button("💾 GUARDAR REGISTRO INMEDIATO", type="primary", use_container_width=True, disabled=not campos_completos)
@@ -330,6 +325,7 @@ tab_formulario, tab_agregar_destino, tab_registros = st.tabs([
         st.rerun()
     elif boton_guardar and f_total <= 0:
         st.error("❌ Por favor, ingresá un monto presupuestario mayor a $0.")
+
 
 # =====================================================================
 # PESTAÑA 2: ABM DE DESTINOS DINÁMICOS DESDE CERO

@@ -26,10 +26,80 @@ def inicializar_base_datos():
     conn.commit()
     conn.close()
 
-# Inicialización y configuración básica de la aplicación Streamlit
 inicializar_base_datos()
+
 st.set_page_config(layout="wide")
 st.title("💼 Homero - Sistema de Registro Presupuestario")
-st.write("📍 Municipalidad de Sunchales | Formato Oficial Adaptado")
+st.write("📍 Municipalidad de Sunchales")
 
-# (El código continúa con la definición de listas, pestañas de formulario, control de datos, reportes y barra lateral para la gestión de la base de datos).
+opciones_secretarias = ["SECRETARÍA DE DESARROLLO Y PROMOCIÓN DE DDHH", "AGENCIA MUNICIPAL DE SEGURIDAD", "SECRETARÍA DE GESTIÓN AMBIENTAL Y TERRITORIAL", "SECRETARÍA DE GOBIERNO", "INTENDENCIA", "HCD"]
+opciones_subsecretarias = ["SUBSECRETARÍA DE PROMOCIÓN DE DDHH", "AGENCIA MUNICIPAL DE SEGURIDAD", "SUBSECRETARÍA DE AMBIENTE Y ACCIÓN CLIMÁTICA", "SUBSECRETARÍA DE GESTIÓN Y DESARROLLO", "SUBSECRETARÍA DE HACIENDA Y FINANZAS", "SUBSECRETARÍA DE CULTURA"]
+opciones_destinos = ["EQUIPO DE POLITICAS DE ADULTOS MAYORES", "CENTRO CUIDADO INFANTIL", "FONDO PLANTA DE RESIDUOS URBANOS", "MANTENIMIENTO DE ESPACIOS PÚBLICOS", "OBJETIVO DENGUE"]
+opciones_objetos = ["1. Gasto en personal", "2. Bienes de consumo", "3. Servicios", "4. Bienes de Uso", "5. Transferencias", "6. Activos Financieros"]
+opciones_fuente_fin = ["Libre", "Afectado", "Propio", "Fondo Provincial"]
+opciones_clase = ["Corriente", "Capital"]
+opciones_tipo = ["Municipal", "Provincial", "Nacional"]
+opciones_financiamiento = ["RTAS GLES", "FONDOS AFECTADOS"]
+
+tab_formulario, tab_registros = st.tabs(["📝 FORMULARIO DE REGISTRO", "📊 VER DATOS GUARDADOS"])
+
+with tab_formulario:
+    st.subheader("📥 Cargar Nuevo Renglón Presupuestario")
+    with st.form("formulario_egresos", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            f_sec = st.selectbox("SECRETARÍA:", opciones_secretarias)
+            f_sub = st.selectbox("SUBSECRETARÍA:", opciones_subsecretarias)
+            f_dest = st.selectbox("DESTINO:", opciones_destinos)
+        with col2:
+            f_obj = st.selectbox("OBJETO DE GASTO:", opciones_objetos)
+            f_padre = st.text_input("CUENTA PADRE (Ej: 21.1.0.0.00.000):")
+            f_presup = st.text_input("DETALLE PARTIDA / IMPUTACIÓN:")
+
+        st.markdown("---")
+        col3, col4, col5 = st.columns(3)
+        with col3:
+            f_total = st.number_input("PRESUPUESTO / VALOR ($):", min_value=0.0, step=100.0)
+            f_fuente = st.selectbox("F.FIN:", opciones_fuente_fin)
+        with col4:
+            f_clase = st.selectbox("CLASE:", opciones_clase)
+            f_tipo = st.selectbox("TIPO:", opciones_tipo)
+        with col5:
+            f_finan = st.selectbox("FINANCIAMIENTO:", opciones_financiamiento)
+
+        boton_guardar = st.form_submit_button("💾 GUARDAR REGISTRO", type="primary")
+        if boton_guardar:
+            if f_total > 0 and f_presup:
+                conn = sqlite3.connect(DB_NAME)
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO egresos_sistema 
+                    (secretaria, subsecretaria, destino, objeto_gasto, cuenta_padre, cuenta_presupuestaria, total, fuente_fin, clase, tipo, financiamiento)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (f_sec, f_sub, f_dest, f_obj, f_padre, f_presup, f_total, f_fuente, f_clase, f_tipo, f_finan))
+                conn.commit()
+                conn.close()
+                st.success("✅ ¡Registro insertado correctamente en el sistema!")
+                st.rerun()
+            else:
+                st.error("❌ Por favor, ingresá un monto mayor a $0 y detallá la partida de imputación.")
+
+with tab_registros:
+    st.subheader("📋 Historial de Cargas Realizadas")
+    conn = sqlite3.connect(DB_NAME)
+    df_actual = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
+    conn.close()
+    if df_actual.empty:
+        st.info("Todavía no se cargaron registros mediante el formulario.")
+    else:
+        st.dataframe(df_actual.drop(columns=["id"]), use_container_width=True, hide_index=True)
+
+st.sidebar.header("⚙️ Herramientas")
+if st.sidebar.button("⚠️ Vaciar Base de Datos Completa"):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM egresos_sistema")
+    conn.commit()
+    conn.close()
+    st.sidebar.success("Base de datos reseteada con éxito.")
+    st.rerun()

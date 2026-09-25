@@ -100,7 +100,7 @@ tab_formulario, tab_agregar_destino, tab_egresos, tab_registros = st.tabs([
     "📝 FORMULARIO DE REGISTRO", 
     "➕ GESTIÓN DE DESTINOS", 
     "📉 EGRESOS (Reporte Tipo Sheet)", 
-    "📊 VER DATOS GUARDADOS (R.A.F.A.M.)"
+    "📊 VER DATOS GUARDADOS"
 ])
 with tab_formulario:
     st.subheader("📥 Cargar Nuevo Renglón Presupuestario")

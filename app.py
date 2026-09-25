@@ -493,8 +493,8 @@ with tab_oficial:
             <div class="container-membrete">
                 <table class="tabla-header">
                     <tr>
-                        <td style="width: 25%; font-size: 10px;"><b>Municipalidad de Sunchales</b></td>
-                        <td style="width: 50%;"><div class="titulo-principal">PRESUPUESTO DE GASTO POR DESTINO</div></td>
+                        <td style="width: 30%; font-size: 10px;"><b>Municipalidad de Sunchales</b></td>
+                        <td style="width: 60%;"><div class="titulo-principal">PRESUPUESTO DE GASTO POR DESTINO 2027</div></td>
                         <td style="width: 25%;" class="box-total"><div class="total-label">Total Destino</div><div class="total-monto">${total_acumulado_destino:,.2f}</div></td>
                     </tr>
                 </table>

@@ -411,9 +411,9 @@ with tab_oficial:
             <div style="border: 1px solid #000000; padding: 0px; border-radius: 2px; background-color: #ffffff; margin-top: 15px; margin-bottom: 20px; font-family: Arial, sans-serif;">
                 <table style="width: 100%; border-collapse: collapse; margin: 0;">
                     <tr>
-                        <td style="width: 20%; text-align: left; font-size: 11px; color: #555; padding: 15px; border-right: 1px solid #000000;">
+                        <td style="width: 30%; text-align: left; font-size: 11px; color: #555; padding: 15px; border-right: 1px solid #000000;">
                             <b>Municipalidad de Sunchales</b><br>
-                            <span style="font-size: 9px; color: #777;">2027 </span>
+                            <span style="font-size: 9px; color: #777;">PRESUPUESTO MUNICIPAL 2027 </span>
                         </td>
                         <td style="width: 55%; text-align: center; padding: 15px; border-right: 1px solid #000000; vertical-align: middle;">
                             <h2 style="margin: 0; padding: 0; color: #000000; font-size: 18px; font-weight: bold;">PRESUPUESTO DE GASTO POR DESTINO</h2>

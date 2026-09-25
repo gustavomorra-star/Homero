@@ -426,7 +426,7 @@ with tab_oficial:
         df_filtrado_oficial = df_oficial_base[(df_oficial_base["secretaria"] == sec_sel) & (df_oficial_base["subsecretaria"] == sub_sel) & (df_oficial_base["destino"] == dest_sel)].copy()
         total_acumulado_destino = df_filtrado_oficial["total"].sum() if not df_filtrado_oficial.empty else 0.0
 
-        # 1. ENCABEZADO INSTITUCIONAL EN PANTALLA
+        # 1. ENCABEZADO INSTITUCIONAL EN PANTALLA (IDÉNTICO A TU DISEÑO)
         st.markdown(
             f"""
             <div style="border: 1px solid #000000; padding: 0px; border-radius: 2px; background-color: #ffffff; margin-top: 15px; margin-bottom: 20px; font-family: Arial, sans-serif;">
@@ -459,8 +459,37 @@ with tab_oficial:
             unsafe_allow_html=True
         )
 
-        # 2. PROCESAMIENTO MATEMÁTICO CONTABLE
+        # 2. PROCESAMIENTO EXCLUSIVO DE LA PLANILLA GRÁFICA PARA LA WEB (FUERA DEL TRY)
         filas_planilla = []
+        if not df_filtrado_oficial.empty:
+            for objeto, df_objeto in df_filtrado_oficial.groupby("objeto_gasto"):
+                tot_obj = df_objeto["total"].sum()
+                filas_planilla.append({"OBJETO DEL GASTO": f"<b>{objeto}</b>", "PRESUPUESTO": f"<b>${tot_obj:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
+                
+                for padre, df_padre in df_objeto.groupby("cuenta_padre"):
+                    tot_pad = df_padre["total"].sum()
+                    filas_planilla.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{padre}</b>", "PRESUPUESTO": f"<b>${tot_pad:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
+                    
+                    for _, fila in df_padre.iterrows():
+                        val_fin = fila["finalidad"] if "finalidad" in df_filtrado_oficial.columns else fila["financiamiento"]
+                        filas_planilla.append({
+                            "OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{fila['cuenta_presupuestaria']}", 
+                            "PRESUPUESTO": f"${fila['total']:,.2f}", 
+                            "F.FIN": fila["fuente_fin"], 
+                            "CLASE": fila["clase"], 
+                            "TIPO": fila["tipo"], 
+                            "FINANCIAMIENTO": val_fin
+                        })
+
+        # Muestra la grilla con todas sus columnas de forma nativa en la web
+        if filas_planilla:
+            st.write(pd.DataFrame(filas_planilla).to_html(escape=False, index=False), unsafe_allow_html=True)
+        else:
+            st.info("No hay transacciones registradas para este destino.")
+ # =====================================================================
+        # 📥 GENERADOR NATIVO DE PDF DIRECTO (.PDF REAL EN SOLAPA 5 CORREGIDO)
+        # =====================================================================
+        st.markdown("<br>", unsafe_allow_html=True)
         try:
             from reportlab.lib.pagesizes import A4
             from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -477,34 +506,7 @@ with tab_oficial:
             C = ParagraphStyle('C', parent=sty['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=1)
             B_C = ParagraphStyle('BC', parent=sty['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, alignment=1)
             
-            t_data = [[
-                Paragraph("<b>OBJETO DEL GASTO</b>", B_C), Paragraph("<b>PRESUPUESTO</b>", B_C), 
-                Paragraph("<b>F.FIN</b>", B_C), Paragraph("<b>CLASE</b>", B_C), 
-                Paragraph("<b>TIPO</b>", B_C), Paragraph("<b>FINANCIAMIENTO</b>", B_C)
-            ]]
-            
-            if not df_filtrado_oficial.empty:
-                for objeto, df_objeto in df_filtrado_oficial.groupby("objeto_gasto"):
-                    tot_obj = df_objeto["total"].sum()
-                    filas_planilla.append({"OBJETO DEL GASTO": f"<b>{objeto}</b>", "PRESUPUESTO": f"<b>${tot_obj:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
-                    t_data.append([Paragraph(f"<b>{objeto}</b>", L), Paragraph(f"<b>${tot_obj:,.2f}</b>", C), "", "", "", ""])
-                    
-                    for padre, df_padre in df_objeto.groupby("cuenta_padre"):
-                        tot_pad = df_padre["total"].sum()
-                        filas_planilla.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{padre}</b>", "PRESUPUESTO": f"<b>${tot_pad:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
-                        t_data.append([Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{padre}</b>", B_L), Paragraph(f"<b>${tot_pad:,.2f}</b>", C), "", "", "", ""])
-                        
-                        for _, fila in df_padre.iterrows():
-                            v_fin = fila["finalidad"] if "finalidad" in df_filtrado_oficial.columns else fila["financiamiento"]
-                            filas_planilla.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{fila['cuenta_presupuestaria']}", "PRESUPUESTO": f"${fila['total']:,.2f}", "F.FIN": fila["fuente_fin"], "CLASE": fila["clase"], "TIPO": fila["tipo"], "FINANCIAMIENTO": v_fin})
-                            t_data.append([Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{fila['cuenta_presupuestaria']}", L), Paragraph(f"${fila['total']:,.2f}", C), Paragraph(str(fila["fuente_fin"]), C), Paragraph(str(fila["clase"]), C), Paragraph(str(fila["tipo"]), C), Paragraph(str(v_fin), C)])
- # 3. RENDERIZACIÓN DE LA PLANILLA EN PANTALLA
-            if filas_planilla:
-                st.write(pd.DataFrame(filas_planilla).to_html(escape=False, index=False), unsafe_allow_html=True)
-            else:
-                st.info("No hay transacciones registradas para este destino en la base de datos.")
-
-            # 4. COMPILACIÓN DE CABECERAS DEL ARCHIVO PDF CON MEDIDAS EN PUNTOS FIJOS
+            # 1. Cabecera del Documento (Ancho Total: 515 puntos)
             h_data = [[
                 Paragraph("<b>Municipalidad de Sunchales</b><br><font color='#555' size='7'>Presupuesto Oficial 2027</font>", L), 
                 Paragraph("<b>PRESUPUESTO DE GASTO POR DESTINO</b><br><font size='10'>-2027-</font>", C), 
@@ -525,6 +527,7 @@ with tab_oficial:
             story.append(h_tab)
             story.append(Spacer(1, 8))
             
+            # 2. Línea de Jurisdicciones
             m_data = [[
                 Paragraph(f"<b>SECRETARÍA:</b> {sec_sel}", L), 
                 Paragraph(f"<b>SUBSECRETARÍA:</b> {sub_sel}", L), 
@@ -543,7 +546,37 @@ with tab_oficial:
             story.append(m_tab)
             story.append(Spacer(1, 15))
             
-            # Definición fija de anchos para la grilla del PDF (Total: 515 puntos)
+            # 3. Títulos de las Columnas del PDF
+            t_data = [[
+                Paragraph("<b>OBJETO DEL GASTO</b>", B_C), 
+                Paragraph("<b>PRESUPUESTO</b>", B_C), 
+                Paragraph("<b>F.FIN</b>", B_C), 
+                Paragraph("<b>CLASE</b>", B_C), 
+                Paragraph("<b>TIPO</b>", B_C), 
+                Paragraph("<b>FINANCIAMIENTO</b>", B_C)
+            ]]
+            
+            # 4. Inyección segura de datos estructurados para celdas de ReportLab
+            if not df_filtrado_oficial.empty:
+                for objeto, df_objeto in df_filtrado_oficial.groupby("objeto_gasto"):
+                    tot_obj = df_objeto["total"].sum()
+                    t_data.append([Paragraph(f"<b>{objeto}</b>", L), Paragraph(f"<b>${tot_obj:,.2f}</b>", C), Paragraph("", C), Paragraph("", C), Paragraph("", C), Paragraph("", C)])
+                    
+                    for padre, df_padre in df_objeto.groupby("cuenta_padre"):
+                        tot_pad = df_padre["total"].sum()
+                        t_data.append([Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{padre}</b>", B_L), Paragraph(f"<b>${tot_pad:,.2f}</b>", C), Paragraph("", C), Paragraph("", C), Paragraph("", C), Paragraph("", C)])
+                        
+                        for _, fila in df_padre.iterrows():
+                            v_fin = fila["finalidad"] if "finalidad" in df_filtrado_oficial.columns else fila["financiamiento"]
+                            t_data.append([
+                                Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{fila['cuenta_presupuestaria']}", L), 
+                                Paragraph(f"${fila['total']:,.2f}", C), 
+                                Paragraph(str(fila["fuente_fin"]), C), 
+                                Paragraph(str(fila["clase"]), C), 
+                                Paragraph(str(fila["tipo"]), C), 
+                                Paragraph(str(v_fin), C)
+                            ])
+            
             w1, w2, w3, w4, w5, w6 = 225, 65, 50, 55, 50, 70
             medidas_columnas_grilla = [w1, w2, w3, w4, w5, w6]
             
@@ -560,7 +593,6 @@ with tab_oficial:
             doc.build(story)
             pdf_bytes = buf.getvalue()
             
-            st.markdown("<br>", unsafe_allow_html=True)
             st.download_button(
                 label="📄 DESCARGAR INFORME OFICIAL EN PDF DIRECTO", 
                 data=pdf_bytes, 

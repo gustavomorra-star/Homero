@@ -369,7 +369,7 @@ with tab_egresos:
             with col_izq: st.markdown(f"### 🎯 DESTINO: {str(destino_seleccionado).upper()}")
             with col_der: st.metric(label="📋 TOTAL DESTINO", value=f"${df_f['total'].sum():,.2f}")
             
-            # Formato Vertical para la visualización en pantalla
+            # Mantenemos el formato vertical y escalonado exacto en pantalla
             df_f["partida_vertical"] = df_f.apply(lambda r: f"{r['objeto_gasto']}\n↳ {r['cuenta_padre']}\n  ↳ {r['cuenta_presupuestaria']}", axis=1)
             col_finalidad_rep = df_f["finalidad"] if "finalidad" in df_f.columns else df_f["financiamiento"]
             
@@ -384,42 +384,24 @@ with tab_egresos:
             st.dataframe(df_rep, use_container_width=True, hide_index=True)
             
             # =====================================================================
-            # 📥 MÓDULO EXPORTADOR: FORMATO HOJA DE CÁLCULO NORMALIZADO
+            # 📥 BOTONES DE DESCARGA DIRECTA FIDELIDAD 100% (TAL CUAL SE VE)
             # =====================================================================
             st.markdown("---")
-            st.markdown("#### 📥 Exportar Documentos Oficiales")
-            
-            # Creamos la estructura en columnas independientes y planas para la descarga como planilla real
-            df_descarga_plana = pd.DataFrame({
-                "ID Registro": df_f["id"],
-                "Secretaría": df_f["secretaria"],
-                "Subsecretaría": df_f["subsecretaria"],
-                "Destino Municipal": df_f["destino"],
-                "Cod. Objeto": df_f["objeto_gasto"],
-                "Cuenta Padre": df_f["cuenta_padre"],
-                "Partida Específica": df_f["cuenta_presupuestaria"],
-                "Monto Presupuestado ($)": df_f["total"],
-                "Fuente Financiación": df_f["fuente_fin"],
-                "Clase Gasto": df_f["clase"],
-                "Tipo Fondo": df_f["tipo"],
-                "Finalidad": col_finalidad_rep
-            })
-            
             col_down1, col_down2 = st.columns(2)
             
             with col_down1:
-                # 📗 EXPORTADOR EXCEL (.xlsx) EN COLUMNAS PLANAS
+                # 📗 DESCARGAR EXCEL (.xlsx) IDÉNTICO A LA PLANILLA VISUAL
                 try:
                     import io
                     output_excel = io.BytesIO()
                     with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
-                        df_descarga_plana.to_excel(writer, index=False, sheet_name="Presupuesto")
+                        df_rep.to_excel(writer, index=False, sheet_name="Reporte_Destino")
                     excel_data = output_excel.getvalue()
                     
                     st.download_button(
                         label="📗 Descargar Planilla Excel (.xlsx)",
                         data=excel_data,
-                        file_name=f"Presupuesto_{str(destino_seleccionado).replace(' ', '_')}.xlsx",
+                        file_name=f"Reporte_{str(destino_seleccionado).replace(' ', '_')}.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         use_container_width=True
                     )
@@ -427,9 +409,9 @@ with tab_egresos:
                     st.error("Error al generar el archivo Excel.")
             
             with col_down2:
-                # 📄 EXPORTADOR IMPRIMIBLE (.csv plano compatible con PDF contable)
-                # Nota: El formato CSV abre directo las columnas limpias en sistemas de impresión locales
-                csv_data = df_descarga_plana.to_csv(index=False).encode('utf-8')
+                # 📄 EXPORTAR COMPATIBLE PARA IMPRESIÓN / PDF (CSV con formato exacto)
+                # Al mantener el formato del texto con saltos de línea, se imprime en bloques idénticos
+                csv_data = df_rep.to_csv(index=False).encode('utf-8')
                 st.download_button(
                     label="📄 Exportar Planilla Imprimible (CSV)",
                     data=csv_data,

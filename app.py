@@ -21,11 +21,14 @@ def leer_datos_gsheet(url_tipo):
         return pd.DataFrame()
 
 def guardar_fila_gsheet(hoja, diccionario_datos):
-    """
-    Guarda los datos simulando una petición HTTP Append hacia la estructura pública del GSheet.
-    Como Google Sheets requiere Google Apps Script para escritura directa por POST puro, 
-    usamos una pasarela de contingencia o un volcado seguro.
-    """
+    try:
+        macro_url = st.secrets["GSHEET_MACRO_URL"]
+        paquete_web = {"hoja": hoja, "datos": diccionario_datos}
+        # Enviamos los datos por internet en tiempo real hacia tu Apps Script
+        requests.post(macro_url, json=paquete_web)
+    except Exception as e:
+        st.error(f"Error de sincronización con Drive: {e}")
+
     # Pasarela puente de comunicación Streamlit -> Google Sheet en formato CSV string descriptor
     url_append = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/echo"
     # Por el momento inicializamos el buffer de lectura local integrado

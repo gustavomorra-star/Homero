@@ -4,8 +4,7 @@ import streamlit as st
 import io
 import requests
 
-# --- CONEXIÓN DIRECTA POR API REST A LA NUBE DE SUPABASE (SIN LIBRERÍAS DE BD) ---
-# Extrae de forma automática las claves seguras guardadas en la solapa "Secrets" de Streamlit Cloud
+# --- CONEXIÓN DIRECTA POR API REST A LA NUBE DE SUPABASE (ETERNA Y PERMANENTE) ---
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
@@ -16,20 +15,12 @@ headers_supabase = {
     "Prefer": "return=representation"
 }
 
-def inicializar_base_datos_supabase():
-    # Nota: En Supabase, a diferencia de SQLite, las tablas se manejan y estructuran 
-    # directamente de forma visual con el mouse desde el panel web (Table Editor).
-    pass
-
 def ejecutar_query_supabase(tabla, json_datos=None, query_params=None, metodo="GET"):
-    """
-    Función global para leer, insertar o borrar registros en la nube sin usar SQL pesado.
-    """
     url_endpoint = f"{SUPABASE_URL}/rest/v1/{tabla}"
     try:
         if metodo == "GET":
             response = requests.get(url_endpoint, headers=headers_supabase, params=query_params)
-            return response.json() if response.status_code == 200 else []
+            return response.json() if response.status_code in [200, 206] else []
         elif metodo == "POST":
             response = requests.post(url_endpoint, headers=headers_supabase, json=json_datos)
             return response.json()
@@ -40,54 +31,32 @@ def ejecutar_query_supabase(tabla, json_datos=None, query_params=None, metodo="G
         st.error(f"Error de enlace con la nube: {e}")
         return []
 
+st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="🍩")
+st.title("🍩 Homero - Sistema de Registro Presupuestario")
+st.write("📍 Municipalidad de Sunchales | Servidor Permanente en la Nube 2027")
 
-
-# --- Plan de Cuentas Compactado Oficial ---
+# --- Plan de Cuentas Oficial ---
 MAPEO_GASTOS = {
+    "2. Bienes de consumo": {
+        "22.5.0.0.00.000 - Productos químicos, combustibles y lubricantes": ["22.5.5.0.00.000 - Tintas, Pinturas y Colorantes"],
+        "22.6.0.0.00.000 - Productos minerales no metálicos": ["22.6.5.0.00.000 - Productos de Cemento, Cal y Yeso"],
+        "22.8.0.0.00.000 - Minerales": ["22.8.4.0.00.000 - Piedra, Arcilla y Arena"],
+        "22.9.0.0.00.000 - Otros bienes de consumo": ["22.9.3.0.00.000 - Útiles y materiales eléctricos", "22.9.6.0.00.000 - Repuestos y accesorios"]
+    },
+    "3. Servicios": {
+        "23.3.0.0.00.000 - Mantenimiento, reparación y limpieza": ["23.3.1.0.00.000 - Mantenimiento y reparación de edificios y locales"]
+    },
     "21.0.0.0.00.000 - Gastos de Personal": {
-        "21.1.0.0.00.000 - Personal Permanente": ["21.1.1.0.00.000 - Retribución del Cargo", "21.1.4.0.00.000 - SAC", "21.1.6.0.00.000 - Contribuciones Patronales"],
-        "21.2.0.0.00.000 - Personal Temporario": ["21.2.1.0.00.000 - Retribución del cargo", "21.2.3.0.00.000 - SAC Temporarios"],
-        "21.3.0.0.00.000 - Servicios extraordinarios": ["21.3.1.0.00.000 - Horas Extra"],
-        "21.8.0.0.00.000 - Personal Contratado": ["21.8.1.0.00.000 - Retribuciones por contratos"]
-    },
-    "22.0.0.0.00.000 - Bienes de consumo": {
-        "22.1.0.0.00.000 - Productos alimenticios": ["22.1.1.0.00.000 - Alimentos para personas"],
-        "22.3.0.0.00.000 - Productos de papel y cartón": ["22.3.1.0.00.000 - Papel de escritorio"],
-        "22.5.0.0.00.000 - Productos químicos y combustibles": ["22.5.6.0.00.000 - Combustibles y lubricantes"],
-        "22.9.0.0.00.000 - Otros bienes de consumo": ["22.9.1.0.00.000 - Elementos de limpieza", "22.9.7.3.01.000 - Indumentaria"]
-    },
-    "23.0.0.0.00.000 - Servicios no personales": {
-        "23.1.0.0.00.000 - Services básicos": ["23.1.1.0.00.000 - Energía Eléctrica", "23.1.2.0.00.000 - Agua"],
-        "23.3.0.0.00.000 - Mantenimiento y limpieza": ["23.3.1.0.00.000 - Mantenimiento de edificios", "23.3.9.1.01.000 - Corte de pasto"],
-        "23.4.0.0.00.000 - Servicios técnicos y profesionales": ["23.4.3.0.00.000 - Jurídicos", "23.4.9.2.00.000 - Servicio de Escribanía"],
-        "23.7.0.0.00.000 - Pasajes y viáticos": ["23.7.2.0.00.000 - Viáticos", "23.7.3.0.00.000 - Peajes"]
-    },
-    "24.0.0.0.00.000 - Bienes de uso": {
-        "24.2.0.0.00.000 - Construcciones": ["24.2.1.1.01.000 - Materiales de Construcción", "24.2.1.1.02.000 - Mano de Obra"],
-        "24.3.0.0.00.000 - Maquinaria y equipo": ["24.3.2.1.00.000 - Obras Menores 2024", "24.3.6.1.00.000 - Computación"]
-    },
-    "25.0.0.0.00.000 - Transferencias": {
-        "25.1.0.0.00.000 - Gastos Corrientes Privados": ["25.1.4.1.01.000 - Viáticos Salud", "25.1.4.4.00.000 - Boleto Educativo"],
-        "25.2.0.0.00.000 - Gastos de Capital Privados": ["25.2.4.5.03.000 - B. Sancor", "25.2.4.8.01.000 - Barrio Centro"],
-        "25.7.0.0.00.000 - Provinciales y Municipales": ["25.7.6.1.00.000 - Concejo Municipal", "25.7.9.1.00.000 - SAMCO"]
-    },
-    "26.0.0.0.00.000 - Activos financieros": {
-        "26.2.0.0.00.000 - Prestamos CP": ["26.2.1.4.00.000 - Préstamos a Pymes"],
-        "26.5.0.0.00.000 - Incremento disponibilidades": ["26.5.1.0.00.000 - Incremento de Caja y Bancos"]
-    },
-    "4 - GASTOS - PARTIDAS NO PRESUPUESTARIAS": {
-        "41.1.0.0.00.000 - Gastos No presupuestarios": ["41.1.1.1.00.000 - DEVOLUCIONES"]
+        "21.1.0.0.00.000 - Personal Permanente": ["21.1.1.0.00.000 - Retribución del Cargo", "21.1.4.0.00.000 - SAC"]
     }
 }
 
 MAPEO_ESTRUCTURA = {
+    "AGENCIA MUNICIPAL DE SEGURIDAD": ["AGENCIA MUNICIPAL DE SEGURIDAD"],
     "SECRETARÍA DE GESTIÓN AMBIENTAL Y TERRITORIAL": ["SUBSECRETARÍA DE OBRAS", "SUBSECRETARÍA DE AMBIENTE Y ACCIÓN CLIMÁTICA"],
     "SECRETARÍA DE GOBIERNO": ["SUBSECRETARÍA DE GESTIÓN Y DESARROLLO"],
-    "SECRETARÍA DE DESARROLLO Y PROMOCIÓN DE DDHH": ["SUBSECRETARÍA DE PROMOCIÓN DE DDHH", "SUBSECRETARÍA DE CULTURA"],
-    "SECRETARÍA DE PRODUCCIÓN Y EMPLEO": ["SUBSECRETARÍA DE DESARROLLO ECONÓMICO Y PRODUCTIVO", "SUBSECRETARÍA DE ECONOMÍA SOCIAL Y SOLIDARIA"],
-    "AGENCIA MUNICIPAL DE SEGURIDAD": ["AGENCIA MUNICIPAL DE SEGURIDAD"],
+    "SECRETARÍA DE DESARROLLO Y PROMOCIÓN DE DDHH": ["SUBSECRETARÍA DE PROMOCIÓN DE DDHH"],
     "INTENDENCIA": ["INTENDENCIA"],
-    "SUBSECRETARÍA DE HACIENDA Y FINANZAS": ["SUBSECRETARÍA DE HACIENDA Y FINANZAS"],
     "HCD": ["HCD"]
 }
 
@@ -96,15 +65,16 @@ opciones_objetos = list(MAPEO_GASTOS.keys())
 opciones_fuente_fin = ["Municipal", "Provincial", "Nacional"]
 opciones_clase = ["Corriente", "Capital"]
 opciones_tipo = ["Libre", "Afectado"]
-opciones_finalidad = ["Legislativa", "Salud"]
+opciones_finalidad = ["Legislativa", "Salud", "Seguridad"]
 
 tab_formulario, tab_agregar_destino, tab_egresos, tab_registros, tab_oficial = st.tabs([
     "📝 FORMULARIO DE REGISTRO", 
     "➕ GESTIÓN DE DESTINOS",
-    "📉 EGRESOS (Reporte Tipo Sheet)",
+    "📉 GENERAL (Base de Datos Sheet)",
     "📊 VER DATOS GUARDADOS",
     "🏛️ REPORTE OFICIAL POR DESTINO"
 ])
+
 # =====================================================================
 # PESTAÑA 1: FORMULARIO PRINCIPAL DE REGISTRO
 # =====================================================================

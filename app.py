@@ -20,16 +20,23 @@ def ejecutar_query_supabase(tabla, json_datos=None, query_params=None, metodo="G
     try:
         if metodo == "GET":
             response = requests.get(url_endpoint, headers=headers_supabase, params=query_params)
-            return response.json() if response.status_code in [200, 206] else []
+            if response.status_code == 200:
+                return response.json()
+            return []
         elif metodo == "POST":
             response = requests.post(url_endpoint, headers=headers_supabase, json=json_datos)
-            return response.json()
+            if response.status_code in [200, 201, 204]:
+                return response.json() if response.text else []
+            else:
+                st.error(f"Falla de inserción en la nube: {response.text}")
+                return []
         elif metodo == "DELETE":
             response = requests.delete(url_endpoint, headers=headers_supabase, params=query_params)
             return response.text
     except Exception as e:
-        st.error(f"Error de enlace con la nube: {e}")
+        st.error(f"Error de red: {e}")
         return []
+
 
 st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="🍩")
 st.title("🍩 Homero - Sistema de Registro Presupuestario")

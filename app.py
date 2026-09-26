@@ -1,38 +1,67 @@
 import os
-try:
-    import openpyxl
-except ImportError:
-    os.system('pip install openpyxl')
-import sqlite3
 import pandas as pd
 import streamlit as st
+import io
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
-DB_NAME = "homero_sistema.db"
+# --- CONEXIÓN DIRECTA Y PERMANENTE A LA NUBE DE SUPABASE ---
+DB_PASSWORD = "ESCRIBÍ_ACÁ_TU_CONTRASEÑA_REAL_DE_SUPABASE"
+DB_PROJECT_ID = "kkatzmrggkbzimjopvpv"
 
-def inicializar_base_datos():
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS egresos_sistema (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            secretaria TEXT, subsecretaria TEXT, destino TEXT,
-            objeto_gasto TEXT, cuenta_padre TEXT, cuenta_presupuestaria TEXT,
-            total REAL, fuente_fin TEXT, clase TEXT, tipo TEXT, finalidad TEXT
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS destinos_sistema (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, secretaria TEXT, subsecretaria TEXT, nombre_destino TEXT UNIQUE
-        )
-    """)
+# Armamos la cadena de conexión cifrada con tu clave
+CONN_STRING = f"postgresql://postgres.{DB_PROJECT_ID}:{DB_PASSWORD}@://supabase.com"
+
+def inicializar_base_datos_supabase():
+    try:
+        conn = psycopg2.connect(CONN_STRING)
+        cursor = conn.cursor()
+        # Se crean las tablas oficiales de Sunchales con formato PostgreSQL permanente
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS egresos_sistema (
+                id SERIAL PRIMARY KEY,
+                secretaria TEXT,
+                subsecretaria TEXT,
+                destino TEXT,
+                objeto_gasto TEXT,
+                cuenta_padre TEXT,
+                cuenta_presupuestaria TEXT,
+                total REAL,
+                fuente_fin TEXT,
+                clase TEXT,
+                tipo TEXT,
+                finalidad TEXT
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS destinos_sistema (
+                id SERIAL PRIMARY KEY,
+                secretaria TEXT,
+                subsecretaria TEXT,
+                nombre_destino TEXT UNIQUE
+            )
+        """)
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        st.error(f"Error de enlace con la nube: {e}")
+
+inicializar_base_datos_supabase()
+
+# Reemplazo de comandos globales para compatibilidad de base de datos remota
+def ejecutar_query_supabase(query, params=(), fetch=False):
+    conn = psycopg2.connect(CONN_STRING)
+    cursor = conn.cursor(cursor_factory=RealDictCursor) if fetch else conn.cursor()
+    cursor.execute(query, params)
+    data = None
+    if fetch:
+        data = cursor.fetchall()
     conn.commit()
+    cursor.close()
     conn.close()
+    return data
 
-inicializar_base_datos()
-
-st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="🍩")
-st.title("🍩 Homero - Sistema de Registro Presupuestario")
-st.write("📍 Municipalidad de Sunchales | Planillas y Reportes Unificados")
 
 # --- Plan de Cuentas Compactado Oficial ---
 MAPEO_GASTOS = {

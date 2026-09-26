@@ -2,80 +2,43 @@ import os
 import pandas as pd
 import streamlit as st
 import io
+import requests
 
-# Forzamos la instalación de pg8000 en caliente si el servidor no la leyó
-try:
-    import pg8000
-except ImportError:
-    os.system('pip install pg8000')
-    import pg8000
+# --- CONEXIÓN DIRECTA POR API REST A LA NUBE DE SUPABASE (SIN LIBRERÍAS DE BD) ---
+# Extrae de forma automática las claves seguras guardadas en la solapa "Secrets" de Streamlit Cloud
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
-
-# --- CONEXIÓN DIRECTA Y PERMANENTE A LA NUBE DE SUPABASE (MOTOR PURO) ---
-DB_PASSWORD = "Tomandomate1"
-DB_PROJECT_ID = "kkatzmrggkbzimjopvpv"
-
-def obtener_conexion_supabase():
-    # Conexión directa a través del puerto de pooler seguro de Supabase
-    return pg8000.connect(
-        user=f"postgres.{DB_PROJECT_ID}",
-        password=DB_PASSWORD,
-        host="://supabase.com",
-        port=6543,
-        database="postgres"
-    )
+headers_supabase = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Content-Type": "application/json",
+    "Prefer": "return=representation"
+}
 
 def inicializar_base_datos_supabase():
+    # Nota: En Supabase, a diferencia de SQLite, las tablas se manejan y estructuran 
+    # directamente de forma visual con el mouse desde el panel web (Table Editor).
+    pass
+
+def ejecutar_query_supabase(tabla, json_datos=None, query_params=None, metodo="GET"):
+    """
+    Función global para leer, insertar o borrar registros en la nube sin usar SQL pesado.
+    """
+    url_endpoint = f"{SUPABASE_URL}/rest/v1/{tabla}"
     try:
-        conn = obtener_conexion_supabase()
-        cursor = conn.cursor()
-        # Se crean las tablas oficiales de Sunchales con formato PostgreSQL permanente
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS egresos_sistema (
-                id SERIAL PRIMARY KEY,
-                secretaria TEXT,
-                subsecretaria TEXT,
-                destino TEXT,
-                objeto_gasto TEXT,
-                cuenta_padre TEXT,
-                cuenta_presupuestaria TEXT,
-                total REAL,
-                fuente_fin TEXT,
-                clase TEXT,
-                tipo TEXT,
-                finalidad TEXT
-            )
-        """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS destinos_sistema (
-                id SERIAL PRIMARY KEY,
-                secretaria TEXT,
-                subsecretaria TEXT,
-                nombre_destino TEXT UNIQUE
-            )
-        """)
-        conn.commit()
-        cursor.close()
-        conn.close()
+        if metodo == "GET":
+            response = requests.get(url_endpoint, headers=headers_supabase, params=query_params)
+            return response.json() if response.status_code == 200 else []
+        elif metodo == "POST":
+            response = requests.post(url_endpoint, headers=headers_supabase, json=json_datos)
+            return response.json()
+        elif metodo == "DELETE":
+            response = requests.delete(url_endpoint, headers=headers_supabase, params=query_params)
+            return response.text
     except Exception as e:
         st.error(f"Error de enlace con la nube: {e}")
-
-inicializar_base_datos_supabase()
-
-# Reemplazo de comandos globales para compatibilidad de base de datos remota
-def ejecutar_query_supabase(query, params=(), fetch=False):
-    conn = obtener_conexion_supabase()
-    cursor = conn.cursor()
-    cursor.execute(query, params)
-    data = None
-    if fetch:
-        # Obtenemos las descripciones de las columnas para armar un diccionario limpio
-        columnas = [desc[0] for desc in cursor.description]
-        data = [dict(zip(columnas, fila)) for fila in cursor.fetchall()]
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return data
+        return []
 
 
 

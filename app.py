@@ -80,82 +80,30 @@ tab_formulario, tab_agregar_destino, tab_egresos, tab_registros, tab_oficial = s
 # =====================================================================
 with tab_formulario:
     st.subheader("📥 Cargar Nuevo Renglón Presupuestario")
-    st.caption("Los campos se encuentran vacíos por defecto. Seleccioná una opción para activar las cascadas de imputación.")
     
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("**📍 1. Ubicación Institucional**")
-        f_sec = st.selectbox(
-            "SECRETARÍA:", 
-            options=[""] + opciones_secretarias,
-            format_func=lambda x: "--- Seleccioná una Secretaría ---" if x == "" else x,
-            key="reg_sec"
-        )
+        f_sec = st.selectbox("SECRETARÍA:", options=[""] + opciones_secretarias, format_func=lambda x: "--- Seleccioná ---" if x == "" else x, key="reg_sec")
         
         if f_sec != "":
-            opciones_sub_filtradas = MAPEO_ESTRUCTURA[f_sec]
-            f_sub = st.selectbox(
-                "SUBSECRETARÍA:", 
-                options=[""] + opciones_sub_filtradas,
-                format_func=lambda x: "--- Seleccioná una Subsecretaría ---" if x == "" else x,
-                key="reg_sub"
-            )
-            
+            f_sub = st.selectbox("SUBSECRETARÍA:", options=[""] + MAPEO_ESTRUCTURA[f_sec], format_func=lambda x: "--- Seleccioná ---" if x == "" else x, key="reg_sub")
             if f_sub != "":
-                conn = sqlite3.connect(DB_NAME)
-                df_d = pd.read_sql_query("SELECT nombre_destino FROM destinos_sistema WHERE secretaria = ? AND subsecretaria = ?", conn, params=(f_sec, f_sub))
-                conn.close()
-                lista_d = df_d["nombre_destino"].tolist()
-                
-                if not lista_d:
-                    st.warning("⚠️ Sin destinos creados para esta área. Crealo primero en '➕ GESTIÓN DE DESTINOS'.")
-                    f_dest = None
-                else:
-                    f_dest = st.selectbox(
-                        "DESTINO SELECCIONADO:", 
-                        options=[""] + lista_d,
-                        format_func=lambda x: "--- Seleccioná un Destino ---" if x == "" else str(x).upper(),
-                        key="reg_dest"
-                    )
-            else:
-                f_dest = None
-        else:
-            f_sub = ""
-            f_dest = None
-            st.info("💡 Seleccioná una Secretaría arriba para desplegar las Subsecretarías.")
+                # Buscamos destinos activos en Supabase filtrados por jerarquía
+                lista_d_raw = ejecutar_query_supabase("destinos_sistema", query_params={"secretaria": f"eq.{f_sec}", "subsecretaria": f"eq.{f_sub}"})
+                lista_d = [d["nombre_destino"] for d in lista_d_raw] if lista_d_raw else []
+                f_dest = st.selectbox("DESTINO SELECCIONADO:", options=[""] + lista_d, format_func=lambda x: "--- Seleccioná ---" if x == "" else str(x).upper(), key="reg_dest") if lista_d else None
+                if not lista_d: st.warning("⚠️ Sin destinos creados. Cargalo en la pestaña contigua.")
+            else: f_dest = None
+        else: f_sub, f_dest = "", None
         
     with col2:
         st.markdown("**📊 2. Imputación de Partida**")
-        f_obj = st.selectbox(
-            "OBJETO DE GASTO:", 
-            options=[""] + opciones_objetos,
-            format_func=lambda x: "--- Seleccioná un Objeto de Gasto ---" if x == "" else x,
-            key="reg_obj"
-        )
-        
+        f_obj = st.selectbox("OBJETO DE GASTO:", options=[""] + opciones_objetos, format_func=lambda x: "--- Seleccioná ---" if x == "" else x, key="reg_obj")
         if f_obj != "":
-            diccionario_cuentas_padre = MAPEO_GASTOS[f_obj]
-            f_padre = st.selectbox(
-                "CUENTA PADRE:", 
-                options=[""] + list(diccionario_cuentas_padre.keys()),
-                format_func=lambda x: "--- Seleccioná una Cuenta Padre ---" if x == "" else x,
-                key="reg_padre"
-            )
-            
-            if f_padre != "":
-                lista_imputaciones_filtradas = diccionario_cuentas_padre[f_padre]
-                f_presup = st.selectbox(
-                    "CUENTA DE IMPUTACIÓN / PARTIDA:", 
-                    options=[""] + lista_imputaciones_filtradas,
-                    format_func=lambda x: "--- Seleccioná una Partida Final ---" if x == "" else x,
-                    key="reg_presup"
-                )
-            else:
-                f_presup = ""
-        else:
-            f_padre = ""
-            f_presup = ""
-            st.info("💡 Seleccioná un Objeto de Gasto arriba para desplegar las Cuentas Padre.")
+            f_padre = st.selectbox("CUENTA PADRE:", options=[""] + list(MAPEO_GASTOS[f_obj].keys()), format_func=lambda x: "--- Seleccioná ---" if x == "" else x, key="reg_padre")
+            f_presup = st.selectbox("CUENTA DE IMPUTACIÓN / PARTIDA:", options=[""] + MAPEO_GASTOS[f_obj][f_padre], format_func=lambda x: "--- Seleccioná ---" if x == "" else x, key="reg_presup") if f_padre != "" else ""
+        else: f_padre, f_presup = "", ""
 
     st.markdown("---")
     col3, col4, col5 = st.columns(3)
@@ -169,18 +117,14 @@ with tab_formulario:
         f_finalidad = st.selectbox("FINALIDAD:", [""] + opciones_finalidad, format_func=lambda x: "--- Elegí Finalidad ---" if x == "" else x)
 
     campos_completos = (f_sec != "") and (f_sub != "") and (f_dest is not None and f_dest != "") and (f_obj != "") and (f_padre != "") and (f_presup != "") and (f_fuente != "") and (f_clase != "") and (f_tipo != "") and (f_finalidad != "")
-    boton_guardar = st.button("💾 GUARDAR REGISTRO INMEDIATO", type="primary", use_container_width=True, disabled=not campos_completos)
-    
-    if boton_guardar and f_total > 0:
-        conn = sqlite3.connect(DB_NAME)
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO egresos_sistema (secretaria, subsecretaria, destino, objeto_gasto, cuenta_padre, cuenta_presupuestaria, total, fuente_fin, clase, tipo, finalidad)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (f_sec, f_sub, f_dest, f_obj, f_padre, f_presup, f_total, f_fuente, f_clase, f_tipo, f_finalidad))
-        conn.commit()
-        conn.close()
-        st.success("✅ ¡Renglón presupuestario guardado con éxito!")
+    if st.button("💾 GUARDAR REGISTRO INMEDIATO", type="primary", use_container_width=True, disabled=not campos_completos) and f_total > 0:
+        nuevo_renglon = {
+            "secretaria": f_sec, "subsecretaria": f_sub, "destino": f_dest,
+            "objeto_gasto": f_obj, "cuenta_padre": f_padre, "cuenta_presupuestaria": f_presup,
+            "total": f_total, "fuente_fin": f_fuente, "clase": f_clase, "tipo": f_tipo, "finalidad": f_finalidad
+        }
+        ejecutar_query_supabase("egresos_sistema", json_datos=nuevo_renglon, metodo="POST")
+        st.success("✅ ¡Renglón presupuestario guardado en la nube de Supabase!")
         st.rerun()
 
 # =====================================================================
@@ -194,95 +138,55 @@ with tab_agregar_destino:
         d_sec = st.selectbox("Asociar a SECRETARÍA:", opciones_secretarias, key="dest_sec")
         d_sub = st.selectbox("Asociar a SUBSECRETARÍA:", MAPEO_ESTRUCTURA[d_sec], key="dest_sub")
         d_nombre = st.text_input("Nombre del Destino:").strip().upper()
-        
         if st.button("✨ Registrar Destino", type="secondary", use_container_width=True) and d_nombre:
-            try:
-                conn = sqlite3.connect(DB_NAME)
-                cursor = conn.cursor()
-                cursor.execute("INSERT INTO destinos_sistema (secretaria, subsecretaria, nombre_destino) VALUES (?, ?, ?)", (d_sec, d_sub, d_nombre))
-                conn.commit()
-                conn.close()
-                st.success("🎯 Destino añadido correctamente.")
-                st.rerun()
-            except sqlite3.IntegrityError:
-                st.error("❌ Este destino ya se encuentra registrado.")
-
+            nuevo_destino = {"secretaria": d_sec, "subsecretaria": d_sub, "nombre_destino": d_nombre}
+            ejecutar_query_supabase("destinos_sistema", json_datos=nuevo_destino, metodo="POST")
+            st.success("🎯 Destino añadido correctamente en la red.")
+            st.rerun()
     with col_b:
         st.markdown("**📋 Listado de Destinos Activos**")
-        conn = sqlite3.connect(DB_NAME)
-        df_dt = pd.read_sql_query("SELECT subsecretaria AS [SUBSECRETARÍA], nombre_destino AS [DESTINO] FROM destinos_sistema ORDER BY secretaria", conn)
-        conn.close()
-        if not df_dt.empty:
-            st.dataframe(df_dt, use_container_width=True, hide_index=True)
+        df_dt_raw = ejecutar_query_supabase("destinos_sistema")
+        if df_dt_raw:
+            df_dt = pd.DataFrame(df_dt_raw)
+            df_dt_vista = df_dt.rename(columns={"subsecretaria": "SUBSECRETARÍA", "nombre_destino": "DESTINO"})
+            st.dataframe(df_dt_vista[["SUBSECRETARÍA", "DESTINO"]], use_container_width=True, hide_index=True)
 
 # =====================================================================
-# PESTAÑA 3: REPORTES AUTOMÁTICOS CON DESGLOSE VERTICAL
+# PESTAÑA 3: BASE DE DATOS GENERAL DE EGRESOS (REPORTE TIPO SHEET MASIVO)
 # =====================================================================
 with tab_egresos:
     st.subheader("📊 Base de Datos General de Egresos")
-    st.caption("Visualización y exportación unificada de la totalidad de renglones presupuestarios en 11 columnas paralelas.")
+    st.caption("Visualización y exportación unificada de la totalidad de renglones en 11 columnas paralelas.")
     
-    conn = sqlite3.connect(DB_NAME)
-    df_egr_completo = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
-    conn.close()
-
-    if df_egr_completo.empty:
-        st.info("No hay movimientos registrados en la base de datos actualmente.")
+    df_egr_raw = ejecutar_query_supabase("egresos_sistema")
+    if not df_egr_raw:
+        st.info("No hay movimientos registrados en la base de datos de la nube.")
     else:
-        # Indicador masivo de control contable
+        df_egr_completo = pd.DataFrame(df_egr_raw)
         st.metric(label="📋 TOTAL GENERAL ACUMULADO MUNICIPAL (EGRESOS)", value=f"${df_egr_completo['total'].sum():,.2f}")
         
-        # Sincronizamos dinámicamente la columna de finalidad/financiamiento
-        col_finalidad_completa = df_egr_completo["finalidad"] if "finalidad" in df_egr_completo.columns else df_egr_completo["financiamiento"]
-        
-        # CONSTRUCCIÓN DE LA PLANILLA ABIERTA TOTAL EN PANTALLA
+        # Grid Masiva Abierta en la Pantalla Web
         df_plano_masivo = pd.DataFrame({
-            "SECRETARIA": df_egr_completo["secretaria"],
-            "SUBSECRETARIA": df_egr_completo["subsecretaria"],
-            "DESTINO": df_egr_completo["destino"],
-            "OBJETO DEL GASTO": df_egr_completo["objeto_gasto"],
-            "CUENTA PADRE": df_egr_completo["cuenta_padre"],
-            "CUENTA IMPUTACIÓN": df_egr_completo["cuenta_presupuestaria"],
-            "TOTAL": df_egr_completo["total"].map(lambda x: f"${x:,.2f}" if pd.notnull(x) else "$0.00"),
-            "FUENTE FIN.": df_egr_completo["fuente_fin"],
-            "CLASE": df_egr_completo["clase"],
-            "TIPO": df_egr_completo["tipo"],
-            "FINALIDAD/FUNCIÓN": col_finalidad_completa
+            "SECRETARIA": df_egr_completo["secretaria"], "SUBSECRETARIA": df_egr_completo["subsecretaria"],
+            "DESTINO": df_egr_completo["destino"], "OBJETO DEL GASTO": df_egr_completo["objeto_gasto"],
+            "CUENTA PADRE": df_egr_completo["cuenta_padre"], "CUENTA IMPUTACIÓN": df_egr_completo["cuenta_presupuestaria"],
+            "TOTAL": df_egr_completo["total"].map(lambda x: f"${x:,.2f}"), "FUENTE FIN.": df_egr_completo["fuente_fin"],
+            "CLASE": df_egr_completo["clase"], "TIPO": df_egr_completo["tipo"], "FINALIDAD/FUNCIÓN": df_egr_completo["finalidad"]
         })
-        
-        # Renderizamos la totalidad de los datos en una grilla extendida para control visual directo
         st.dataframe(df_plano_masivo, use_container_width=True, hide_index=True)
         
-        # =====================================================================
-        # 📥 EXPORTADOR GLOBAL EN 11 COLUMNAS SEPARADAS POR PUNTO Y COMA
-        # =====================================================================
         st.markdown("---")
-        
+        # Estructuración plana separada por punto y coma para Excel de Argentina
         df_excel_global = pd.DataFrame({
-            "SECRETARIA": df_egr_completo["secretaria"],
-            "SUBSECRETARIA": df_egr_completo["subsecretaria"],
-            "DESTINO": df_egr_completo["destino"],
-            "OBJETO DEL GASTO": df_egr_completo["objeto_gasto"],
-            "CUENTA PADRE": df_egr_completo["cuenta_padre"],
-            "CUENTA IMPUTACIÓN": df_egr_completo["cuenta_presupuestaria"],
-            "TOTAL": df_egr_completo["total"], # Número crudo matemático
-            "FUENTE FIN.": df_egr_completo["fuente_fin"],
-            "CLASE": df_egr_completo["clase"],
-            "TIPO": df_egr_completo["tipo"],
-            "FINALIDAD/FUNCIÓN": col_finalidad_completa
+            "SECRETARIA": df_egr_completo["secretaria"], "SUBSECRETARIA": df_egr_completo["subsecretaria"],
+            "DESTINO": df_egr_completo["destino"], "OBJETO DEL GASTO": df_egr_completo["objeto_gasto"],
+            "CUENTA PADRE": df_egr_completo["cuenta_padre"], "CUENTA IMPUTACIÓN": df_egr_completo["cuenta_presupuestaria"],
+            "TOTAL": df_egr_completo["total"], "FUENTE FIN.": df_egr_completo["fuente_fin"],
+            "CLASE": df_egr_completo["clase"], "TIPO": df_egr_completo["tipo"], "FINALIDAD/FUNCIÓN": df_egr_completo["finalidad"]
         })
-        
-        # El comando 'sep=";"' fuerza a Excel a dividir las 11 columnas automáticamente en sistemas argentinos
         csv_global_data = df_excel_global.to_csv(index=False, sep=';').encode('utf-8-sig')
-        
-        st.download_button(
-            label="📗 Descargar Base de Datos Completa en 11 Columnas (.xls)", 
-            data=csv_global_data, 
-            file_name="Base_De_Datos_Egresos_General.xls", 
-            mime="application/vnd.ms-excel", 
-            use_container_width=True,
-            key="btn_descarga_global_sheet_egresos"
-        )
+        st.download_button(label="📗 Descargar Base de Datos Completa en 11 Columnas (.xls)", data=csv_global_data, file_name="Base_De_Datos_Egresos_General.xls", mime="application/vnd.ms-excel", use_container_width=True, key="btn_descarga_global_sheet_egresos")
+
 # =====================================================================
 # PESTAÑA 4: CONSULTA COMPLETA POR BLOQUES Y PANEL DE EDICIÓN SEGURO
 # =====================================================================

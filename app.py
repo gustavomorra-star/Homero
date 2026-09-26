@@ -5,7 +5,7 @@ import io
 import pg8000
 
 # --- CONEXIÓN DIRECTA Y PERMANENTE A LA NUBE DE SUPABASE (MOTOR PURO) ---
-DB_PASSWORD = "ESCRIBÍ_ACÁ_TU_CONTRASEÑA_REAL_DE_SUPABASE"
+DB_PASSWORD = "Tomandomate1"
 DB_PROJECT_ID = "kkatzmrggkbzimjopvpv"
 
 def obtener_conexion_supabase():

@@ -298,3 +298,49 @@ with tab_oficial:
                             html_rows += f'<tr><td style="text-align: left; padding-left: 40px;">{r["cuenta_presupuestaria"]}</td><td>${r["total"]:,.2f}</td><td>{r["fuente_fin"]}</td><td>{r["clase"]}</td><td>{r["tipo"]}</td><td>{r["finalidad"]}</td></tr>'
 
             if f_plan: st.write(pd.DataFrame(f_plan).to_html(escape=False, index=False), unsafe_allow_html=True)
+            # --- MOTOR DE IMPRESIÓN AUTOMÁTICO HORIZONTAL ---
+            st.markdown("---")
+            html_imp = f"""
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    @page {{ size: A4 landscape; margin: 15mm; }}
+                    body {{ font-family: Arial, sans-serif; color: #000; margin: 0 auto; width: 100%; max-width: 1050px; }}
+                    .m-box {{ border: 1px solid #000; padding: 12px; margin-bottom: 20px; }}
+                    .t-hdr {{ width: 100%; border-collapse: collapse; }}
+                    .t-hdr td {{ padding: 5px; vertical-align: middle; border: none; }}
+                    .b-tot {{ border: 1px solid #000; background-color: #f5f5f5; text-align: center; }}
+                    .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }}
+                    .tabla-datos th {{ border-bottom: 2px solid #000; padding: 8px 5px; text-align: center; font-weight: bold; }}
+                    .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 8px 5px; vertical-align: middle; text-align: center; }}
+                    .tabla-datos th:first-child, .tabla-datos td:first-child {{ text-align: left !important; padding-left: 10px; }}
+                </style>
+            </head>
+            <body onload="window.print();">
+                <div class="m-box">
+                    <table class="t-hdr">
+                        <tr>
+                            <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Presupuesto Oficial 2027</span></td>
+                            <td style="width: 50%; text-align: center;"><b>PRESUPUESTO DE GASTO POR DESTINO</b><br><small>-2027-</small></td>
+                            <td style="width: 25%;" class="b-tot"><small>Total Destino</small><br><b>${tot_dest:,.2f}</b></td>
+                        </tr>
+                    </table>
+                    <div style="border-top: 1px solid #000; font-size: 11px; padding-top: 8px; margin-top: 8px;">
+                        <b>SECRETARÍA:</b> {sec_s} | <b>SUBSECRETARÍA:</b> {sub_s} | <span style="float: right;"><b>DESTINO:</b> {str(dest_s).upper()}</span>
+                    </div>
+                </div>
+                <table class="tabla-datos">
+                    <thead><tr><th>OBJETO DEL GASTO</th><th>PRESUPUESTO</th><th>F.FIN</th><th>CLASE</th><th>TIPO</th><th>FINANCIAMIENTO</th></tr></thead>
+                    <tbody>{html_rows}</tbody>
+                </table>
+            </body>
+            </html>
+            """
+            st.download_button(label="🖨️ GENERAR Y ABRIR REPORTE IMPRIMIBLE A PDF", data=html_imp, file_name=f"Reporte_{str(dest_s).replace(' ', '_')}.html", mime="text/html", use_container_width=True)
+            st.info("💡 Al hacer clic, se abrirá la ventana de impresión automática en horizontal con el membrete 2027.")
+
+# Barra lateral informativa de control permanente
+st.sidebar.header("⚙️ Herramientas de Red")
+st.sidebar.info("Base de datos enlazada a la nube permanente de Supabase. Los registros están protegidos contra reinicios.")
+                

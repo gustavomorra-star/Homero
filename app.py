@@ -1,25 +1,26 @@
 import os
-try:
-    import psycopg2
-except ImportError:
-    os.system('pip install psycopg2-binary')
-import os
 import pandas as pd
 import streamlit as st
 import io
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import pg8000
 
-# --- CONEXIÓN DIRECTA Y PERMANENTE A LA NUBE DE SUPABASE ---
-DB_PASSWORD = "Tomandomate1"
+# --- CONEXIÓN DIRECTA Y PERMANENTE A LA NUBE DE SUPABASE (MOTOR PURO) ---
+DB_PASSWORD = "ESCRIBÍ_ACÁ_TU_CONTRASEÑA_REAL_DE_SUPABASE"
 DB_PROJECT_ID = "kkatzmrggkbzimjopvpv"
 
-# Armamos la cadena de conexión cifrada con tu clave
-CONN_STRING = f"postgresql://postgres.{DB_PROJECT_ID}:{DB_PASSWORD}@://supabase.com"
+def obtener_conexion_supabase():
+    # Conexión directa a través del puerto de pooler seguro de Supabase
+    return pg8000.connect(
+        user=f"postgres.{DB_PROJECT_ID}",
+        password=DB_PASSWORD,
+        host="://supabase.com",
+        port=6543,
+        database="postgres"
+    )
 
 def inicializar_base_datos_supabase():
     try:
-        conn = psycopg2.connect(CONN_STRING)
+        conn = obtener_conexion_supabase()
         cursor = conn.cursor()
         # Se crean las tablas oficiales de Sunchales con formato PostgreSQL permanente
         cursor.execute("""
@@ -56,16 +57,19 @@ inicializar_base_datos_supabase()
 
 # Reemplazo de comandos globales para compatibilidad de base de datos remota
 def ejecutar_query_supabase(query, params=(), fetch=False):
-    conn = psycopg2.connect(CONN_STRING)
-    cursor = conn.cursor(cursor_factory=RealDictCursor) if fetch else conn.cursor()
+    conn = obtener_conexion_supabase()
+    cursor = conn.cursor()
     cursor.execute(query, params)
     data = None
     if fetch:
-        data = cursor.fetchall()
+        # Obtenemos las descripciones de las columnas para armar un diccionario limpio
+        columnas = [desc[0] for desc in cursor.description]
+        data = [dict(zip(columnas, fila)) for fila in cursor.fetchall()]
     conn.commit()
     cursor.close()
     conn.close()
     return data
+
 
 
 # --- Plan de Cuentas Compactado Oficial ---

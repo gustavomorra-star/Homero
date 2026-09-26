@@ -2,4 +2,4 @@ pandas
 openpyxl
 reportlab
 supabase
-psycopg2-binary
+pg8000

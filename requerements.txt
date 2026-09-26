@@ -1,4 +1,5 @@
 pandas
 openpyxl
 reportlab
-pysqlite3-binary
+supabase
+psycopg2-binary

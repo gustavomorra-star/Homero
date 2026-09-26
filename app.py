@@ -151,10 +151,11 @@ with tab_agregar_destino:
         d_sub = st.selectbox("Asociar a SUBSECRETARÍA:", MAPEO_ESTRUCTURA[d_sec], key="dest_sub")
         d_nombre = st.text_input("Nombre del Destino:").strip().upper()
         if st.button("✨ Registrar Destino", type="secondary", use_container_width=True) and d_nombre:
-            nuevo_destino = {"secretaria": d_sec, "subsecretaria": d_sub, "nombre_destino": d_nombre}
-            ejecutar_query_supabase("destinos_sistema", json_datos=nuevo_destino, metodo="POST")
-            st.success("🎯 Destino añadido correctamente en la red.")
-            st.rerun()
+    nuevo_destino = {"secretaria": d_sec, "subsecretaria": d_sub, "destino": d_nombre}
+    ejecutar_query_supabase("destinos_sistema", json_datos=nuevo_destino, metodo="POST")
+    st.success("🎯 Destino añadido correctamente en la red.")
+    st.rerun()
+
     with col_b:
         st.markdown("**📋 Listado de Destinos Activos**")
         df_dt_raw = ejecutar_query_supabase("destinos_sistema")

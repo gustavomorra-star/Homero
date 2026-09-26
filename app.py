@@ -6,7 +6,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 # --- CONEXIÓN DIRECTA Y PERMANENTE A LA NUBE DE SUPABASE ---
-DB_PASSWORD = "ESCRIBÍ_ACÁ_TU_CONTRASEÑA_REAL_DE_SUPABASE"
+DB_PASSWORD = "Tomandomate1"
 DB_PROJECT_ID = "kkatzmrggkbzimjopvpv"
 
 # Armamos la cadena de conexión cifrada con tu clave

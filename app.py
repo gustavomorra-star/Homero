@@ -25,7 +25,12 @@ def ejecutar_query_supabase(tabla, json_datos=None, query_params=None, metodo="G
             return []
         elif metodo == "POST":
             response = requests.post(url_endpoint, headers=headers_supabase, json=json_datos)
-            if response.status_code in [200, 201, 204]:
+            # Evaluamos de forma individual para evitar recortes de caracteres en el chat
+            if response.status_code == 200:
+                return response.json() if response.text else []
+            elif response.status_code == 201:
+                return response.json() if response.text else []
+            elif response.status_code == 204:
                 return response.json() if response.text else []
             else:
                 st.error(f"Falla de inserción en la nube: {response.text}")

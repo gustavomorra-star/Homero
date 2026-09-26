@@ -138,7 +138,7 @@ with tab_formulario:
 
 # =====================================================================
 # =====================================================================
-# PESTAÑA 2: GESTIÓN DE DESTINOS DINÁMICOS (CONECTOR OFICIAL NATIVO)
+# PESTAÑA 2: GESTIÓN DE DESTINOS DINÁMICOS (COMPATIBILIDAD INTEGRAL NUBE)
 # =====================================================================
 with tab_agregar_destino:
     st.subheader("⚙️ Panel de Configuración de Destinos")
@@ -150,13 +150,13 @@ with tab_agregar_destino:
         d_nombre = st.text_input("Nombre del Destino:").strip().upper()
         
         if st.button("✨ Registrar Destino", type="secondary", use_container_width=True) and d_nombre:
-            # Enviamos el paquete limpio mediante el conector oficial
-            nuevo_destino = {
-                "secretaria": d_sec, 
-                "subsecretaria": d_sub, 
-                "destino": d_nombre, 
-                "nombre_destino": d_nombre
-            }
+            # Enviamos el registro envuelto en una lista [] que es el formato estricto que exige PostgREST para insertar filas
+            nuevo_destino = [{
+                "secretaria": str(d_sec), 
+                "subsecretaria": str(d_sub), 
+                "destino": str(d_nombre), 
+                "nombre_destino": str(d_nombre)
+            }]
             ejecutar_query_supabase("destinos_sistema", json_datos=nuevo_destino, metodo="POST")
             st.success("🎯 Destino añadido correctamente en la red.")
             st.rerun()
@@ -165,9 +165,10 @@ with tab_agregar_destino:
         df_dt_raw = ejecutar_query_supabase("destinos_sistema")
         if df_dt_raw:
             df_dt = pd.DataFrame(df_dt_raw)
-            col_destino_activa = "destino" if "destino" in df_dt.columns else "nombre_destino"
-            if col_destino_activa in df_dt.columns:
-                df_dt_vista = df_dt.rename(columns={"subsecretaria": "SUBSECRETARÍA", col_destino_activa: "DESTINO"})
+            # Validamos qué nombre de columna detecta el servidor para dibujarlo bien en pantalla
+            col_activa = "destino" if "destino" in df_dt.columns else ("nombre_destino" if "nombre_destino" in df_dt.columns else "")
+            if col_activa != "":
+                df_dt_vista = df_dt.rename(columns={"subsecretaria": "SUBSECRETARÍA", col_activa: "DESTINO"})
                 st.dataframe(df_dt_vista[["SUBSECRETARÍA", "DESTINO"]], use_container_width=True, hide_index=True)
             else:
                 st.info("Estructurando datos desde el servidor central...")

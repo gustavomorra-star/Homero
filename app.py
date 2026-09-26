@@ -140,6 +140,7 @@ with tab_formulario:
         st.rerun()
 
 # =====================================================================
+# =====================================================================
 # PESTAÑA 2: GESTIÓN DE DESTINOS DINÁMICOS
 # =====================================================================
 with tab_agregar_destino:
@@ -152,17 +153,19 @@ with tab_agregar_destino:
         d_nombre = st.text_input("Nombre del Destino:").strip().upper()
         if st.button("✨ Registrar Destino", type="secondary", use_container_width=True) and d_nombre:
             nuevo_destino = {"secretaria": d_sec, "subsecretaria": d_sub, "destino": d_nombre}
-        ejecutar_query_supabase("destinos_sistema", json_datos=nuevo_destino, metodo="POST")
-        st.success("🎯 Destino añadido correctamente en la red.")
-        st.rerun()
-
+            ejecutar_query_supabase("destinos_sistema", json_datos=nuevo_destino, metodo="POST")
+            st.success("🎯 Destino añadido correctamente en la red.")
+            st.rerun()
     with col_b:
         st.markdown("**📋 Listado de Destinos Activos**")
         df_dt_raw = ejecutar_query_supabase("destinos_sistema")
         if df_dt_raw:
             df_dt = pd.DataFrame(df_dt_raw)
-            df_dt_vista = df_dt.rename(columns={"subsecretaria": "SUBSECRETARÍA", "destino": "DESTINO"})
-            st.dataframe(df_dt_vista[["SUBSECRETARÍA", "DESTINO"]], use_container_width=True, hide_index=True)
+            if "destino" in df_dt.columns:
+                df_dt_vista = df_dt.rename(columns={"subsecretaria": "SUBSECRETARÍA", "destino": "DESTINO"})
+                st.dataframe(df_dt_vista[["SUBSECRETARÍA", "DESTINO"]], use_container_width=True, hide_index=True)
+            else:
+                st.info("Estructurando datos desde el servidor central...")
 
 # =====================================================================
 # PESTAÑA 3: BASE DE DATOS GENERAL DE EGRESOS (REPORTE TIPO SHEET MASIVO)

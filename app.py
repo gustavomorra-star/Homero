@@ -1,4 +1,14 @@
 import os
+import sys
+
+# Forzamos la instalación de la librería oficial de Supabase en caliente si el servidor está en caché
+try:
+    from supabase import create_client, Client
+except ImportError:
+    os.system(f'"{sys.executable}" -m pip install supabase')
+    from supabase import create_client, Client
+
+import os
 import pandas as pd
 import streamlit as st
 import io

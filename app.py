@@ -2,7 +2,14 @@ import os
 import pandas as pd
 import streamlit as st
 import io
-import pg8000
+
+# Forzamos la instalación de pg8000 en caliente si el servidor no la leyó
+try:
+    import pg8000
+except ImportError:
+    os.system('pip install pg8000')
+    import pg8000
+
 
 # --- CONEXIÓN DIRECTA Y PERMANENTE A LA NUBE DE SUPABASE (MOTOR PURO) ---
 DB_PASSWORD = "Tomandomate1"

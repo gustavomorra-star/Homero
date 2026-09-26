@@ -1,4 +1,9 @@
 import os
+try:
+    import psycopg2
+except ImportError:
+    os.system('pip install psycopg2-binary')
+import os
 import pandas as pd
 import streamlit as st
 import io

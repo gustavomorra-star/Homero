@@ -15,32 +15,36 @@ headers_supabase = {
     "Prefer": "return=representation"
 }
 
+from supabase import create_client, Client
+
+# Inicializamos el cliente oficial nativo de Supabase
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
 def ejecutar_query_supabase(tabla, json_datos=None, query_params=None, metodo="GET"):
-    url_endpoint = f"{SUPABASE_URL}/rest/v1/{tabla}"
     try:
         if metodo == "GET":
-            response = requests.get(url_endpoint, headers=headers_supabase, params=query_params)
-            if response.status_code == 200:
-                return response.json()
-            return []
+            query = supabase.table(tabla).select("*")
+            if query_params:
+                for k, v in query_params.items():
+                    if "eq." in str(v):
+                        query = query.eq(k, str(v).replace("eq.", ""))
+            res = query.execute()
+            return res.data if res else []
         elif metodo == "POST":
-            response = requests.post(url_endpoint, headers=headers_supabase, json=json_datos)
-            # Evaluamos de forma individual para evitar recortes de caracteres en el chat
-            if response.status_code == 200:
-                return response.json() if response.text else []
-            elif response.status_code == 201:
-                return response.json() if response.text else []
-            elif response.status_code == 204:
-                return response.json() if response.text else []
-            else:
-                st.error(f"Falla de inserción en la nube: {response.text}")
-                return []
+            res = supabase.table(tabla).insert(json_datos).execute()
+            return res.data if res else []
         elif metodo == "DELETE":
-            response = requests.delete(url_endpoint, headers=headers_supabase, params=query_params)
-            return response.text
+            query = supabase.table(tabla).delete()
+            if query_params:
+                for k, v in query_params.items():
+                    if "eq." in str(v):
+                        query = query.eq(k, str(v).replace("eq.", ""))
+            res = query.execute()
+            return res.data if res else []
     except Exception as e:
-        st.error(f"Error de red: {e}")
+        st.error(f"Error de red central: {e}")
         return []
+
 
 
 st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="🍩")
@@ -141,7 +145,7 @@ with tab_formulario:
 
 # =====================================================================
 # =====================================================================
-# PESTAÑA 2: GESTIÓN DE DESTINOS DINÁMICOS (CON ID AUTOMÁTICO BINARIO)
+# PESTAÑA 2: GESTIÓN DE DESTINOS DINÁMICOS (CONECTOR OFICIAL NATIVO)
 # =====================================================================
 with tab_agregar_destino:
     st.subheader("⚙️ Panel de Configuración de Destinos")
@@ -153,12 +157,8 @@ with tab_agregar_destino:
         d_nombre = st.text_input("Nombre del Destino:").strip().upper()
         
         if st.button("✨ Registrar Destino", type="secondary", use_container_width=True) and d_nombre:
-            import random
-            # Generamos un ID numérico único al azar para evitar trabas del servidor remoto
-            id_unico_destino = random.randint(1000, 999999)
-            
+            # Enviamos el paquete limpio mediante el conector oficial
             nuevo_destino = {
-                "id": id_unico_destino,
                 "secretaria": d_sec, 
                 "subsecretaria": d_sub, 
                 "destino": d_nombre, 
@@ -172,7 +172,6 @@ with tab_agregar_destino:
         df_dt_raw = ejecutar_query_supabase("destinos_sistema")
         if df_dt_raw:
             df_dt = pd.DataFrame(df_dt_raw)
-            # Validamos qué nombre de columna está activo en tu servidor para dibujarlo bien
             col_destino_activa = "destino" if "destino" in df_dt.columns else "nombre_destino"
             if col_destino_activa in df_dt.columns:
                 df_dt_vista = df_dt.rename(columns={"subsecretaria": "SUBSECRETARÍA", col_destino_activa: "DESTINO"})

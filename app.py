@@ -141,7 +141,7 @@ with tab_formulario:
 
 # =====================================================================
 # =====================================================================
-# PESTAÑA 2: GESTIÓN DE DESTINOS DINÁMICOS
+# PESTAÑA 2: GESTIÓN DE DESTINOS DINÁMICOS (CON ID AUTOMÁTICO BINARIO)
 # =====================================================================
 with tab_agregar_destino:
     st.subheader("⚙️ Panel de Configuración de Destinos")
@@ -151,8 +151,19 @@ with tab_agregar_destino:
         d_sec = st.selectbox("Asociar a SECRETARÍA:", opciones_secretarias, key="dest_sec")
         d_sub = st.selectbox("Asociar a SUBSECRETARÍA:", MAPEO_ESTRUCTURA[d_sec], key="dest_sub")
         d_nombre = st.text_input("Nombre del Destino:").strip().upper()
+        
         if st.button("✨ Registrar Destino", type="secondary", use_container_width=True) and d_nombre:
-            nuevo_destino = {"secretaria": d_sec, "subsecretaria": d_sub, "destino": d_nombre, "nombre_destino": d_nombre}
+            import random
+            # Generamos un ID numérico único al azar para evitar trabas del servidor remoto
+            id_unico_destino = random.randint(1000, 999999)
+            
+            nuevo_destino = {
+                "id": id_unico_destino,
+                "secretaria": d_sec, 
+                "subsecretaria": d_sub, 
+                "destino": d_nombre, 
+                "nombre_destino": d_nombre
+            }
             ejecutar_query_supabase("destinos_sistema", json_datos=nuevo_destino, metodo="POST")
             st.success("🎯 Destino añadido correctamente en la red.")
             st.rerun()
@@ -161,8 +172,10 @@ with tab_agregar_destino:
         df_dt_raw = ejecutar_query_supabase("destinos_sistema")
         if df_dt_raw:
             df_dt = pd.DataFrame(df_dt_raw)
-            if "destino" in df_dt.columns:
-                df_dt_vista = df_dt.rename(columns={"subsecretaria": "SUBSECRETARÍA", "destino": "DESTINO"})
+            # Validamos qué nombre de columna está activo en tu servidor para dibujarlo bien
+            col_destino_activa = "destino" if "destino" in df_dt.columns else "nombre_destino"
+            if col_destino_activa in df_dt.columns:
+                df_dt_vista = df_dt.rename(columns={"subsecretaria": "SUBSECRETARÍA", col_destino_activa: "DESTINO"})
                 st.dataframe(df_dt_vista[["SUBSECRETARÍA", "DESTINO"]], use_container_width=True, hide_index=True)
             else:
                 st.info("Estructurando datos desde el servidor central...")

@@ -242,200 +242,59 @@ with tab_registros:
                 st.rerun()
 
 # =====================================================================
-# 🏛️ PESTAÑA 5: INFORME OFICIAL - PRESUPUESTO DE GASTO POR DESTINO
+# =====================================================================
+# PESTAÑA 5: REPORTE GRÁFICO OFICIAL MUNICIPAL 2027 HORIZONTAL
 # =====================================================================
 with tab_oficial:
     st.subheader("📋 Consulta de Presupuesto de Gasto por Destino Oficial")
-    st.caption("Filtre mediante los selectores en cascada para estructurar la planilla con el formato normativo y sumas jerárquicas.")
-    
-    conn = sqlite3.connect(DB_NAME)
-    df_oficial_base = pd.read_sql_query("SELECT * FROM egresos_sistema", conn)
-    conn.close()
+    df_of_raw = ejecutar_query_supabase("egresos_sistema")
+    if not df_of_raw:
+        st.info("No hay transacciones cargadas en el servidor actualmente.")
+    else:
+        df_o_base = pd.DataFrame(df_of_raw)
+        cf1, cf2, col_f3 = st.columns(3)
+        with cf1: sec_s = st.selectbox("1. SELECCIONÁ SECRETARÍA:", options=[""] + opciones_secretarias, key="of_sec")
+        with cf2:
+            sb_opts = [""] + MAPEO_ESTRUCTURA[sec_s] if sec_s != "" else [""]
+            sub_s = st.selectbox("2. SELECCIONÁ SUBSECRETARÍA:", options=sb_opts, key="of_sub")
+        with col_f3:
+            if sec_s != "" and sub_s != "":
+                l_raw = ejecutar_query_supabase("destinos_sistema", query_params={"secretaria": f"eq.{sec_s}", "subsecretaria": f"eq.{sub_s}"})
+                l_dest = [d["nombre_destino"] for d in l_raw] if l_raw else []
+                dest_s = st.selectbox("3. SELECCIONÁ DESTINO:", options=[""] + l_dest, format_func=lambda x: "--- Seleccioná ---" if x == "" else str(x).upper(), key="of_dest")
+            else: dest_s = st.selectbox("3. SELECCIONÁ DESTINO:", options=[""], key="of_dest")
 
-    # Selectores en triple cascada limpia e independiente
-    col_f1, col_f2, col_f3 = st.columns(3)
-    with col_f1:
-        sec_sel = st.selectbox("1. SELECCIONÁ SECRETARÍA:", options=[""] + opciones_secretarias, key="oficial_sec")
-    with col_f2:
-        sub_opts = [""] + MAPEO_ESTRUCTURA[sec_sel] if sec_sel != "" else [""]
-        sub_sel = st.selectbox("2. SELECCIONÁ SUBSECRETARÍA:", options=sub_opts, key="oficial_sub")
-    with col_f3:
-        if sec_sel != "" and sub_sel != "":
-            conn = sqlite3.connect(DB_NAME)
-            df_d_of = pd.read_sql_query("SELECT nombre_destino FROM destinos_sistema WHERE secretaria = ? AND subsecretaria = ?", conn, params=(sec_sel, sub_sel))
-            conn.close()
-            dest_sel = st.selectbox("3. SELECCIONÁ DESTINO:", options=[""] + df_d_of["nombre_destino"].tolist(), format_func=lambda x: "--- Seleccioná ---" if x == "" else str(x).upper(), key="oficial_dest")
-        else:
-            dest_sel = st.selectbox("3. SELECCIONÁ DESTINO:", options=[""], key="oficial_dest")
+        if sec_s != "" and sub_s != "" and dest_s != "":
+            df_f_of = df_o_base[(df_o_base["secretaria"] == sec_s) & (df_o_base["subsecretaria"] == sub_s) & (df_o_base["destino"] == dest_s)].copy()
+            tot_dest = df_f_of["total"].sum() if not df_f_of.empty else 0.0
 
-    if sec_sel != "" and sub_sel != "" and dest_sel != "":
-        df_filtrado_oficial = df_oficial_base[(df_oficial_base["secretaria"] == sec_sel) & (df_oficial_base["subsecretaria"] == sub_sel) & (df_oficial_base["destino"] == dest_sel)].copy()
-        total_acumulado_destino = df_filtrado_oficial["total"].sum() if not df_filtrado_oficial.empty else 0.0
-
-        # 1. ENCABEZADO INSTITUCIONAL EN PANTALLA (IDÉNTICO A TU DISEÑO)
-        st.markdown(
-            f"""
-            <div style="border: 1px solid #000000; padding: 0px; border-radius: 2px; background-color: #ffffff; margin-top: 15px; margin-bottom: 20px; font-family: Arial, sans-serif;">
-                <table style="width: 100%; border-collapse: collapse; margin: 0;">
+            st.markdown(f"""
+            <div style="border: 1px solid #000; padding: 0px; border-radius: 2px; background-color: #fff; font-family: Arial, sans-serif;">
+                <table style="width: 100%; border-collapse: collapse;">
                     <tr>
-                        <td style="width: 25%; text-align: left; font-size: 11px; color: #555; padding: 15px; border-right: 1px solid #000000;">
-                            <b>Municipalidad de Sunchales</b><br><span style="font-size: 9px; color: #777;">Presupuesto Oficial 2027</span>
-                        </td>
-                        <td style="width: 50%; text-align: center; padding: 15px; border-right: 1px solid #000000; vertical-align: middle;">
-                            <h2 style="margin: 0; padding: 0; color: #000000; font-size: 18px; font-weight: bold;">PRESUPUESTO DE GASTO POR DESTINO</h2>
-                            <h4 style="margin: 4px 0 0 0; padding: 0; font-size: 13px; font-weight: normal;">-2027-</h4>
-                        </td>
-                        <td style="width: 25%; text-align: center; padding: 0; margin: 0; vertical-align: middle; background-color: #f5f5f5;">
-                            <div style="font-size: 13px; font-weight: bold; border-bottom: 1px solid #000000; padding: 6px 0;">Total Destino</div>
-                            <div style="font-size: 18px; font-weight: bold; color: #000000; padding: 10px 0;">${total_acumulado_destino:,.2f}</div>
-                        </td>
+                        <td style="width: 25%; font-size: 11px; padding: 15px; border-right: 1px solid #000; text-align: left;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 9px; color: #777;">Presupuesto Oficial 2027</span></td>
+                        <td style="width: 50%; text-align: center; padding: 15px; border-right: 1px solid #000; vertical-align: middle;"><h2 style="margin: 0; font-size: 18px; font-weight: bold;">PRESUPUESTO DE GASTO POR DESTINO</h2><h4 style="margin: 4px 0 0 0; font-size: 13px; font-weight: normal;">-2027-</h4></td>
+                        <td style="width: 25%; text-align: center; background-color: #f5f5f5; vertical-align: middle;"><div style="font-size: 13px; font-weight: bold; border-bottom: 1px solid #000; padding: 4px 0;">Total Destino</div><div style="font-size: 18px; font-weight: bold;">${tot_dest:,.2f}</div></td>
                     </tr>
                 </table>
-                <div style="border-top: 1px solid #000000; background-color: #ffffff; font-size: 11px; padding: 6px 10px;">
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr>
-                            <td style="width: 35%; padding: 2px;"><b>SECRETARÍA:</b> {sec_sel}</td>
-                            <td style="width: 35%; padding: 2px;"><b>SUBSECRETARÍA:</b> {sub_sel}</td>
-                            <td style="width: 30%; padding: 2px; text-align: right;"><b>DESTINO:</b> {str(dest_sel).upper()}</td>
-                        </tr>
-                    </table>
+                <div style="border-top: 1px solid #000; font-size: 11px; padding: 6px 10px;">
+                    <b>SECRETARÍA:</b> {sec_s} | <b>SUBSECRETARÍA:</b> {sub_s} | <span style="float: right;"><b>DESTINO:</b> {str(dest_s).upper()}</span>
                 </div>
             </div>
-            """, 
-            unsafe_allow_html=True
-        )
+            """, unsafe_allow_html=True)
 
-        # 2. PROCESAMIENTO EXCLUSIVO DE LA PLANILLA GRÁFICA PARA LA WEB (FUERA DEL TRY)
-        filas_planilla = []
-        if not df_filtrado_oficial.empty:
-            for objeto, df_objeto in df_filtrado_oficial.groupby("objeto_gasto"):
-                tot_obj = df_objeto["total"].sum()
-                filas_planilla.append({"OBJETO DEL GASTO": f"<b>{objeto}</b>", "PRESUPUESTO": f"<b>${tot_obj:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
-                
-                for padre, df_padre in df_objeto.groupby("cuenta_padre"):
-                    tot_pad = df_padre["total"].sum()
-                    filas_planilla.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{padre}</b>", "PRESUPUESTO": f"<b>${tot_pad:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
-                    
-                    for _, fila in df_padre.iterrows():
-                        val_fin = fila["finalidad"] if "finalidad" in df_filtrado_oficial.columns else fila["financiamiento"]
-                        filas_planilla.append({
-                            "OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{fila['cuenta_presupuestaria']}", 
-                            "PRESUPUESTO": f"${fila['total']:,.2f}", 
-                            "F.FIN": fila["fuente_fin"], 
-                            "CLASE": fila["clase"], 
-                            "TIPO": fila["tipo"], 
-                            "FINANCIAMIENTO": val_fin
-                        })
+            f_plan, html_rows = [], ""
+            if not df_f_of.empty:
+                for obj, df_obj in df_f_of.groupby("objeto_gasto"):
+                    t_o = df_obj["total"].sum()
+                    f_plan.append({"OBJETO DEL GASTO": f"<b>{obj}</b>", "PRESUPUESTO": f"<b>${t_o:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
+                    html_rows += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td>${t_o:,.2f}</td><td></td><td></td><td></td><td></td></tr>'
+                    for pad, df_pad in df_obj.groupby("cuenta_padre"):
+                        t_p = df_pad["total"].sum()
+                        f_plan.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{pad}</b>", "PRESUPUESTO": f"<b>${t_p:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
+                        html_rows += f'<tr style="font-weight: bold;"><td style="text-align: left; padding-left: 20px;">{pad}</td><td>${t_p:,.2f}</td><td></td><td></td><td></td><td></td></tr>'
+                        for _, r in df_pad.iterrows():
+                            f_plan.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{r['cuenta_presupuestaria']}", "PRESUPUESTO": f"${r['total']:,.2f}", "F.FIN": r["fuente_fin"], "CLASE": r["clase"], "TIPO": r["tipo"], "FINANCIAMIENTO": r["finalidad"]})
+                            html_rows += f'<tr><td style="text-align: left; padding-left: 40px;">{r["cuenta_presupuestaria"]}</td><td>${r["total"]:,.2f}</td><td>{r["fuente_fin"]}</td><td>{r["clase"]}</td><td>{r["tipo"]}</td><td>{r["finalidad"]}</td></tr>'
 
-        # Muestra la grilla con todas sus columnas de forma nativa en la web
-        if filas_planilla:
-            st.write(pd.DataFrame(filas_planilla).to_html(escape=False, index=False), unsafe_allow_html=True)
-        else:
-            st.info("No hay transacciones registradas para este destino.")
- # =====================================================================
- # =====================================================================
-        # 🖨️ CENTRO DE IMPRESIÓN MUNICIPAL AUTOMATIZADO A PDF (2027)
-        # =====================================================================
-        st.markdown("---")
-        st.markdown("#### 🖨️ Centro de Impresión Municipal")
-
-        # Construimos el código HTML/CSS con una orden de auto-impresión nativa (window.print)
-        html_imprimible = f"""
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <title>Presupuesto Oficial 2027 - {str(dest_sel).upper()}</title>
-            <style>
-                @page {{ size: A4 landscape; margin: 15mm; }}
-                body {{ font-family: Arial, sans-serif; color: #000000; margin: 0 auto; padding: 0; width: 100%; max-width: 1050px; }}
-                .container-membrete {{ border: 1px solid #000000; padding: 12px; margin-bottom: 20px; box-sizing: border-box; }}
-                .tabla-header {{ width: 100%; border-collapse: collapse; }}
-                .tabla-header td {{ border: none; padding: 5px; vertical-align: middle; }}
-                .titulo-principal {{ margin: 0; font-size: 16px; font-weight: bold; text-align: center; }}
-                .box-total {{ border: 1px solid #000000; background-color: #f5f5f5; text-align: center; }}
-                .total-label {{ font-size: 11px; font-weight: bold; border-bottom: 1px solid #000000; padding: 4px 0; }}
-                .total-monto {{ font-size: 14px; font-weight: bold; padding: 6px 0; }}
-                .linea-institucional {{ width: 100%; border-collapse: collapse; margin-top: 10px; border-top: 1px solid #000000; font-size: 11px; }}
-                .linea-institucional td {{ padding-top: 8px; border: none; }}
-                .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }}
-                .tabla-datos th {{ border-bottom: 2px solid #000000; padding: 8px 5px; text-align: center; font-weight: bold; }}
-                .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 8px 5px; vertical-align: middle; text-align: center; }}
-                .tabla-datos th:first-child, .tabla-datos td:first-child {{ text-align: left !important; padding-left: 10px; }}
-            </style>
-        </head>
-        <body onload="window.print();">
-            <div class="container-membrete">
-                <table class="tabla-header">
-                    <tr>
-                        <td style="width: 25%; font-size: 10px; line-height: 1.3; text-align: left;">
-                            <b>Municipalidad de Sunchales</b><br>
-                            <span style="color: #555; font-size: 8px;">Presupuesto Oficial 2027</span>
-                        </td>
-                        <td style="width: 50%; text-align: center; vertical-align: middle;">
-                            <div class="titulo-principal">PRESUPUESTO DE GASTO POR DESTINO</div>
-                            <div style="text-align: center; font-size: 12px; margin-top: 3px;">-2027-</div>
-                        </td>
-                        <td style="width: 25%;" class="box-total">
-                            <div class="total-label">Total Destino</div>
-                            <div class="total-monto">${total_acumulado_destino:,.2f}</div>
-                        </td>
-                    </tr>
-                </table>
-                <table class="linea-institucional">
-                    <tr>
-                        <td><b>SECRETARÍA:</b> {sec_sel}</td>
-                        <td><b>SUBSECRETARÍA:</b> {sub_sel}</td>
-                        <td style="text-align: right;"><b>DESTINO:</b> {str(dest_sel).upper()}</td>
-                    </tr>
-                </table>
-            </div>
-            <table class="tabla-datos">
-                <thead>
-                    <tr>
-                        <th>OBJETO DEL GASTO</th>
-                        <th>PRESUPUESTO</th>
-                        <th>F.FIN</th>
-                        <th>CLASE</th>
-                        <th>TIPO</th>
-                        <th>FINANCIAMIENTO</th>
-                    </tr>
-                </thead>
-                <tbody>
-        """
-
-        # Volcado dinámico de las filas con las sangrías contables intactas
-        if filas_planilla:
-            for f in filas_planilla:
-                txt_partida = f["OBJETO DEL GASTO"]
-                txt_monto = f["PRESUPUESTO"]
-                es_negrita = "<b>" in txt_partida
-                style_row = "font-weight: bold; background-color: #f9f9f5;" if es_negrita else ""
-                
-                html_imprimible += f"""
-                    <tr style="{style_row}">
-                        <td>{txt_partida}</td>
-                        <td>{txt_monto}</td>
-                        <td>{f["F.FIN"]}</td>
-                        <td>{f["CLASE"]}</td>
-                        <td>{f["TIPO"]}</td>
-                        <td>{f["FINANCIAMIENTO"]}</td>
-                    </tr>
-                """
-
-        html_imprimible += """
-                </tbody>
-            </table>
-        </body>
-        </html>
-        """
-
-        # Botón de descarga directa del documento imprimible
-        st.download_button(
-            label="🖨️ GENERAR Y ABRIR REPORTE IMPRIMIBLE A PDF",
-            data=html_imprimible,
-            file_name=f"Presupuesto_Oficial_{str(dest_sel).replace(' ', '_')}.html",
-            mime="text/html",
-            use_container_width=True,
-            key="btn_oficial_impresion_final_centrada"
-        )
-        st.info("💡 Al hacer clic, se descargará el reporte optimizado. Abrilo y se desplegará en el acto la ventana de impresión para guardarlo como PDF o imprimirlo en papel, con los números centrados y las cuentas alineadas.")
+            if f_plan: st.write(pd.DataFrame(f_plan).to_html(escape=False, index=False), unsafe_allow_html=True)

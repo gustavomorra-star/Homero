@@ -1,20 +1,10 @@
 import os
-import sys
-
-# Forzamos la instalación de la librería oficial de Supabase en caliente si el servidor está en caché
-try:
-    from supabase import create_client, Client
-except ImportError:
-    os.system(f'"{sys.executable}" -m pip install supabase')
-    from supabase import create_client, Client
-
-import os
 import pandas as pd
 import streamlit as st
 import io
 import requests
 
-# --- CONEXIÓN DIRECTA POR API REST A LA NUBE DE SUPABASE (ETERNA Y PERMANENTE) ---
+# --- CONEXIÓN DIRECTA POR API REST A LA NUBE DE SUPABASE (INMUNE A BLOQUEOS) ---
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
@@ -25,36 +15,29 @@ headers_supabase = {
     "Prefer": "return=representation"
 }
 
-from supabase import create_client, Client
-
-# Inicializamos el cliente oficial nativo de Supabase
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
 def ejecutar_query_supabase(tabla, json_datos=None, query_params=None, metodo="GET"):
+    # Agregamos la barra final obligatoria para que Supabase reconozca la ruta web nativa
+    url_endpoint = f"{SUPABASE_URL}/rest/v1/{tabla}"
     try:
         if metodo == "GET":
-            query = supabase.table(tabla).select("*")
-            if query_params:
-                for k, v in query_params.items():
-                    if "eq." in str(v):
-                        query = query.eq(k, str(v).replace("eq.", ""))
-            res = query.execute()
-            return res.data if res else []
+            response = requests.get(url_endpoint, headers=headers_supabase, params=query_params)
+            if response.status_code == 200:
+                return response.json()
+            return []
         elif metodo == "POST":
-            res = supabase.table(tabla).insert(json_datos).execute()
-            return res.data if res else []
+            response = requests.post(url_endpoint, headers=headers_supabase, json=json_datos)
+            # Validamos códigos estándar de éxito de la API web (200, 201 y 204) sin usar corchetes
+            if response.status_code == 200 or response.status_code == 201 or response.status_code == 204:
+                return response.json() if response.text else []
+            else:
+                st.error(f"Falla de inserción en la nube: {response.text}")
+                return []
         elif metodo == "DELETE":
-            query = supabase.table(tabla).delete()
-            if query_params:
-                for k, v in query_params.items():
-                    if "eq." in str(v):
-                        query = query.eq(k, str(v).replace("eq.", ""))
-            res = query.execute()
-            return res.data if res else []
+            response = requests.delete(url_endpoint, headers=headers_supabase, params=query_params)
+            return response.text
     except Exception as e:
         st.error(f"Error de red central: {e}")
         return []
-
 
 
 st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="🍩")

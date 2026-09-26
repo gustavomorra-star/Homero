@@ -1,5 +1,3 @@
 pandas
 openpyxl
 reportlab
-supabase
-pg8000

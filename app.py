@@ -2229,7 +2229,7 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
         )
 
 # =====================================================================
-# SECCIÓN 20: COMPARATIVO E HISTÓRICO PRESUPUESTARIO (FILTRO COLUMNA D)
+# SECCIÓN 20: COMPARATIVO E HISTÓRICO PRESUPUESTARIO (FILTRO COMPLETO)
 # =====================================================================
 elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     st.subheader("🔄 Comparativo e Histórico Presupuestario (2026 vs 2027)")
@@ -2237,7 +2237,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados para el proyecto 2027.")
     else:
-        st.caption("Cruce exacto sumando únicamente los registros que poseen **datos de referencia en la Columna D** (partidas de imputación real).")
+        st.caption("Cruce exacto sumando únicamente **imputaciones reales de gasto** (excluyendo subtotales y partidas de recursos).")
 
         CSV_URL_SALDOS = "https://docs.google.com/spreadsheets/d/1JLCDkHYiSFV_cCOjVigcIXLkpD61pHpoxOmJ1CvK2m4/export?format=csv&gid=2027704109"
 
@@ -2263,21 +2263,34 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             df_2026 = pd.read_csv(CSV_URL_SALDOS, skiprows=header_row_idx, on_bad_lines='skip')
 
             # ---------------------------------------------------------
-            # FILTRADO CLAVE: SOLO FILAS DONDE LA COLUMNA D (ÍNDICE 3) NO ESTÉ VACÍA
+            # FILTRO 1: SOLO FILAS CON DATOS EN COLUMNA D (ÍNDICE 3)
             # ---------------------------------------------------------
-            # La Columna D en base 0 es el índice 3
             col_d_values = df_2026.iloc[:, 3]
-            
-            # Condición: no nulo, no vacío y no espacios en blanco
             mask_col_d = col_d_values.notna() & (col_d_values.astype(str).str.strip() != "") & (col_d_values.astype(str).str.strip() != "nan")
             
-            # Aplicar filtro estricto
             df_2026_filtrado = df_2026[mask_col_d].copy()
+
+            # ---------------------------------------------------------
+            # FILTRO 2: EXCLUIR RECURSOS E INGRESOS
+            # ---------------------------------------------------------
+            # Convertir toda la fila a texto para verificar si es un recurso
+            fila_texto = df_2026_filtrado.apply(
+                lambda row: " ".join([str(val) if pd.notna(val) else "" for val in row.values]).upper(), 
+                axis=1
+            )
+            
+            # Máscara que DESCARTA filas con palabras de Recursos/Ingresos
+            mask_sin_recursos = ~fila_texto.str.contains(
+                r"\bRECURSO\b|\bRECURSOS\b|\bINGRESOS\b|\bTRIBUTARIOS\b|\bNO TRIBUTARIOS\b", 
+                regex=True
+            )
+            
+            df_2026_filtrado = df_2026_filtrado[mask_sin_recursos].copy()
 
             # Normalizar nombres de columnas
             df_2026_filtrado.columns = [str(c).strip().upper() for c in df_2026_filtrado.columns]
 
-            # 3. Mapear columna seleccionada por el usuario
+            # 3. Mapear columna de monto seleccionada por el usuario
             if "Inicial" in modo_comparacion:
                 col_monto_target = "PRESUPUESTADO"
             elif "Efectivo" in modo_comparacion:
@@ -2291,7 +2304,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                     col_encontrada = c
                     break
 
-            # 4. Función de conversión numérica para formato argentino (ej: "62.573.641,68" -> 62573641.68)
+            # 4. Función de conversión numérica para formato argentino
             def parse_num_arg(val):
                 if pd.isna(val):
                     return 0.0
@@ -2321,7 +2334,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             porc_incremento = (incremento / tot_2026) * 100 if tot_2026 > 0 else 0.0
 
             st.markdown("---")
-            st.markdown("##### 📊 Variación Interanual Global (Imputaciones Directas - Columna D)")
+            st.markdown("##### 📊 Variación Interanual Global (Imputaciones de Gasto Puras)")
             m_h1, m_h2, m_h3 = st.columns(3)
             m_h1.metric(f"Base 2026 ({col_monto_target})", f"${tot_2026:,.2f}")
             m_h2.metric("Proyecto 2027", f"${tot_2027:,.2f}")

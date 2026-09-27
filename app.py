@@ -15,6 +15,7 @@ if "destinos" not in st.session_state["db_local_backup"] or not isinstance(st.se
 
 if "egresos" not in st.session_state["db_local_backup"] or not isinstance(st.session_state["db_local_backup"]["egresos"], list):
     st.session_state["db_local_backup"]["egresos"] = []
+
 # Configuración de la página
 st.set_page_config(page_title="Presupuesto Municipal 2027", layout="wide")
 
@@ -83,12 +84,18 @@ def leer_datos_gsheet(param_url_o_gid):
     df_vacio["total"] = df_vacio["total"].astype(float)
     return df_vacio
 
+def guardar_fila_gsheet(pestana, nuevo_dict):
+    """Guarda en la memoria local de respaldo para actualización inmediata"""
+    if pestana in st.session_state["db_local_backup"]:
+        st.session_state["db_local_backup"][pestana].append(nuevo_dict)
+
 # =====================================================================
 # 2. CARGA PRINCIPAL
 # =====================================================================
 
 df_egr_completo = leer_datos_gsheet(URL_READ_EGRESOS)
 df_destinos_gsheet = leer_datos_gsheet(URL_READ_DESTINOS)
+
 # Dibujamos las etiquetas de títulos superiores del sistema
 st.title("🍩 Homero - Sistema de Registro Presupuestario")
 st.write("📍 Municipalidad de Sunchales | Conexión Cooperativa a Google Sheets **2027**")
@@ -154,10 +161,11 @@ with tab_formulario:
                     df_fil = df_dest_gsheet[(df_dest_gsheet["secretaria"] == f_sec) & (df_dest_gsheet["subsecretaria"] == f_sub)]
                     lista_d = df_fil["destino"].dropna().astype(str).tolist()
 
-                for d_loc in st.session_state["db_local_backup"]["destinos"]:
-                    if d_loc["secretaria"] == f_sec and d_loc["subsecretaria"] == f_sub:
-                        if d_loc["destino"] not in lista_d:
-                            lista_d.append(d_loc["destino"])
+                for d_loc in st.session_state.get("db_local_backup", {}).get("destinos", []):
+                    if isinstance(d_loc, dict):
+                        if d_loc.get("secretaria") == f_sec and d_loc.get("subsecretaria") == f_sub:
+                            if d_loc.get("destino") not in lista_d:
+                                lista_d.append(d_loc.get("destino"))
 
                 f_dest = st.selectbox("DESTINO SELECCIONADO:", options=[""] + lista_d, format_func=lambda x: "--- Seleccioná ---" if x == "" else str(x).upper(), key="reg_dest") if lista_d else None
                 if not lista_d: 
@@ -222,8 +230,10 @@ with tab_agregar_destino:
         if not df_dt_gsheet.empty and "destino" in df_dt_gsheet.columns:
             lista_destinos_mostrar = df_dt_gsheet[["subsecretaria", "destino"]].dropna().to_dict('records')
         for d_l in st.session_state.get("db_local_backup", {}).get("destinos", []):
-            if {"subsecretaria": d_l["subsecretaria"], "destino": d_l["destino"]} not in lista_destinos_mostrar:
-                lista_destinos_mostrar.append({"subsecretaria": d_l["subsecretaria"], "destino": d_l["destino"]})
+            if isinstance(d_l, dict) and "subsecretaria" in d_l and "destino" in d_l:
+                elem = {"subsecretaria": d_l["subsecretaria"], "destino": d_l["destino"]}
+                if elem not in lista_destinos_mostrar:
+                    lista_destinos_mostrar.append(elem)
         if lista_destinos_mostrar:
             df_dt_vista = pd.DataFrame(lista_destinos_mostrar).rename(columns={"subsecretaria": "SUBSECRETARÍA", "destino": "DESTINO"})
             st.dataframe(df_dt_vista, use_container_width=True, hide_index=True)
@@ -407,6 +417,7 @@ with tab_oficial:
                 </html>
                 """
                 st.download_button(label="🖨️ GENERAR Y ABRIR REPORTE IMPRIMIBLE A PDF", data=html_imp, file_name=f"Reporte_{str(dest_s).replace(' ', '_')}.html", mime="text/html", use_container_width=True)
+
 # =====================================================================
 # PESTAÑA 5: PANEL EXCLUSIVO DE MODIFICACIONES (SOLAPA AISLADA)
 # =====================================================================
@@ -419,23 +430,19 @@ with tab_modificaciones:
             destino_txt = str(r.get('destino', '')).strip().upper()
             partida_txt = str(r.get('cuenta_presupuestaria', '')).strip()
 
-            # Formatear el monto asegurando conversión numérica
             try:
                 monto_val = float(r.get('total', 0.0))
             except Exception:
                 monto_val = 0.0
 
-            # Asignar nombres genéricos si están vacíos para evitar filtrar el renglón
             if not destino_txt or destino_txt == "NAN":
                 destino_txt = "SIN DESTINO"
             if not partida_txt or partida_txt == "NAN":
                 partida_txt = "SIN PARTIDA"
 
-            # CLAVE ÚNICA GARANTIZADA: Se agrega [ID: i] al inicio para evitar duplicados en el selectbox
             texto_descriptivo = f"[ID: {i+1}] Fila {i+1} | Destino: {destino_txt} | Partida: {partida_txt[:30]} | Monto: ${monto_val:,.2f}"
             diccionario_opciones[texto_descriptivo] = i
 
-    # Garantizamos que la lista de opciones no contenga duplicados
     lista_claves_validas = list(diccionario_opciones.keys())
 
     if len(lista_claves_validas) == 0:
@@ -443,7 +450,34 @@ with tab_modificaciones:
     else:
         st.caption("Seleccioná un renglón para corregir sus valores, cambiar su partida de imputación o darlo de baja.")
 
-        # Ahora lista_claves_validas no generará el TypeError
         linea_sel = st.selectbox("Seleccioná el registro a modificar por su número de fila:", options=lista_claves_validas, key="sel_mod_panel")
         idx_real = diccionario_opciones[linea_sel]
         fila_r = df_egr_completo.loc[idx_real]
+
+        st.markdown("---")
+        st.subheader(f"📝 Formulario de Edición (Fila {idx_real + 1})")
+
+        col_mod1, col_mod2 = st.columns(2)
+
+        with col_mod1:
+            st.markdown("#### ✏️ Cambiar Importe y Destino")
+            with st.form(key=f"form_modificacion_{idx_real}"):
+                mod_dest = st.text_input("Destino:", value=str(fila_r.get("destino", "")))
+                mod_monto = st.number_input("Monto Total ($):", value=float(fila_r.get("total", 0.0)), step=1000.0)
+                
+                if st.form_submit_button("💾 Guardar Cambios"):
+                    # Actualizar en el dataframe en memoria local
+                    if idx_real < len(st.session_state["db_local_backup"]["egresos"]):
+                        st.session_state["db_local_backup"]["egresos"][idx_real]["destino"] = mod_dest
+                        st.session_state["db_local_backup"]["egresos"][idx_real]["total"] = mod_monto
+                    st.success(f"¡Fila {idx_real + 1} modificada correctamente!")
+                    st.rerun()
+
+        with col_mod2:
+            st.markdown("#### 🗑️ Dar de Baja Registro")
+            st.warning("Esta operación eliminará el registro seleccionado.")
+            if st.button("❌ Confirmar Baja de Fila", key=f"btn_del_{idx_real}"):
+                if idx_real < len(st.session_state["db_local_backup"]["egresos"]):
+                    st.session_state["db_local_backup"]["egresos"].pop(idx_real)
+                st.success(f"Renglón {idx_real + 1} dado de baja.")
+                st.rerun()

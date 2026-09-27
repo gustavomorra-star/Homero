@@ -14,21 +14,25 @@ URL_READ_DESTINOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=1
 
 def leer_datos_gsheet(url_tipo):
     try:
-        # Descargamos el CSV en tiempo real forzando la limpieza de caché
+        # Descargamos el CSV en tiempo real forzando la limpieza de caché de Drive
         df = pd.read_csv(url_tipo + f"&cache_bust={os.urandom(4).hex()}")
         
-        # Validamos de forma estricta que no sea una página de error de Google y que tenga las columnas
-        if df.empty or "secretaria" not in df.columns:
-            if "sheet=destinos" in url_tipo or "destinos" in str(url_tipo):
+        # Validamos de forma estricta si el archivo vino vacío o no leyó el encabezado
+        if df.empty or len(df.columns) <= 1:
+            if "gid=1365567783" in str(url_tipo):
                 return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
             else:
-                return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+                df_vacio = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+                df_vacio["total"] = df_vacio["total"].astype(float)
+                return df_vacio
         return df
     except:
-        # En caso de cualquier falla de red o formato, devolvemos la matriz estructurada por seguridad
-        if "sheet=destinos" in url_tipo or "destinos" in str(url_tipo):
+        # En caso de cualquier falla de red, devolvemos la matriz estructurada por seguridad
+        if "gid=1365567783" in str(url_tipo):
             return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
-        return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+        df_falla = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+        df_falla["total"] = df_falla["total"].astype(float)
+        return df_falla
 
 def guardar_fila_gsheet(hoja, diccionario_datos):
     try:

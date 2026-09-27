@@ -2229,15 +2229,15 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
         )
 
 # =====================================================================
-# SECCIÓN 20: COMPARATIVO E HISTÓRICO PRESUPUESTARIO (FILTRO COMPLETO)
+# SECCIÓN 20: COMPARATIVO E HISTÓRICO PRESUPUESTARIO (POR SUBSECRETARÍA)
 # =====================================================================
 elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
-    st.subheader("🔄 Comparativo e Histórico Presupuestario (2026 vs 2027)")
+    st.subheader("🔄 Comparativo e Histórico Presupuestario por Subsecretaría (2026 vs 2027)")
 
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados para el proyecto 2027.")
     else:
-        st.caption("Cruce exacto sumando únicamente **imputaciones reales de gasto** (excluyendo subtotales y partidas de recursos).")
+        st.caption("Cruce en tiempo real por **Subsecretaría**, sumando partidas reales (Columna D) y excluyendo recursos.")
 
         CSV_URL_SALDOS = "https://docs.google.com/spreadsheets/d/1JLCDkHYiSFV_cCOjVigcIXLkpD61pHpoxOmJ1CvK2m4/export?format=csv&gid=2027704109"
 
@@ -2267,30 +2267,25 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             # ---------------------------------------------------------
             col_d_values = df_2026.iloc[:, 3]
             mask_col_d = col_d_values.notna() & (col_d_values.astype(str).str.strip() != "") & (col_d_values.astype(str).str.strip() != "nan")
-            
             df_2026_filtrado = df_2026[mask_col_d].copy()
 
             # ---------------------------------------------------------
             # FILTRO 2: EXCLUIR RECURSOS E INGRESOS
             # ---------------------------------------------------------
-            # Convertir toda la fila a texto para verificar si es un recurso
             fila_texto = df_2026_filtrado.apply(
                 lambda row: " ".join([str(val) if pd.notna(val) else "" for val in row.values]).upper(), 
                 axis=1
             )
-            
-            # Máscara que DESCARTA filas con palabras de Recursos/Ingresos
             mask_sin_recursos = ~fila_texto.str.contains(
                 r"\bRECURSO\b|\bRECURSOS\b|\bINGRESOS\b|\bTRIBUTARIOS\b|\bNO TRIBUTARIOS\b", 
                 regex=True
             )
-            
             df_2026_filtrado = df_2026_filtrado[mask_sin_recursos].copy()
 
             # Normalizar nombres de columnas
             df_2026_filtrado.columns = [str(c).strip().upper() for c in df_2026_filtrado.columns]
 
-            # 3. Mapear columna de monto seleccionada por el usuario
+            # 3. Mapear columna de monto seleccionada
             if "Inicial" in modo_comparacion:
                 col_monto_target = "PRESUPUESTADO"
             elif "Efectivo" in modo_comparacion:
@@ -2304,7 +2299,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                     col_encontrada = c
                     break
 
-            # 4. Función de conversión numérica para formato argentino
+            # Conversion numérica para formato argentino
             def parse_num_arg(val):
                 if pd.isna(val):
                     return 0.0
@@ -2324,7 +2319,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             st.error(f"⚠️ No se pudo procesar la planilla: {e}")
 
         # -------------------------------------------------------------
-        # PROCESAR Y DESPLEGAR COMPARATIVA
+        # PROCESAR Y DESPLEGAR COMPARATIVA POR SUBSECRETARÍA
         # -------------------------------------------------------------
         if hay_datos_2026 and not df_2026_filtrado.empty:
             tot_2026 = df_2026_filtrado["TOTAL_2026_CLEAN"].sum()
@@ -2334,42 +2329,50 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             porc_incremento = (incremento / tot_2026) * 100 if tot_2026 > 0 else 0.0
 
             st.markdown("---")
-            st.markdown("##### 📊 Variación Interanual Global (Imputaciones de Gasto Puras)")
+            st.markdown("##### 📊 Variación Interanual Global")
             m_h1, m_h2, m_h3 = st.columns(3)
             m_h1.metric(f"Base 2026 ({col_monto_target})", f"${tot_2026:,.2f}")
             m_h2.metric("Proyecto 2027", f"${tot_2027:,.2f}")
             m_h3.metric("Variación Interanual", f"${incremento:,.2f}", f"{porc_incremento:+.2f}%")
 
             st.markdown("---")
-            st.markdown("##### 🏛️ Comparativo por Secretaría (2026 vs 2027)")
+            st.markdown("##### 🏛️ Comparativo Detallado por Subsecretaría (2026 vs 2027)")
 
-            # Agrupamiento 2027
-            sec_2027 = df_egr_completo.groupby("secretaria")["total"].sum().reset_index()
-            sec_2027.columns = ["SECRETARÍA", "PROYECTO 2027 ($)"]
-            sec_2027["SECRETARÍA"] = sec_2027["SECRETARÍA"].astype(str).str.strip().str.upper()
+            # Agrupamiento 2027 por Subsecretaría
+            sec_2027 = df_egr_completo.groupby("subsecretaria")["total"].sum().reset_index()
+            sec_2027.columns = ["SUBSECRETARÍA", "PROYECTO 2027 ($)"]
+            sec_2027["SUBSECRETARÍA"] = sec_2027["SUBSECRETARÍA"].astype(str).str.strip().str.upper()
 
-            # Agrupamiento 2026
-            col_sec_2026 = "SECRETARÍA" if "SECRETARÍA" in df_2026_filtrado.columns else ("SECRETARIA" if "SECRETARIA" in df_2026_filtrado.columns else None)
+            # Agrupamiento 2026 por Subsecretaría (Columna B / SUBSECRETARÍA)
+            col_subsec_2026 = None
+            for col_candidata in ["SUBSECRETARÍA", "SUBSECRETARIA", "SUB SECRETARIA"]:
+                if col_candidata in df_2026_filtrado.columns:
+                    col_subsec_2026 = col_candidata
+                    break
+            
+            # Si no encuentra por nombre, toma la Columna B (índice 1)
+            if not col_subsec_2026:
+                col_subsec_2026 = df_2026_filtrado.columns[1]
 
-            if col_sec_2026:
-                df_2026_filtrado[col_sec_2026] = df_2026_filtrado[col_sec_2026].astype(str).str.strip().str.upper()
-                sec_2026 = df_2026_filtrado.groupby(col_sec_2026)["TOTAL_2026_CLEAN"].sum().reset_index()
-                sec_2026.columns = ["SECRETARÍA", f"BASE 2026 ({col_monto_target}) ($)"]
-            else:
-                sec_2026 = pd.DataFrame(columns=["SECRETARÍA", f"BASE 2026 ({col_monto_target}) ($)"])
+            df_2026_filtrado[col_subsec_2026] = df_2026_filtrado[col_subsec_2026].astype(str).str.strip().str.upper()
+            sec_2026 = df_2026_filtrado.groupby(col_subsec_2026)["TOTAL_2026_CLEAN"].sum().reset_index()
+            sec_2026.columns = ["SUBSECRETARÍA", f"BASE 2026 ({col_monto_target}) ($)"]
 
-            # Merge / Cruzamiento por Secretaría
-            df_comp_sec = pd.merge(sec_2027, sec_2026, on="SECRETARÍA", how="outer").fillna(0.0)
+            # Merge por Subsecretaría
+            df_comp_sec = pd.merge(sec_2027, sec_2026, on="SUBSECRETARÍA", how="outer").fillna(0.0)
             col_base_nom = f"BASE 2026 ({col_monto_target}) ($)"
 
             # Limpieza de valores nulos o encabezados filtrados
-            df_comp_sec = df_comp_sec[~df_comp_sec["SECRETARÍA"].isin(["NAN", "NONE", "", "0.0", "UNNAMED: 0"])]
+            df_comp_sec = df_comp_sec[~df_comp_sec["SUBSECRETARÍA"].isin(["NAN", "NONE", "", "0.0", "UNNAMED: 1", "SUBSECRETARÍA"])]
 
             df_comp_sec["VARIACIÓN ($)"] = df_comp_sec["PROYECTO 2027 ($)"] - df_comp_sec[col_base_nom]
             df_comp_sec["% VARIACIÓN"] = df_comp_sec.apply(
                 lambda r: ((r["VARIACIÓN ($)"] / r[col_base_nom]) * 100) if r[col_base_nom] > 0 else 0.0, 
                 axis=1
             )
+
+            # Ordenar descendentemente por monto 2027
+            df_comp_sec = df_comp_sec.sort_values(by="PROYECTO 2027 ($)", ascending=False)
 
             st.dataframe(
                 df_comp_sec.style.format({

@@ -61,7 +61,6 @@ def leer_datos_gsheet(param_url_o_gid):
                 # 4. Convertir 'total' a numérico de forma segura (Formato Argentina / Internacional)
                 if "total" in df.columns:
                     s_total = df["total"].astype(str).str.replace("$", "", regex=False).str.strip()
-                    # Quitar puntos de miles y cambiar la coma decimal por punto
                     s_total = s_total.str.replace(".", "", regex=False).str.replace(",", ".", regex=False)
                     df["total"] = pd.to_numeric(s_total, errors='coerce').fillna(0.0)
             return df
@@ -70,7 +69,6 @@ def leer_datos_gsheet(param_url_o_gid):
     except Exception as e:
         st.warning(f"Error de conexión con Google Sheets: {e}")
 
-    # Retorno de DataFrame vacío estructurado en caso de fallo
     if "1365567783" in str(param_url_o_gid):
         return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
 
@@ -786,7 +784,6 @@ with st.sidebar:
             "🎯 REPORTE POR FINALIDAD Y FUNCIÓN",
             "📦 TOTALES POR OBJETO DEL GASTO",
             "📊 MATRIZ SUBSECRETARÍA VS OBJETOS",
-            # --- NUEVAS 5 SECCIONES ---
             "📈 PROYECCIÓN Y ESTRUCTURA TEMPORAL",
             "🏛️ CLASIFICACIÓN ECONÓMICA DEL GASTO",
             "🛡️ CONTROL DE TECHOS PRESUPUESTARIOS",
@@ -794,6 +791,7 @@ with st.sidebar:
             "🔄 COMPARATIVO E HISTÓRICO"
         ]
     )
+
 # =====================================================================
 # SECCIÓN 1: FORMULARIO PRINCIPAL DE REGISTRO
 # =====================================================================
@@ -892,7 +890,7 @@ elif opcion_menu == "➕ GESTIÓN DE DESTINOS":
             st.dataframe(df_dt_vista, use_container_width=True, hide_index=True)
 
 # =====================================================================
-# SECCIÓN 3: BASE DE DATOS GENERAL (REPORTE TIPO SHEET MASIVO)
+# SECCIÓN 3: BASE DE DATOS GENERAL
 # =====================================================================
 elif opcion_menu == "📉 GENERAL (Base de Datos Sheet)":
     st.subheader("📊 Base de Datos General de Egresos")
@@ -1028,7 +1026,7 @@ elif opcion_menu == "🏛️ REPORTE OFICIAL POR DESTINO":
 
                         for _, r in df_pad.iterrows():
                             f_plan.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{r['cuenta_presupuestaria']}", "PRESUPUESTO": f"${r['total']:,.2f}", "F.FIN": r["fuente_fin"], "CLASE": r["clase"], "TIPO": r["tipo"], "FINANCIAMIENTO": r["finalidad"]})
-                            html_rows += f'<tr><td style="text-align: left; padding-left: 40px;">{r["cuenta_presupuestaria"]}</td><td>${r["total']:,.2f}</td><td>{r["fuente_fin"]}</td><td>{r["clase"]}</td><td>{r["tipo"]}</td><td>{r["finalidad"]}</td></tr>'
+                            html_rows += f'<tr><td style="text-align: left; padding-left: 40px;">{r["cuenta_presupuestaria"]}</td><td>${r["total"]:,.2f}</td><td>{r["fuente_fin"]}</td><td>{r["clase"]}</td><td>{r["tipo"]}</td><td>{r["finalidad"]}</td></tr>'
 
                 st.write(pd.DataFrame(f_plan).to_html(escape=False, index=False), unsafe_allow_html=True)
 
@@ -1081,8 +1079,6 @@ elif opcion_menu == "🛠️ PANEL DE MODIFICACIONES":
     diccionario_opciones = {}
     if not df_egr_completo.empty:
         for i, r in df_egr_completo.iterrows():
-            sec_txt = str(r.get('secretaria', '')).strip().upper()
-            sub_txt = str(r.get('subsecretaria', '')).strip().upper()
             destino_txt = str(r.get('destino', '')).strip().upper()
             partida_txt = str(r.get('cuenta_presupuestaria', '')).strip()
 
@@ -1179,8 +1175,9 @@ elif opcion_menu == "🛠️ PANEL DE MODIFICACIONES":
                     st.session_state["db_local_backup"]["egresos"].pop(idx_real)
                 st.success(f"Renglón {idx_real + 1} eliminado.")
                 st.rerun()
+
 # =====================================================================
-# SECCIÓN 6: REPORTE CONSOLIDADO Y ESTADÍSTICAS (NUEVA)
+# SECCIÓN 6: REPORTE CONSOLIDADO Y ESTADÍSTICAS
 # =====================================================================
 elif opcion_menu == "📊 REPORTE CONSOLIDADO Y ESTADÍSTICAS":
     st.subheader("📊 Análisis Consolidado del Presupuesto 2027")
@@ -1212,9 +1209,8 @@ elif opcion_menu == "📊 REPORTE CONSOLIDADO Y ESTADÍSTICAS":
             df_fuente["total_fmt"] = df_fuente["total"].map(lambda x: f"${x:,.2f}")
             st.dataframe(df_fuente.rename(columns={"fuente_fin": "FUENTE FINANCIAMIENTO", "total_fmt": "TOTAL ($)"}), use_container_width=True, hide_index=True)
 
-
 # =====================================================================
-# SECCIÓN 7: BUSCADOR AVANZADO (NUEVA)
+# SECCIÓN 7: BUSCADOR AVANZADO
 # =====================================================================
 elif opcion_menu == "🔍 BUSCADOR AVANZADO":
     st.subheader("🔍 Buscador Filtrado de Partidas Presupuestarias")
@@ -1232,7 +1228,6 @@ elif opcion_menu == "🔍 BUSCADOR AVANZADO":
         with col_b3:
             max_monto = st.number_input("Monto Máximo ($):", min_value=0.0, value=float(df_egr_completo["total"].max() or 1000000000.0))
 
-        # Filtrado
         df_busqueda = df_egr_completo.copy()
         
         if texto_buscar:
@@ -1250,9 +1245,8 @@ elif opcion_menu == "🔍 BUSCADOR AVANZADO":
         else:
             st.warning("No se encontraron registros que coincidan con los criterios de búsqueda.")
 
-
 # =====================================================================
-# SECCIÓN 8: EXPORTACIÓN Y FIRMAS (REPORTE OFICIAL COMPLETO CON FIRMAS)
+# SECCIÓN 8: EXPORTACIÓN Y FIRMAS
 # =====================================================================
 elif opcion_menu == "📄 EXPORTACIÓN Y FIRMAS":
     st.subheader("📄 Exportación General Oficial por Destino (con Cuadro de Firmas)")
@@ -1260,33 +1254,26 @@ elif opcion_menu == "📄 EXPORTACIÓN Y FIRMAS":
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados en el sistema para exportar.")
     else:
-        st.caption("Generá un documento oficial en formato HTML para imprimir o guardar en PDF que agrupa automáticamente **TODOS los Destinos** con el formato oficial municipal e incluye el panel de firmas al pie.")
-
         tot_general_exp = df_egr_completo["total"].sum()
         st.metric(label="📋 TOTAL GENERAL A EXPORTAR", value=f"${tot_general_exp:,.2f}")
 
         bloques_html_destinos = ""
 
-        # Agrupar todos los registros cargados por Secretaría, Subsecretaría y Destino
         for (sec_exp, sub_exp, dest_exp), df_dest_exp in df_egr_completo.groupby(["secretaria", "subsecretaria", "destino"]):
             tot_dest_exp = df_dest_exp["total"].sum()
-            
             rows_dest_exp = ""
-            # Agrupar por Objeto del Gasto
+            
             for obj, df_obj in df_dest_exp.groupby("objeto_gasto"):
                 t_o = df_obj["total"].sum()
                 rows_dest_exp += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${t_o:,.2f}</td><td></td><td></td><td></td><td></td></tr>'
                 
-                # Agrupar por Cuenta Padre
                 for pad, df_pad in df_obj.groupby("cuenta_padre"):
                     t_p = df_pad["total"].sum()
                     rows_dest_exp += f'<tr style="font-weight: bold;"><td style="text-align: left; padding-left: 20px;">{pad}</td><td style="text-align: right;">${t_p:,.2f}</td><td></td><td></td><td></td><td></td></tr>'
                     
-                    # Imprimir Cuentas de Imputación
                     for _, r in df_pad.iterrows():
                         rows_dest_exp += f'<tr><td style="text-align: left; padding-left: 40px;">{r["cuenta_presupuestaria"]}</td><td style="text-align: right;">${r["total"]:,.2f}</td><td style="text-align: center;">{r["fuente_fin"]}</td><td style="text-align: center;">{r["clase"]}</td><td style="text-align: center;">{r["tipo"]}</td><td style="text-align: center;">{r["finalidad"]}</td></tr>'
 
-            # Armar bloque gráfico oficial por Destino
             bloques_html_destinos += f"""
             <div class="bloque-destino">
                 <div class="m-box">
@@ -1321,7 +1308,6 @@ elif opcion_menu == "📄 EXPORTACIÓN Y FIRMAS":
             </div>
             """
 
-        # HTML General Completo con Estilos y Cuadro de Firmas Final
         html_completo_oficial = f"""
         <html>
         <head>
@@ -1367,8 +1353,9 @@ elif opcion_menu == "📄 EXPORTACIÓN Y FIRMAS":
             use_container_width=True,
             type="primary"
         )
+
 # =====================================================================
-# SECCIÓN 9: RANKING Y MAYORES EROGACIONES (NUEVA)
+# SECCIÓN 9: RANKING Y MAYORES EROGACIONES
 # =====================================================================
 elif opcion_menu == "🏆 RANKING Y MAYORES EROGACIONES":
     st.subheader("🏆 Ranking de Partidas y Erogaciones Mayores")
@@ -1385,21 +1372,15 @@ elif opcion_menu == "🏆 RANKING Y MAYORES EROGACIONES":
         st.dataframe(
             df_sorted[["secretaria", "destino", "objeto_gasto", "cuenta_presupuestaria", "total", "fuente_fin"]].rename(
                 columns={
-                    "secretaria": "SECRETARÍA",
-                    "destino": "DESTINO",
-                    "objeto_gasto": "OBJETO GASTO",
-                    "cuenta_presupuestaria": "PARTIDA",
-                    "total": "MONTO TOTAL ($)",
-                    "fuente_fin": "FUENTE"
+                    "secretaria": "SECRETARÍA", "destino": "DESTINO", "objeto_gasto": "OBJETO GASTO",
+                    "cuenta_presupuestaria": "PARTIDA", "total": "MONTO TOTAL ($)", "fuente_fin": "FUENTE"
                 }
             ),
-            use_container_width=True,
-            hide_index=True
+            use_container_width=True, hide_index=True
         )
 
-
 # =====================================================================
-# SECCIÓN 10: COMPARATIVO DE ESTRUCTURA Y FUENTES (NUEVA)
+# SECCIÓN 10: COMPARATIVO DE ESTRUCTURA Y FUENTES
 # =====================================================================
 elif opcion_menu == "⚖️ COMPARATIVO DE ESTRUCTURA Y FUENTES":
     st.subheader("⚖️ Matriz Comparativa: Clase de Gasto vs Fuente de Financiamiento")
@@ -1407,23 +1388,14 @@ elif opcion_menu == "⚖️ COMPARATIVO DE ESTRUCTURA Y FUENTES":
     if df_egr_completo.empty:
         st.info("💡 No hay datos suficientes para armar la matriz comparativa.")
     else:
-        st.caption("Cruza la Clase de Gasto (Corriente/Capital) con la Fuente de Financiamiento.")
-        
         matriz = pd.pivot_table(
-            df_egr_completo,
-            values="total",
-            index="clase",
-            columns="fuente_fin",
-            aggfunc="sum",
-            fill_value=0.0
+            df_egr_completo, values="total", index="clase", columns="fuente_fin", aggfunc="sum", fill_value=0.0
         )
-
         st.markdown("##### 📊 Matriz de Totales por Clase y Fuente ($)")
         st.dataframe(matriz.style.format("${:,.2f}"), use_container_width=True)
 
-
 # =====================================================================
-# SECCIÓN 11: AUDITORÍA Y CONTROL DE CALIDAD (NUEVA)
+# SECCIÓN 11: AUDITORÍA Y CONTROL DE CALIDAD
 # =====================================================================
 elif opcion_menu == "🧹 AUDITORÍA Y CONTROL DE CALIDAD":
     st.subheader("🧹 Panel de Auditoría y Verificación de Datos")
@@ -1431,9 +1403,7 @@ elif opcion_menu == "🧹 AUDITORÍA Y CONTROL DE CALIDAD":
     if df_egr_completo.empty:
         st.info("💡 No hay datos para auditar.")
     else:
-        # Detectar renglones con monto cero
         df_cero = df_egr_completo[df_egr_completo["total"] == 0]
-        # Detectar renglones con campos vacíos esenciales
         df_vacios = df_egr_completo[
             (df_egr_completo["secretaria"] == "") | 
             (df_egr_completo["destino"] == "") | 
@@ -1456,8 +1426,9 @@ elif opcion_menu == "🧹 AUDITORÍA Y CONTROL DE CALIDAD":
             st.dataframe(df_vacios[["secretaria", "subsecretaria", "destino", "cuenta_presupuestaria"]], use_container_width=True, hide_index=True)
         else:
             st.success("✅ ¡Excelente! Todos los renglones tienen su ubicación e imputación completa.")
+
 # =====================================================================
-# SECCIÓN 12: VISTA POR SECRETARÍA Y SUBSECRETARÍA (CON EXPORTACIÓN HORIZONTAL)
+# SECCIÓN 12: VISTA POR SECRETARÍA Y SUBSECRETARÍA
 # =====================================================================
 elif opcion_menu == "🏢 VISTA POR SECRETARÍA Y SUBSECRETARÍA":
     st.subheader("🏢 Vista Jerárquica por Secretaría y Subsecretaría")
@@ -1465,26 +1436,19 @@ elif opcion_menu == "🏢 VISTA POR SECRETARÍA Y SUBSECRETARÍA":
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados para mostrar.")
     else:
-        st.caption("Seleccioná la Secretaría y la Subsecretaría para consultar los Destinos y sus partidas presupuestarias asignadas, o exportar la planilla oficial firmable.")
-
-        # Obtener lista de secretarías únicas
         lista_secretarias = sorted([s for s in df_egr_completo["secretaria"].unique() if str(s).strip() != ""])
-
         col_sec, col_sub = st.columns(2)
 
         with col_sec:
             sec_seleccionada = st.selectbox("1. Seleccionar Secretaría:", lista_secretarias)
 
-        # Filtrar subsecretarías pertenecientes a la secretaría elegida
         df_sec_filtrado = df_egr_completo[df_egr_completo["secretaria"] == sec_seleccionada]
         lista_subsecretarias = sorted([s for s in df_sec_filtrado["subsecretaria"].unique() if str(s).strip() != ""])
 
         with col_sub:
             sub_seleccionada = st.selectbox("2. Seleccionar Subsecretaría:", lista_subsecretarias)
 
-        # Filtrar datos finales por Secretaría y Subsecretaría
         df_area = df_sec_filtrado[df_sec_filtrado["subsecretaria"] == sub_seleccionada]
-
         st.markdown("---")
 
         if df_area.empty:
@@ -1493,28 +1457,20 @@ elif opcion_menu == "🏢 VISTA POR SECRETARÍA Y SUBSECRETARÍA":
             tot_area = df_area["total"].sum()
             cant_destinos = df_area["destino"].nunique()
 
-            # Métricas rápidas del Área
             m_a1, m_a2 = st.columns(2)
             m_a1.metric("💰 Presupuesto Total de la Subsecretaría", f"${tot_area:,.2f}")
             m_a2.metric("📌 Cantidad de Destinos Asignados", f"{cant_destinos}")
 
             st.markdown("### 📍 Resumen de Destinos")
-
-            # Resumen acumulado por Destino
             df_destinos_resumen = df_area.groupby("destino")["total"].sum().reset_index()
             df_destinos_resumen["total_fmt"] = df_destinos_resumen["total"].map(lambda x: f"${x:,.2f}")
             df_destinos_resumen.columns = ["DESTINO", "TOTAL ($)", "PRESUPUESTO FORMATEADO"]
 
-            st.dataframe(
-                df_destinos_resumen[["DESTINO", "PRESUPUESTO FORMATEADO"]],
-                use_container_width=True,
-                hide_index=True
-            )
+            st.dataframe(df_destinos_resumen[["DESTINO", "PRESUPUESTO FORMATEADO"]], use_container_width=True, hide_index=True)
 
             st.markdown("---")
             st.markdown("### 🔍 Detalle por Destino y Partidas")
 
-            # Desplegable individual por Destino
             for dest, df_d in df_area.groupby("destino"):
                 tot_d = df_d["total"].sum()
                 with st.expander(f"📌 DESTINO: {str(dest).upper()} — Total: ${tot_d:,.2f}"):
@@ -1522,25 +1478,12 @@ elif opcion_menu == "🏢 VISTA POR SECRETARÍA Y SUBSECRETARÍA":
                     df_mostrar["total"] = df_mostrar["total"].map(lambda x: f"${x:,.2f}")
                     st.dataframe(
                         df_mostrar[["objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo"]].rename(
-                            columns={
-                                "objeto_gasto": "OBJETO GASTO",
-                                "cuenta_padre": "CUENTA PADRE",
-                                "cuenta_presupuestaria": "PARTIDA",
-                                "total": "MONTO ($)",
-                                "fuente_fin": "FUENTE",
-                                "clase": "CLASE",
-                                "tipo": "TIPO"
-                            }
+                            columns={"objeto_gasto": "OBJETO GASTO", "cuenta_padre": "CUENTA PADRE", "cuenta_presupuestaria": "PARTIDA", "total": "MONTO ($)", "fuente_fin": "FUENTE", "clase": "CLASE", "tipo": "TIPO"}
                         ),
-                        use_container_width=True,
-                        hide_index=True
+                        use_container_width=True, hide_index=True
                     )
 
-            # -------------------------------------------------------------
-            # GENERACIÓN DEL DOCUMENTO HORIZONTAL (PDF / FIRMAS)
-            # -------------------------------------------------------------
             bloques_html_sec = ""
-
             for dest_sec, df_d_sec in df_area.groupby("destino"):
                 tot_d_sec = df_d_sec["total"].sum()
                 rows_d_sec = ""
@@ -1636,8 +1579,9 @@ elif opcion_menu == "🏢 VISTA POR SECRETARÍA Y SUBSECRETARÍA":
                 use_container_width=True,
                 type="primary"
             )
+
 # =====================================================================
-# SECCIÓN 13: REPORTE POR FINALIDAD Y FUNCIÓN (CON EXPORTACIÓN OFICIAL)
+# SECCIÓN 13: REPORTE POR FINALIDAD Y FUNCIÓN
 # =====================================================================
 elif opcion_menu == "🎯 REPORTE POR FINALIDAD Y FUNCIÓN":
     st.subheader("🎯 Consolidado Presupuestario por Finalidad y Función")
@@ -1645,22 +1589,14 @@ elif opcion_menu == "🎯 REPORTE POR FINALIDAD Y FUNCIÓN":
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados para generar el reporte de finalidades.")
     else:
-        st.caption("Resumen consolidado con la suma total del presupuesto distribuido por **Finalidad y Función**, listo para consultar en pantalla o exportar con formato oficial.")
-
-        # Identificar columnas
         col_fin = "finalidad" if "finalidad" in df_egr_completo.columns else df_egr_completo.columns[0]
         col_fun = "tipo" if "tipo" in df_egr_completo.columns else col_fin
 
         tot_general_ff = df_egr_completo["total"].sum()
-
         st.metric("💰 TOTAL GENERAL PRESUPUESTO", f"${tot_general_ff:,.2f}")
 
-        # Agrupamiento principal
         df_fin_fun = df_egr_completo.groupby([col_fin, col_fun])["total"].sum().reset_index()
 
-        # -------------------------------------------------------------
-        # VISTA EN PANTALLA (TABLA INTERACTIVA)
-        # -------------------------------------------------------------
         st.markdown("---")
         st.markdown("##### 📋 Resumen en Pantalla")
 
@@ -1671,36 +1607,22 @@ elif opcion_menu == "🎯 REPORTE POR FINALIDAD Y FUNCIÓN":
 
         st.dataframe(
             df_tabla_ff[[col_fin, col_fun, "total_fmt", "porcentaje_fmt"]].rename(
-                columns={
-                    col_fin: "FINALIDAD",
-                    col_fun: "FUNCIÓN / TIPO",
-                    "total_fmt": "TOTAL PRESUPUESTADO ($)",
-                    "porcentaje_fmt": "% DEL TOTAL"
-                }
+                columns={col_fin: "FINALIDAD", col_fun: "FUNCIÓN / TIPO", "total_fmt": "TOTAL PRESUPUESTADO ($)", "porcentaje_fmt": "% DEL TOTAL"}
             ),
-            use_container_width=True,
-            hide_index=True
+            use_container_width=True, hide_index=True
         )
 
-        # -------------------------------------------------------------
-        # GENERACIÓN DEL DOCUMENTO IMPRESO / PDF OFICIAL
-        # -------------------------------------------------------------
         rows_html_ff = ""
-
-        # Recorrer por Finalidad y luego por Función
         for fin, df_g in df_fin_fun.groupby(col_fin):
             t_fin = df_g["total"].sum()
             pct_fin = (t_fin / (tot_general_ff if tot_general_ff > 0 else 1)) * 100
             
-            # Fila de Cabecera por Finalidad (Negrita)
             rows_html_ff += f'<tr style="font-weight: bold; background-color: #f2f2f2;"><td style="text-align: left; padding-left: 8px;">{fin}</td><td style="text-align: right;">${t_fin:,.2f}</td><td style="text-align: center;">{pct_fin:.2f}%</td></tr>'
             
-            # Filas de Función / Tipo (Sangría)
             for _, r in df_g.iterrows():
                 pct_fun = (r["total"] / (tot_general_ff if tot_general_ff > 0 else 1)) * 100
                 rows_html_ff += f'<tr><td style="text-align: left; padding-left: 30px;">{r[col_fun]}</td><td style="text-align: right;">${r["total"]:,.2f}</td><td style="text-align: center;">{pct_fun:.2f}%</td></tr>'
 
-        # Documento HTML Completo con membrete oficial y cuadro de firmas
         html_ff_oficial = f"""
         <html>
         <head>
@@ -1766,8 +1688,9 @@ elif opcion_menu == "🎯 REPORTE POR FINALIDAD Y FUNCIÓN":
             use_container_width=True,
             type="primary"
         )
+
 # =====================================================================
-# SECCIÓN 14: TOTALES POR OBJETO DEL GASTO (NUEVA)
+# SECCIÓN 14: TOTALES POR OBJETO DEL GASTO
 # =====================================================================
 elif opcion_menu == "📦 TOTALES POR OBJETO DEL GASTO":
     st.subheader("📦 Consolidado Presupuestario por Objeto del Gasto")
@@ -1775,16 +1698,12 @@ elif opcion_menu == "📦 TOTALES POR OBJETO DEL GASTO":
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados para generar el reporte por Objeto del Gasto.")
     else:
-        st.caption("Resumen general del presupuesto acumulado por cada **Objeto del Gasto**, con porcentajes de participación y opción de impresión oficial.")
-
         tot_general_obj = df_egr_completo["total"].sum()
         st.metric("💰 TOTAL GENERAL PRESUPUESTO", f"${tot_general_obj:,.2f}")
 
-        # Agrupamiento por Objeto del Gasto
         df_obj_res = df_egr_completo.groupby("objeto_gasto")["total"].sum().reset_index()
         df_obj_res["porcentaje"] = (df_obj_res["total"] / (tot_general_obj if tot_general_obj > 0 else 1)) * 100
         
-        # Tabla en Pantalla
         st.markdown("---")
         st.markdown("##### 📋 Resumen en Pantalla")
         
@@ -1794,19 +1713,11 @@ elif opcion_menu == "📦 TOTALES POR OBJETO DEL GASTO":
 
         st.dataframe(
             df_obj_pantalla[["objeto_gasto", "total_fmt", "porcentaje_fmt"]].rename(
-                columns={
-                    "objeto_gasto": "OBJETO DEL GASTO",
-                    "total_fmt": "TOTAL PRESUPUESTADO ($)",
-                    "porcentaje_fmt": "% DEL TOTAL"
-                }
+                columns={"objeto_gasto": "OBJETO DEL GASTO", "total_fmt": "TOTAL PRESUPUESTADO ($)", "porcentaje_fmt": "% DEL TOTAL"}
             ),
-            use_container_width=True,
-            hide_index=True
+            use_container_width=True, hide_index=True
         )
 
-        # -------------------------------------------------------------
-        # REPORTES IMPRESO / PDF (A4 PORTRAIT)
-        # -------------------------------------------------------------
         rows_obj_html = ""
         for _, r in df_obj_res.iterrows():
             rows_obj_html += f"""
@@ -1883,9 +1794,8 @@ elif opcion_menu == "📦 TOTALES POR OBJETO DEL GASTO":
             type="primary"
         )
 
-
 # =====================================================================
-# SECCIÓN 15: MATRIZ SUBSECRETARÍA VS OBJETOS DE GASTO (NUEVA)
+# SECCIÓN 15: MATRIZ SUBSECRETARÍA VS OBJETOS DE GASTO
 # =====================================================================
 elif opcion_menu == "📊 MATRIZ SUBSECRETARÍA VS OBJETOS":
     st.subheader("📊 Matriz Cruzada: Subsecretarías vs Objetos del Gasto")
@@ -1893,34 +1803,19 @@ elif opcion_menu == "📊 MATRIZ SUBSECRETARÍA VS OBJETOS":
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados para generar la matriz cruzada.")
     else:
-        st.caption("Cuadro comparativo donde la **Columna 1 es la Subsecretaría** y las columnas continuas representan cada **Objeto del Gasto**.")
-
-        # Generar Pivot Table
         matriz_pivot = pd.pivot_table(
-            df_egr_completo,
-            values="total",
-            index="subsecretaria",
-            columns="objeto_gasto",
-            aggfunc="sum",
-            fill_value=0.0
+            df_egr_completo, values="total", index="subsecretaria", columns="objeto_gasto", aggfunc="sum", fill_value=0.0
         )
-
-        # Calcular Total por fila (Subsecretaría)
         matriz_pivot["TOTAL GENERAL"] = matriz_pivot.sum(axis=1)
 
         st.markdown("##### 📋 Matriz Cruzada en Pantalla ($)")
         st.dataframe(matriz_pivot.style.format("${:,.2f}"), use_container_width=True)
 
-        # -------------------------------------------------------------
-        # GENERACIÓN DEL DOCUMENTO HORIZONTAL (A4 LANDSCAPE)
-        # -------------------------------------------------------------
         cols_objetos = [c for c in matriz_pivot.columns if c != "TOTAL GENERAL"]
         tot_general_matriz = matriz_pivot["TOTAL GENERAL"].sum()
 
-        # Encabezados de la tabla HTML
         th_cols_html = "".join([f'<th style="text-align: right; font-size: 9px;">{col}</th>' for col in cols_objetos])
         
-        # Filas de datos HTML
         rows_matriz_html = ""
         for sub_nom, r in matriz_pivot.iterrows():
             tds_objetos = "".join([f'<td style="text-align: right;">${r[col]:,.2f}</td>' for col in cols_objetos])
@@ -1932,7 +1827,6 @@ elif opcion_menu == "📊 MATRIZ SUBSECRETARÍA VS OBJETOS":
             </tr>
             """
 
-        # Fila final de Totales por columna
         tds_totales_cols = "".join([f'<td style="text-align: right; font-weight: bold;">${matriz_pivot[col].sum():,.2f}</td>' for col in cols_objetos])
         row_totales_final = f"""
         <tr style="background-color: #e6e6e6; border-top: 2px solid #000;">
@@ -2003,8 +1897,9 @@ elif opcion_menu == "📊 MATRIZ SUBSECRETARÍA VS OBJETOS":
             use_container_width=True,
             type="primary"
         )
+
 # =====================================================================
-# SECCIÓN 16: PROYECCIÓN Y ESTRUCTURA TEMPORAL (TRIMESTRAL / SEMESTRAL)
+# SECCIÓN 16: PROYECCIÓN Y ESTRUCTURA TEMPORAL
 # =====================================================================
 elif opcion_menu == "📈 PROYECCIÓN Y ESTRUCTURA TEMPORAL":
     st.subheader("📈 Proyección y Programación de Ejecución Temporal")
@@ -2012,12 +1907,9 @@ elif opcion_menu == "📈 PROYECCIÓN Y ESTRUCTURA TEMPORAL":
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados.")
     else:
-        st.caption("Estimación del flujo de fondos presupuestarios divididos por Trimestres (Q1 a Q4) o Semestres para la planificación financiera.")
-
         tot_anual = df_egr_completo["total"].sum()
         
         st.markdown("##### 🗓️ Distribución Trimestral Estimada")
-        
         col_q1, col_q2, col_q3, col_q4 = st.columns(4)
         col_q1.metric("1° Trimestre (Q1 - 25%)", f"${(tot_anual * 0.25):,.2f}")
         col_q2.metric("2° Trimestre (Q2 - 25%)", f"${(tot_anual * 0.25):,.2f}")
@@ -2034,16 +1926,9 @@ elif opcion_menu == "📈 PROYECCIÓN Y ESTRUCTURA TEMPORAL":
         df_sec_prog["Q4 (25%)"] = df_sec_prog["total"] * 0.25
         
         st.dataframe(
-            df_sec_prog.style.format({
-                "total": "${:,.2f}",
-                "Q1 (25%)": "${:,.2f}",
-                "Q2 (25%)": "${:,.2f}",
-                "Q3 (25%)": "${:,.2f}",
-                "Q4 (25%)": "${:,.2f}"
-            }),
+            df_sec_prog.style.format({"total": "${:,.2f}", "Q1 (25%)": "${:,.2f}", "Q2 (25%)": "${:,.2f}", "Q3 (25%)": "${:,.2f}", "Q4 (25%)": "${:,.2f}"}),
             use_container_width=True
         )
-
 
 # =====================================================================
 # SECCIÓN 17: CLASIFICACIÓN ECONÓMICA DEL GASTO
@@ -2054,14 +1939,11 @@ elif opcion_menu == "🏛️ CLASIFICACIÓN ECONÓMICA DEL GASTO":
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados.")
     else:
-        st.caption("Agrupación presupuestaria requerida por el Tribunal de Cuentas (Gastos Corrientes vs. Gastos de Capital e Inversión).")
-
         df_econ = df_egr_completo.groupby("clase")["total"].sum().reset_index()
         tot_general_econ = df_econ["total"].sum()
         df_econ["porcentaje"] = (df_econ["total"] / (tot_general_econ if tot_general_econ > 0 else 1)) * 100
 
         col_ec1, col_ec2 = st.columns(2)
-        
         for idx, row in df_econ.iterrows():
             if "corriente" in str(row["clase"]).lower():
                 col_ec1.metric(f"🔄 {row['clase']}", f"${row['total']:,.2f}", f"{row['porcentaje']:.2f}% del total")
@@ -2071,18 +1953,9 @@ elif opcion_menu == "🏛️ CLASIFICACIÓN ECONÓMICA DEL GASTO":
         st.markdown("---")
         st.markdown("##### 📋 Detalle por Secretaría y Clasificación Económica")
         
-        pivot_econ = pd.pivot_table(
-            df_egr_completo,
-            values="total",
-            index="secretaria",
-            columns="clase",
-            aggfunc="sum",
-            fill_value=0.0
-        )
+        pivot_econ = pd.pivot_table(df_egr_completo, values="total", index="secretaria", columns="clase", aggfunc="sum", fill_value=0.0)
         pivot_econ["TOTAL"] = pivot_econ.sum(axis=1)
-        
         st.dataframe(pivot_econ.style.format("${:,.2f}"), use_container_width=True)
-
 
 # =====================================================================
 # SECCIÓN 18: CONTROL DE TECHOS PRESUPUESTARIOS
@@ -2093,25 +1966,17 @@ elif opcion_menu == "🛡️ CONTROL DE TECHOS PRESUPUESTARIOS":
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados.")
     else:
-        st.caption("Define el límite o techo presupuestario asignado a cada Secretaría para controlar desvíos en tiempo real.")
-
         df_sec_techos = df_egr_completo.groupby("secretaria")["total"].sum().reset_index()
 
-        # Inicializar techos en session_state si no existen
         if "techos_presupuesto" not in st.session_state:
             st.session_state.techos_presupuesto = {row["secretaria"]: float(row["total"] * 1.1) for _, row in df_sec_techos.iterrows()}
 
         st.markdown("##### ⚙️ Definir Techos Presupuestarios ($)")
-        
         col_t1, col_t2 = st.columns(2)
         with col_t1:
             sec_a_editar = st.selectbox("Seleccionar Secretaría:", df_sec_techos["secretaria"].unique())
         with col_t2:
-            nuevo_techo = st.number_input(
-                "Techo Límite ($):",
-                value=float(st.session_state.techos_presupuesto.get(sec_a_editar, 0.0)),
-                step=500000.0
-            )
+            nuevo_techo = st.number_input("Techo Límite ($):", value=float(st.session_state.techos_presupuesto.get(sec_a_editar, 0.0)), step=500000.0)
             if st.button("💾 Guardar Techo"):
                 st.session_state.techos_presupuesto[sec_a_editar] = nuevo_techo
                 st.success("Techo actualizado correctamente.")
@@ -2128,18 +1993,14 @@ elif opcion_menu == "🛡️ CONTROL DE TECHOS PRESUPUESTARIOS":
             estado = "✅ DENTRO DEL TECHO" if diferencia >= 0 else "🚨 EXCEDIDO"
             
             filas_techos.append({
-                "SECRETARÍA": sec_nom,
-                "PRESUPUESTO CARGADO ($)": f"${cargado:,.2f}",
-                "TECHO PERMITIDO ($)": f"${techo:,.2f}",
-                "DISPONIBLE / DESVÍO ($)": f"${diferencia:,.2f}",
-                "ESTADO": estado
+                "SECRETARÍA": sec_nom, "PRESUPUESTO CARGADO ($)": f"${cargado:,.2f}",
+                "TECHO PERMITIDO ($)": f"${techo:,.2f}", "DISPONIBLE / DESVÍO ($)": f"${diferencia:,.2f}", "ESTADO": estado
             })
 
         st.dataframe(pd.DataFrame(filas_techos), use_container_width=True, hide_index=True)
 
-
 # =====================================================================
-# SECCIÓN 19: FICHA TÉCNICA POR DESTINO (FICHA INDIVIDUAL)
+# SECCIÓN 19: FICHA TÉCNICA POR DESTINO
 # =====================================================================
 elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
     st.subheader("📋 Ficha Técnica Ejecutiva por Destino")
@@ -2147,8 +2008,6 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados.")
     else:
-        st.caption("Generación de Ficha Ejecutiva resumida de una sola página por Destino, ideal para la firma del responsable del área.")
-
         destinos_lista = sorted([d for d in df_egr_completo["destino"].unique() if str(d).strip() != ""])
         destino_f_elegido = st.selectbox("Seleccionar Destino:", destinos_lista)
 
@@ -2159,7 +2018,6 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
         st.markdown(f"### 📌 Destino: **{str(destino_f_elegido).upper()}**")
         st.metric("💰 Presupuesto Asignado", f"${tot_f_destino:,.2f}")
 
-        # HTML Individual A4
         rows_f_html = ""
         for _, r in df_f_destino.iterrows():
             rows_f_html += f"""
@@ -2230,7 +2088,7 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
         )
 
 # =====================================================================
-# SECCIÓN 20: COMPARATIVO E HISTÓRICO PRESUPUESTARIO (POR SUBSECRETARÍA)
+# SECCIÓN 20: COMPARATIVO E HISTÓRICO PRESUPUESTARIO
 # =====================================================================
 elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     st.subheader("🔄 Comparativo e Histórico Presupuestario por Subsecretaría (2026 vs 2027)")
@@ -2238,8 +2096,6 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados para el proyecto 2027.")
     else:
-        st.caption("Cruce en tiempo real por **Subsecretaría**, sumando partidas reales (Columna D) y excluyendo recursos.")
-
         CSV_URL_SALDOS = "https://docs.google.com/spreadsheets/d/1JLCDkHYiSFV_cCOjVigcIXLkpD61pHpoxOmJ1CvK2m4/export?format=csv&gid=2027704109"
 
         c_mod1, c_mod2 = st.columns(2)
@@ -2250,7 +2106,6 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             )
 
         try:
-            # 1. Detectar cabecera real
             df_raw_no_header = pd.read_csv(CSV_URL_SALDOS, header=None, on_bad_lines='skip')
             
             header_row_idx = 0
@@ -2260,33 +2115,18 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                     header_row_idx = idx
                     break
 
-            # 2. Cargar DataFrame salteando el membrete
             df_2026 = pd.read_csv(CSV_URL_SALDOS, skiprows=header_row_idx, on_bad_lines='skip')
 
-            # ---------------------------------------------------------
-            # FILTRO 1: SOLO FILAS CON DATOS EN COLUMNA D (ÍNDICE 3)
-            # ---------------------------------------------------------
             col_d_values = df_2026.iloc[:, 3]
             mask_col_d = col_d_values.notna() & (col_d_values.astype(str).str.strip() != "") & (col_d_values.astype(str).str.strip() != "nan")
             df_2026_filtrado = df_2026[mask_col_d].copy()
 
-            # ---------------------------------------------------------
-            # FILTRO 2: EXCLUIR RECURSOS E INGRESOS
-            # ---------------------------------------------------------
-            fila_texto = df_2026_filtrado.apply(
-                lambda row: " ".join([str(val) if pd.notna(val) else "" for val in row.values]).upper(), 
-                axis=1
-            )
-            mask_sin_recursos = ~fila_texto.str.contains(
-                r"\bRECURSO\b|\bRECURSOS\b|\bINGRESOS\b|\bTRIBUTARIOS\b|\bNO TRIBUTARIOS\b", 
-                regex=True
-            )
+            fila_texto = df_2026_filtrado.apply(lambda row: " ".join([str(val) if pd.notna(val) else "" for val in row.values]).upper(), axis=1)
+            mask_sin_recursos = ~fila_texto.str.contains(r"\bRECURSO\b|\bRECURSOS\b|\bINGRESOS\b|\bTRIBUTARIOS\b|\bNO TRIBUTARIOS\b", regex=True)
             df_2026_filtrado = df_2026_filtrado[mask_sin_recursos].copy()
 
-            # Normalizar nombres de columnas
             df_2026_filtrado.columns = [str(c).strip().upper() for c in df_2026_filtrado.columns]
 
-            # 3. Mapear columna de monto seleccionada
             if "Inicial" in modo_comparacion:
                 col_monto_target = "PRESUPUESTADO"
             elif "Efectivo" in modo_comparacion:
@@ -2300,13 +2140,10 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                     col_encontrada = c
                     break
 
-            # Conversion numérica para formato argentino
             def parse_num_arg(val):
-                if pd.isna(val):
-                    return 0.0
+                if pd.isna(val): return 0.0
                 s = str(val).strip().replace("$", "").replace(" ", "")
-                if "," in s:
-                    s = s.replace(".", "").replace(",", ".")
+                if "," in s: s = s.replace(".", "").replace(",", ".")
                 return pd.to_numeric(s, errors="coerce")
 
             if col_encontrada:
@@ -2319,9 +2156,6 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             hay_datos_2026 = False
             st.error(f"⚠️ No se pudo procesar la planilla: {e}")
 
-        # -------------------------------------------------------------
-        # PROCESAR Y DESPLEGAR COMPARATIVA POR SUBSECRETARÍA
-        # -------------------------------------------------------------
         if hay_datos_2026 and not df_2026_filtrado.empty:
             tot_2026 = df_2026_filtrado["TOTAL_2026_CLEAN"].sum()
             tot_2027 = df_egr_completo["total"].sum()
@@ -2339,19 +2173,16 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             st.markdown("---")
             st.markdown("##### 🏛️ Comparativo Detallado por Subsecretaría (2026 vs 2027)")
 
-            # Agrupamiento 2027 por Subsecretaría
             sec_2027 = df_egr_completo.groupby("subsecretaria")["total"].sum().reset_index()
             sec_2027.columns = ["SUBSECRETARÍA", "PROYECTO 2027 ($)"]
             sec_2027["SUBSECRETARÍA"] = sec_2027["SUBSECRETARÍA"].astype(str).str.strip().str.upper()
 
-            # Agrupamiento 2026 por Subsecretaría (Columna B / SUBSECRETARÍA)
             col_subsec_2026 = None
             for col_candidata in ["SUBSECRETARÍA", "SUBSECRETARIA", "SUB SECRETARIA"]:
                 if col_candidata in df_2026_filtrado.columns:
                     col_subsec_2026 = col_candidata
                     break
             
-            # Si no encuentra por nombre, toma la Columna B (índice 1)
             if not col_subsec_2026:
                 col_subsec_2026 = df_2026_filtrado.columns[1]
 
@@ -2359,11 +2190,9 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             sec_2026 = df_2026_filtrado.groupby(col_subsec_2026)["TOTAL_2026_CLEAN"].sum().reset_index()
             sec_2026.columns = ["SUBSECRETARÍA", f"BASE 2026 ({col_monto_target}) ($)"]
 
-            # Merge por Subsecretaría
             df_comp_sec = pd.merge(sec_2027, sec_2026, on="SUBSECRETARÍA", how="outer").fillna(0.0)
             col_base_nom = f"BASE 2026 ({col_monto_target}) ($)"
 
-            # Limpieza de valores nulos o encabezados filtrados
             df_comp_sec = df_comp_sec[~df_comp_sec["SUBSECRETARÍA"].isin(["NAN", "NONE", "", "0.0", "UNNAMED: 1", "SUBSECRETARÍA"])]
 
             df_comp_sec["VARIACIÓN ($)"] = df_comp_sec["PROYECTO 2027 ($)"] - df_comp_sec[col_base_nom]
@@ -2371,17 +2200,12 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 lambda r: ((r["VARIACIÓN ($)"] / r[col_base_nom]) * 100) if r[col_base_nom] > 0 else 0.0, 
                 axis=1
             )
-
-            # Ordenar descendentemente por monto 2027
             df_comp_sec = df_comp_sec.sort_values(by="PROYECTO 2027 ($)", ascending=False)
 
             st.dataframe(
                 df_comp_sec.style.format({
-                    "PROYECTO 2027 ($)": "${:,.2f}",
-                    col_base_nom: "${:,.2f}",
-                    "VARIACIÓN ($)": "${:,.2f}",
-                    "% VARIACIÓN": "{:+.2f}%"
+                    "PROYECTO 2027 ($)": "${:,.2f}", col_base_nom: "${:,.2f}",
+                    "VARIACIÓN ($)": "${:,.2f}", "% VARIACIÓN": "{:+.2f}%"
                 }),
-                use_container_width=True,
-                hide_index=True
+                use_container_width=True, hide_index=True
             )

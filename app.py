@@ -15,10 +15,21 @@ URL_READ_DESTINOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gv
 # Macros de envío web directo para simular la inserción de filas (Formulario)
 def leer_datos_gsheet(url_tipo):
     try:
-        # Forzamos la descarga del CSV en tiempo real para evitar la caché de Google
-        return pd.read_csv(url_tipo + f"&cache_bust={os.urandom(4).hex()}")
+        # Descargamos el CSV en tiempo real desde tu Google Drive
+        df = pd.read_csv(url_tipo + f"&cache_bust={os.urandom(4).hex()}")
+        if df.empty:
+            # Si el Google Sheet está vacío, devolvemos las columnas estructuradas para evitar caídas
+            if "sheet=destinos" in url_tipo:
+                return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
+            else:
+                return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+        return df
     except:
-        return pd.DataFrame()
+        # En caso de error de red, devolvemos la matriz armada para que la app no tire cartel de KeyError
+        if "sheet=destinos" in url_tipo:
+            return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
+        return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+
 
 def guardar_fila_gsheet(hoja, diccionario_datos):
     try:

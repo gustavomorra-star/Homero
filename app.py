@@ -244,11 +244,10 @@ with tab_egresos:
     csv_global_data = df_excel_global.to_csv(index=False, sep=';').encode('utf-8-sig')
     st.download_button(label="📗 Descargar Base de Datos Completa en 11 Columnas (.xls)", data=csv_global_data, file_name="Base_De_Datos_Egresos_General.xls", mime="application/vnd.ms-excel", use_container_width=True)
 
-    # --- PANEL SUPERVISOR DE MODIFICACIONES CON BLINDAJE TOTAL ---
+    # --- PANEL SUPERVISOR DE MODIFICACIONES CON BLINDAJE INTEGRAL DE CONTROL ---
     st.markdown("---")
     st.markdown("### 🛠️ Panel Supervisor de Modificaciones")
     
-    # Construimos el diccionario de opciones con manejo seguro de strings
     diccionario_opciones = {}
     if not df_egr_completo.empty:
         filas_lista = df_egr_completo.to_dict('records')
@@ -257,8 +256,7 @@ with tab_egresos:
             destino_txt = str(r.get('destino', '')).strip()
             partida_txt = str(r.get('cuenta_presupuestaria', '')).strip()
             
-            # Filtramos que no sean renglones vacíos de control
-            if destino_txt != "" or partida_txt != "":
+            if destino_txt != "" and partida_txt != "":
                 monto_raw = str(r.get('total', '0')).replace('$', '').replace('.', '').replace(',', '.')
                 try:
                     monto_val = float(monto_raw)
@@ -267,9 +265,9 @@ with tab_egresos:
                 texto_descriptivo = f"Fila {i+1} | Destino: {destino_txt} | Partida: {partida_txt} | Monto: ${monto_val:,.2f}"
                 diccionario_opciones[texto_descriptivo] = int(i)
 
-    # Si el diccionario está vacío porque la hoja no tiene datos, mostramos el aviso seguro
-    if not diccionario_opciones:
-        st.info("💡 No hay registros contables activos para modificar en este momento. Los campos se habilitarán automáticamente cuando cargues tu primer renglón presupuestario.")
+    # BLINDAJE DE SEGURIDAD ABSOLUTO: Evaluamos antes de ejecutar el st.selectbox
+    if len(diccionario_opciones) == 0:
+        st.info("💡 No hay registros contables activos para modificar en este momento. Los campos se habilitarán automáticamente cuando cargues tu primer renglón presupuestario en el sistema.")
     else:
         st.caption("Seleccioná un renglón para corregir sus valores, cambiar su partida de imputación o darlo de baja.")
         linea_sel = st.selectbox("Seleccioná el registro a modificar por su número de fila:", opciones=list(diccionario_opciones.keys()), key="sel_mod_panel")
@@ -328,7 +326,6 @@ with tab_egresos:
                     st.session_state["db_local_backup"]["egresos"].pop(idx_real)
                 st.warning("🗑️ Registro removido del panel. Recordá borrar la fila correspondiente directamente en tu Google Sheet.")
                 st.rerun()
-
 
 # =====================================================================
 # PESTAÑA 4: REPORTE GRÁFICO OFICIAL MUNICIPAL 2027

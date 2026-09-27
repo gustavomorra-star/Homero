@@ -75,7 +75,7 @@ else:
         "fuente_fin", "clase", "tipo", "finalidad"
     ])
 
-# Garantizar columnas requeridas en minúsculas y limpias
+# Garantizar columnas requeridas
 columnas_estandar = [
     "secretaria", "subsecretaria", "destino", "objeto_gasto", 
     "cuenta_padre", "cuenta_presupuestaria", "total", 
@@ -85,7 +85,7 @@ for col in columnas_estandar:
     if col not in df_egr_completo.columns:
         df_egr_completo[col] = ""
 
-# Pestañas principales (se declaran las 5 pestañas)
+# Pestañas principales
 tab_registro, tab_consulta, tab_masivo, tab_oficial, tab_modificaciones = st.tabs([
     "📝 Registro", 
     "🔍 Consulta", 
@@ -98,14 +98,107 @@ tab_registro, tab_consulta, tab_masivo, tab_oficial, tab_modificaciones = st.tab
 # PESTAÑA 1: REGISTRO DE PRESUPUESTO
 # =====================================================================
 with tab_registro:
-    st.subheader("Carga de Partida Presupuestaria")
-    st.info("Ingresá las partidas para asignarlas a la base local y sincronizar.")
+    st.subheader("📝 Carga e Imputación de Partidas Presupuestarias")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        sec = st.selectbox("Secretaría:", opciones_secretarias, key="reg_sec")
+        sub_opts = MAPEO_ESTRUCTURA.get(sec, [])
+        subsec = st.selectbox("Subsecretaría:", sub_opts, key="reg_sub")
+        
+        # Cargar destinos desde Google Sheet + backup local
+        destinos_lista = []
+        df_d = leer_datos_gsheet(URL_READ_DESTINOS)
+        if not df_d.empty and "destino" in df_d.columns:
+            destinos_lista = df_d[
+                (df_d["secretaria"].astype(str).str.strip() == sec) & 
+                (df_d["subsecretaria"].astype(str).str.strip() == subsec)
+            ]["destino"].dropna().tolist()
+        
+        for d in st.session_state["db_local_backup"]["destinos"]:
+            if d.get("secretaria") == sec and d.get("subsecretaria") == subsec and d.get("destino") not in destinos_lista:
+                destinos_lista.append(d["destino"])
+                
+        destino = st.selectbox("Destino / Ubicación:", [""] + destinos_lista, key="reg_dest")
+        
+        nuevo_dest = st.text_input("O agregar nuevo destino:", key="reg_new_dest")
+        if st.button("➕ Crear Destino"):
+            if nuevo_dest.strip() != "":
+                st.session_state["db_local_backup"]["destinos"].append({
+                    "secretaria": sec,
+                    "subsecretaria": subsec,
+                    "destino": nuevo_dest.strip().upper()
+                })
+                st.success(f"Destino '{nuevo_dest.upper()}' agregado correctamente.")
+                st.rerun()
+
+    with col2:
+        obj_gasto = st.selectbox("Objeto del Gasto:", list(MAPEO_GASTOS.keys()), key="reg_obj")
+        padres_opts = list(MAPEO_GASTOS[obj_gasto].keys())
+        cuenta_padre = st.selectbox("Cuenta Padre:", padres_opts, key="reg_padre")
+        partidas_opts = MAPEO_GASTOS[obj_gasto][cuenta_padre]
+        cuenta_presu = st.selectbox("Cuenta Imputación / Partida:", partidas_opts, key="reg_partida")
+        monto = st.number_input("Monto Presupuestado ($):", min_value=0.0, step=1000.0, key="reg_monto")
+
+    with col3:
+        fuente_fin = st.selectbox("Fuente de Financiamiento:", opciones_fuente_fin, key="reg_fuente")
+        clase = st.selectbox("Clase:", opciones_clase, key="reg_clase")
+        tipo = st.selectbox("Tipo:", opciones_tipo, key="reg_tipo")
+        finalidad = st.selectbox("Finalidad / Función:", opciones_finalidad, key="reg_finalidad")
+
+    st.markdown("---")
+    if st.button("💾 GUARDAR PARTIDA EN BASE DE DATOS", type="primary", use_container_width=True):
+        dest_final = nuevo_dest.strip().upper() if nuevo_dest.strip() != "" else destino
+        if dest_final == "":
+            st.error("Por favor, selecciona o ingresa un Destino válido.")
+        elif monto <= 0:
+            st.error("Ingresa un monto mayor a cero.")
+        else:
+            nueva_fila = {
+                "secretaria": sec,
+                "subsecretaria": subsec,
+                "destino": dest_final,
+                "objeto_gasto": obj_gasto,
+                "cuenta_padre": cuenta_padre,
+                "cuenta_presupuestaria": cuenta_presu,
+                "total": monto,
+                "fuente_fin": fuente_fin,
+                "clase": clase,
+                "tipo": tipo,
+                "finalidad": finalidad
+            }
+            st.session_state["db_local_backup"]["egresos"].append(nueva_fila)
+            st.success("✅ ¡Partida presupuestaria guardada exitosamente!")
+            st.rerun()
 
 # =====================================================================
 # PESTAÑA 2: CONSULTA GENERAL
 # =====================================================================
 with tab_consulta:
-    st.subheader("Búsqueda y Filtros de Partidas")
+    st.subheader("🔍 Búsqueda y Filtros de Partidas")
+    
+    if df_egr_completo.empty:
+        st.info("No hay transacciones guardadas en la base de datos.")
+    else:
+        fc1, fc2, fc3 = st.columns(3)
+        with fc1:
+            f_sec = st.selectbox("Filtrar Secretaría:", ["TODAS"] + opciones_secretarias, key="c_sec")
+        with fc2:
+            sub_list = MAPEO_ESTRUCTURA.get(f_sec, []) if f_sec != "TODAS" else []
+            f_sub = st.selectbox("Filtrar Subsecretaría:", ["TODAS"] + sub_list, key="c_sub")
+        with fc3:
+            f_partida = st.text_input("Buscar por nombre de Partida:", key="c_busc")
+
+        df_filtrado = df_egr_completo.copy()
+        if f_sec != "TODAS":
+            df_filtrado = df_filtrado[df_filtrado["secretaria"] == f_sec]
+        if f_sub != "TODAS":
+            df_filtrado = df_filtrado[df_filtrado["subsecretaria"] == f_sub]
+        if f_partida.strip() != "":
+            df_filtrado = df_filtrado[df_filtrado["cuenta_presupuestaria"].astype(str).str.contains(f_partida, case=False)]
+
+        st.dataframe(df_filtrado, use_container_width=True)
 
 # =====================================================================
 # PESTAÑA 3: BASE DE DATOS MASIVA (11 COLUMNAS)
@@ -185,11 +278,10 @@ with tab_oficial:
                 (df_egr_completo["destino"].astype(str).str.strip().str.upper() == dest_s.strip().upper())
             ].copy()
 
-            # Conversión de valores numéricos para evitar errores de cálculo
             df_f_of["total"] = pd.to_numeric(df_f_of["total"], errors="coerce").fillna(0.0)
             tot_dest = df_f_of["total"].sum() if not df_f_of.empty else 0.0
 
-            # Encabezado del reporte oficial
+            # Encabezado oficial
             st.markdown(f"""
             <div style="border: 1px solid #000; padding: 0px; border-radius: 2px; background-color: #fff; font-family: Arial, sans-serif;">
                 <table style="width: 100%; border-collapse: collapse;">
@@ -211,7 +303,7 @@ with tab_oficial:
             </div>
             """, unsafe_allow_html=True)
 
-            # Construcción de la tabla jerárquica con todas las columnas
+            # Construcción de la tabla jerárquica
             f_plan = []
             if not df_f_of.empty:
                 for obj, df_obj in df_f_of.groupby("objeto_gasto"):

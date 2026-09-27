@@ -17,10 +17,10 @@ URL_READ_DESTINOS = f"https://google.com{SPREADSHEET_ID}/pub?output=csv&sheet=de
 
 def leer_datos_gsheet(url_tipo):
     try:
-        # Descargamos el CSV en tiempo real forzando la limpieza de caché de Drive
-        df = pd.read_csv(url_tipo + f"&cache_bust={os.urandom(4).hex()}")
+        # Descargamos el archivo plano CSV de tu Google Drive sin códigos de caché que rompan la URL
+        df = pd.read_csv(url_tipo)
         
-        # Si Google Sheets devuelve un archivo corrupto, HTML de error o vacío, fabricamos las columnas
+        # Si el DataFrame viene vacío o no tiene encabezados válidos, estructuramos columnas de seguridad
         if df.empty or len(df.columns) <= 1:
             if "sheet=destinos" in str(url_tipo):
                 return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
@@ -29,6 +29,17 @@ def leer_datos_gsheet(url_tipo):
                 df_vacio["total"] = df_vacio["total"].astype(float)
                 return df_vacio
                 
+        # Normalizamos todos los nombres de las columnas a minúsculas
+        df.columns = [str(col).strip().lower() for col in df.columns]
+        return df
+    except:
+        # Si ocurre un error de conexión, devolvemos la matriz vacía para que no se caiga la app
+        if "sheet=destinos" in str(url_tipo):
+            return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
+        df_falla = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+        df_falla["total"] = df_falla["total"].astype(float)
+        return df_falla
+
         # Forzamos la conversión de todos los títulos de columnas a minúsculas
         df.columns = [str(col).strip().lower() for col in df.columns]
         return df

@@ -10,9 +10,9 @@ st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="�
 # --- CONEXIÓN DIRECTA Y PERMANENTE A GOOGLE SHEETS MUNICIPAL ---
 SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
-# Enlaces de exportación directa CSV con los GID numéricos reales de tu archivo de Sunchales
-URL_READ_EGRESOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=0"
-URL_READ_DESTINOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=1365567783"
+# Enlaces de conexión corregidos con protocolo de exportación directa CSV por nombre de pestaña exacto
+URL_READ_EGRESOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&sheet=egresos"
+URL_READ_DESTINOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&sheet=destinos"
 
 def leer_datos_gsheet(url_tipo):
     try:
@@ -20,18 +20,18 @@ def leer_datos_gsheet(url_tipo):
         df = pd.read_csv(url_tipo)
         
         if df.empty or len(df.columns) <= 1:
-            if "gid=1365567783" in str(url_tipo):
+            if "sheet=destinos" in str(url_tipo):
                 return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
             else:
                 df_vacio = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
                 df_vacio["total"] = df_vacio["total"].astype(float)
                 return df_vacio
                 
-        # CORRECCIÓN DE SINTAXIS: Convertimos los encabezados a minúsculas usando sintaxis pura de Python
+        # Convertimos los encabezados a minúsculas usando sintaxis pura de Python
         df.columns = [str(col).strip().lower() for col in df.columns]
         return df
     except:
-        if "gid=1365567783" in str(url_tipo):
+        if "sheet=destinos" in str(url_tipo):
             return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
         df_falla = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
         df_falla["total"] = df_falla["total"].astype(float)

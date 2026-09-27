@@ -17,7 +17,6 @@ def leer_datos_gsheet(url_tipo):
         # Descargamos el CSV en tiempo real forzando la limpieza de caché de Drive
         df = pd.read_csv(url_tipo + f"&cache_bust={os.urandom(4).hex()}")
         
-        # Validamos de forma estricta si el archivo vino vacío o no leyó el encabezado
         if df.empty or len(df.columns) <= 1:
             if "gid=1365567783" in str(url_tipo):
                 return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
@@ -25,9 +24,12 @@ def leer_datos_gsheet(url_tipo):
                 df_vacio = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
                 df_vacio["total"] = df_vacio["total"].astype(float)
                 return df_vacio
+                
+        # --- BLINDAJE DE MAYÚSCULAS/MINÚSCULAS ---
+        # Convertimos automáticamente todos los títulos de tu Google Sheet a minúsculas y sin espacios
+        df.columns = [str(col).strip().toLowerCase() for col in df.columns]
         return df
     except:
-        # En caso de cualquier falla de red, devolvemos la matriz estructurada por seguridad
         if "gid=1365567783" in str(url_tipo):
             return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
         df_falla = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])

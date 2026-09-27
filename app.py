@@ -763,6 +763,7 @@ opciones_tipo = ["Libre", "Afectado"]
 opciones_finalidad = ["Administración Central", "Promoción y asistencia social","Educación","Cultura","Ciencia y técnica","Servicios urbanos","Vivienda y urbanismo","Deuda Pública","Ecología y medio ambiente","Deporte y recreación","Obra pública","Apoyo a Instituciones","Desarrollo de Gestión","Legislativa", "Salud", "Seguridad","Promoción industrial y Laboral"]
 
 # MENÚ LATERAL A LA IZQUIERDA (SIDEBAR)
+# 1. Agregás las nuevas opciones al menú lateral
 with st.sidebar:
     st.title("🍩 Homero")
     st.caption("Municipalidad de Sunchales - 2027")
@@ -774,12 +775,13 @@ with st.sidebar:
             "➕ GESTIÓN DE DESTINOS",
             "📉 GENERAL (Base de Datos Sheet)",
             "🏛️ REPORTE OFICIAL POR DESTINO",
-            "🛠️ PANEL DE MODIFICACIONES"
+            "🛠️ PANEL DE MODIFICACIONES",
+            # 👇 ACÁ SUMÁS LAS NUEVAS PESTAÑAS:
+            "📊 REPORTE CONSOLIDADO / ESTADÍSTICAS",
+            "🔍 BUSCADOR AVANZADO",
+            "📄 EXPORTACIÓN Y FIRMAS"
         ]
     )
-
-st.title("🍩 Homero - Sistema de Registro Presupuestario")
-st.write("📍 Municipalidad de Sunchales | Conexión Cooperativa a Google Sheets **2027**")
 
 # =====================================================================
 # SECCIÓN 1: FORMULARIO PRINCIPAL DE REGISTRO
@@ -1166,3 +1168,23 @@ elif opcion_menu == "🛠️ PANEL DE MODIFICACIONES":
                     st.session_state["db_local_backup"]["egresos"].pop(idx_real)
                 st.success(f"Renglón {idx_real + 1} eliminado.")
                 st.rerun()
+# =====================================================================
+# SECCIÓN 6: REPORTE CONSOLIDADO / ESTADÍSTICAS (NUEVA)
+# =====================================================================
+elif opcion_menu == "📊 REPORTE CONSOLIDADO / ESTADÍSTICAS":
+    st.subheader("📊 Análisis y Estadísticas Presupuestarias")
+    st.info("Espacio listo para agregar gráficos, comparativos por Secretaría, etc.")
+
+# =====================================================================
+# SECCIÓN 7: BUSCADOR AVANZADO (NUEVA)
+# =====================================================================
+elif opcion_menu == "🔍 BUSCADOR AVANZADO":
+    st.subheader("🔍 Buscador Filtrado de Partidas")
+    st.info("Espacio listo para búsquedas avanzadas por palabra clave o rango de montos.")
+
+# =====================================================================
+# SECCIÓN 8: EXPORTACIÓN Y FIRMAS (NUEVA)
+# =====================================================================
+elif opcion_menu == "📄 EXPORTACIÓN Y FIRMAS":
+    st.subheader("📄 Generador de Documentos para Firma")
+    st.info("Espacio listo para armar expedientes o planillas resumidas.")

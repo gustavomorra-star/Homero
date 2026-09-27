@@ -2229,7 +2229,7 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
         )
 
 # =====================================================================
-# SECCIÓN 20: COMPARATIVO E HISTÓRICO DE MODIFICACIONES (FILTRO RECURSOS)
+# SECCIÓN 20: COMPARATIVO E HISTÓRICO DE MODIFICACIONES (CONVERSIÓN DE TIPOS)
 # =====================================================================
 elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     st.subheader("🔄 Comparativo e Histórico Presupuestario (2026 vs 2027)")
@@ -2254,7 +2254,8 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             
             header_row_idx = 0
             for idx, row in df_raw_no_header.iterrows():
-                row_str = " ".join([str(val).upper() for val in row.values])
+                # Conversión segura de cada celda a string para evitar errores de float
+                row_str = " ".join([str(val) if pd.notna(val) else "" for val in row.values]).upper()
                 if "PRESUPUESTADO" in row_str and "DEVENGADO" in row_str:
                     header_row_idx = idx
                     break
@@ -2264,12 +2265,14 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             df_2026.columns = [str(c).strip().upper() for c in df_2026.columns]
 
             # ---------------------------------------------------------
-            # FILTRADO 1: QUITAR RECURSOS
+            # FILTRADO 1: QUITAR RECURSOS (CONVERSIÓN SEGURA A STRING)
             # ---------------------------------------------------------
-            # Crear una representación en texto de toda la fila para detectar si es un recurso
-            fila_texto = df_2026.astype(str).apply(lambda row: " ".join(row).upper(), axis=1)
+            fila_texto = df_2026.apply(
+                lambda row: " ".join([str(val) if pd.notna(val) else "" for val in row.values]).upper(), 
+                axis=1
+            )
             
-            # Excluir filas que contengan "RECURSO", "RECURSOS", "INGRESOS", etc.
+            # Excluir filas que contengan términos de Recursos
             filtro_recursos = ~fila_texto.str.contains(
                 r"\bRECURSO\b|\bRECURSOS\b|\bINGRESOS TRIBUTARIOS\b|\bINGRESOS NO TRIBUTARIOS\b|\bRECURSOS PROPIOS\b", 
                 regex=True
@@ -2277,7 +2280,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             df_2026 = df_2026[filtro_recursos]
 
             # ---------------------------------------------------------
-            # FILTRADO 2: CONSERVAR SOLO CUENTAS DE IMPUTACIÓN (DESCARTAR SUBTOTALES)
+            # FILTRADO 2: CONSERVAR SOLO CUENTAS DE IMPUTACIÓN
             # ---------------------------------------------------------
             if "CUENTA DE GASTO" in df_2026.columns:
                 df_2026 = df_2026[

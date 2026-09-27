@@ -14,32 +14,37 @@ if "db_local_backup" not in st.session_state:
 # --- CONEXIÓN DIRECTA Y PERMANENTE A GOOGLE SHEETS MUNICIPAL ---
 SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
-# Direcciones de consulta directa CSV indexadas de forma nativa por el ID físico de tus pestañas
-URL_READ_EGRESOS = f"https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0"
-URL_READ_DESTINOS = f"https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=1365567783"
+# Modificamos las direcciones para indicarle al código qué pestaña pedirle al Cartero
+URL_READ_EGRESOS = "egresos"
+URL_READ_DESTINOS = "destinos"
 
-
-def leer_datos_gsheet(url_tipo):
+def leer_datos_gsheet(nombre_hoja):
     try:
-        df = pd.read_csv(url_tipo)
-        if not df.empty:
-            df.columns = [str(col).strip().lower() for col in df.columns]
-        return df
-    except:
-        if "gid=1365567783" in str(url_tipo):
+        # Le pedimos los datos directamente a la URL de tu Apps Script (El Cartero)
+        macro_url = st.secrets["GSHEET_MACRO_URL"]
+        # Solicitamos la información enviando el nombre de la solapa
+        respuesta = requests.post(macro_url, json={"hoja": nombre_hoja, "accion": "leer"}, timeout=10)
+        
+        if respuesta.status_code == 200:
+            datos_json = respuesta.json()
+            if datos_json.get("status") == "success" and datos_json.get("data"):
+                df = pd.DataFrame(datos_json["data"])
+                df.columns = [str(col).strip().lower() for col in df.columns]
+                return df
+                
+        # Matriz de contingencia por si la solapa está vacía o el Cartero no responde
+        if nombre_hoja == "destinos":
             return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
         df_vacio = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
         df_vacio["total"] = df_vacio["total"].astype(float)
         return df_vacio
-
-def guardar_fila_gsheet(hoja, diccionario_datos):
-    st.session_state["db_local_backup"][hoja].append(diccionario_datos)
-    try:
-        macro_url = st.secrets["GSHEET_MACRO_URL"]
-        paquete_web = {"hoja": hoja, "datos": diccionario_datos}
-        requests.post(macro_url, json=paquete_web)
     except:
-        pass
+        if nombre_hoja == "destinos":
+            return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
+        df_falla = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+        df_falla["total"] = df_falla["total"].astype(float)
+        return df_falla
+
 
 # Encabezados institucionales superiores
 st.title("🍩 Homero - Sistema de Registro Presupuestario")

@@ -161,9 +161,6 @@ with tab_formulario:
 # =====================================================================
 # PESTAÑA 2: GESTIÓN DE DESTINOS DINÁMICOS
 # =====================================================================
-# =====================================================================
-# PESTAÑA 2: GESTIÓN DE DESTINOS DINÁMICOS
-# =====================================================================
 with tab_agregar_destino:
     st.subheader("⚙️ Panel de Configuración de Destinos")
     col_a, col_b = st.columns([1, 1.2])
@@ -212,41 +209,42 @@ with tab_egresos:
     for e_l in st.session_state["db_local_backup"]["egresos"]:
         lista_egr_mostrar.append(e_l)
         
-    # Inicializamos una matriz armada a la fuerza si la lista combinada vino vacía
     if not lista_egr_mostrar:
         df_egr_completo = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
         df_egr_completo["total"] = df_egr_completo["total"].astype(float)
     else:
         df_egr_completo = pd.DataFrame(lista_egr_mostrar)
-        # Si por alguna razón la tabla no trajo la columna 'total', la fabricamos numéricamente
         if "total" not in df_egr_completo.columns:
             df_egr_completo["total"] = 0.0
             
-    # Forzamos que la columna sea decimal para que la suma devuelva cero en lugar de error
     df_egr_completo["total"] = pd.to_numeric(df_egr_completo["total"], errors='coerce').fillna(0.0)
-    
     st.metric(label="📋 TOTAL GENERAL ACUMULADO MUNICIPAL (EGRESOS)", value=f"${df_egr_completo['total'].sum():,.2f}")
+    
+    # Rellenamos columnas por seguridad antes de renderizar la grilla en la web
+    for col in ["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "fuente_fin", "clase", "tipo", "finalidad"]:
+        if col not in df_egr_completo.columns:
+            df_egr_completo[col] = ""
+            
+    df_plano_masivo = pd.DataFrame({
+        "SECRETARIA": df_egr_completo["secretaria"], "SUBSECRETARIA": df_egr_completo["subsecretaria"],
+        "DESTINO": df_egr_completo["destino"], "OBJETO DEL GASTO": df_egr_completo["objeto_gasto"],
+        "CUENTA PADRE": df_egr_completo["cuenta_padre"], "CUENTA IMPUTACIÓN": df_egr_completo["cuenta_presupuestaria"],
+        "TOTAL": df_egr_completo["total"].map(lambda x: f"${x:,.2f}"), "FUENTE FIN.": df_egr_completo["fuente_fin"],
+        "CLASE": df_egr_completo["clase"], "TIPO": df_egr_completo["tipo"], "FINALIDAD/FUNCIÓN": df_egr_completo["finalidad"]
+    })
+    st.dataframe(df_plano_masivo, use_container_width=True, hide_index=True)
+    
+    st.markdown("---")
+    df_excel_global = pd.DataFrame({
+        "SECRETARIA": df_egr_completo["secretaria"], "SUBSECRETARIA": df_egr_completo["subsecretaria"],
+        "DESTINO": df_egr_completo["destino"], "OBJETO DEL GASTO": df_egr_completo["objeto_gasto"],
+        "CUENTA PADRE": df_egr_completo["cuenta_padre"], "CUENTA IMPUTACIÓN": df_egr_completo["cuenta_presupuestaria"],
+        "TOTAL": df_egr_completo["total"], "FUENTE FIN.": df_egr_completo["fuente_fin"],
+        "CLASE": df_egr_completo["clase"], "TIPO": df_egr_completo["tipo"], "FINALIDAD/FUNCIÓN": df_egr_completo["finalidad"]
+    })
+    csv_global_data = df_excel_global.to_csv(index=False, sep=';').encode('utf-8-sig')
+    st.download_button(label="📗 Descargar Base de Datos Completa en 11 Columnas (.xls)", data=csv_global_data, file_name="Base_De_Datos_Egresos_General.xls", mime="application/vnd.ms-excel", use_container_width=True)
 
-        
-        df_plano_masivo = pd.DataFrame({
-            "SECRETARIA": df_egr_completo["secretaria"], "SUBSECRETARIA": df_egr_completo["subsecretaria"],
-            "DESTINO": df_egr_completo["destino"], "OBJETO DEL GASTO": df_egr_completo["objeto_gasto"],
-            "CUENTA PADRE": df_egr_completo["cuenta_padre"], "CUENTA IMPUTACIÓN": df_egr_completo["cuenta_presupuestaria"],
-            "TOTAL": df_egr_completo["total"].map(lambda x: f"${x:,.2f}"), "FUENTE FIN.": df_egr_completo["fuente_fin"],
-            "CLASE": df_egr_completo["clase"], "TIPO": df_egr_completo["tipo"], "FINALIDAD/FUNCIÓN": df_egr_completo["finalidad"]
-        })
-        st.dataframe(df_plano_masivo, use_container_width=True, hide_index=True)
-        
-        st.markdown("---")
-        df_excel_global = pd.DataFrame({
-            "SECRETARIA": df_egr_completo["secretaria"], "SUBSECRETARIA": df_egr_completo["subsecretaria"],
-            "DESTINO": df_egr_completo["destino"], "OBJETO DEL GASTO": df_egr_completo["objeto_gasto"],
-            "CUENTA PADRE": df_egr_completo["cuenta_padre"], "CUENTA IMPUTACIÓN": df_egr_completo["cuenta_presupuestaria"],
-            "TOTAL": df_egr_completo["total"], "FUENTE FIN.": df_egr_completo["fuente_fin"],
-            "CLASE": df_egr_completo["clase"], "TIPO": df_egr_completo["tipo"], "FINALIDAD/FUNCIÓN": df_egr_completo["finalidad"]
-        })
-        csv_global_data = df_excel_global.to_csv(index=False, sep=';').encode('utf-8-sig')
-        st.download_button(label="📗 Descargar Base de Datos Completa en 11 Columnas (.xls)", data=csv_global_data, file_name="Base_De_Datos_Egresos_General.xls", mime="application/vnd.ms-excel", use_container_width=True)
 
 # =====================================================================
 # =====================================================================

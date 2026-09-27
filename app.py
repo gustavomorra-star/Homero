@@ -256,7 +256,7 @@ with tab_egresos:
             destino_txt = str(r.get('destino', '')).strip()
             partida_txt = str(r.get('cuenta_presupuestaria', '')).strip()
             
-            if destino_txt != "" and partida_txt != "":
+            if destino_txt != "" or partida_txt != "":
                 monto_raw = str(r.get('total', '0')).replace('$', '').replace('.', '').replace(',', '.')
                 try:
                     monto_val = float(monto_raw)
@@ -265,12 +265,13 @@ with tab_egresos:
                 texto_descriptivo = f"Fila {i+1} | Destino: {destino_txt} | Partida: {partida_txt} | Monto: ${monto_val:,.2f}"
                 diccionario_opciones[texto_descriptivo] = int(i)
 
-    # BLINDAJE DE SEGURIDAD ABSOLUTO: Evaluamos antes de ejecutar el st.selectbox
-    if len(diccionario_opciones) == 0:
+    # BLINDAJE DE SEGURIDAD ABSOLUTO EXTRA: Validamos las claves generadas reales
+    lista_claves_validas = list(diccionario_opciones.keys())
+    if len(lista_claves_validas) == 0:
         st.info("💡 No hay registros contables activos para modificar en este momento. Los campos se habilitarán automáticamente cuando cargues tu primer renglón presupuestario en el sistema.")
     else:
         st.caption("Seleccioná un renglón para corregir sus valores, cambiar su partida de imputación o darlo de baja.")
-        linea_sel = st.selectbox("Seleccioná el registro a modificar por su número de fila:", opciones=list(diccionario_opciones.keys()), key="sel_mod_panel")
+        linea_sel = st.selectbox("Seleccioná el registro a modificar por su número de fila:", opciones=lista_claves_validas, key="sel_mod_panel")
         
         idx_real = int(diccionario_opciones[linea_sel])
         fila_r = df_egr_completo.iloc[idx_real]

@@ -14,9 +14,9 @@ if "db_local_backup" not in st.session_state:
 # --- CONEXIÓN DIRECTA Y PERMANENTE A GOOGLE SHEETS MUNICIPAL ---
 SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
-# Enlaces de conexión directa indexados por el GID numérico real de tu Drive
-URL_READ_EGRESOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=0"
-URL_READ_DESTINOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=1365567783"
+# Enlaces oficiales de consulta directa CSV que destraban el candado de privacidad de Google Drive
+URL_READ_EGRESOS = f"https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0"
+URL_READ_DESTINOS = f"https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=1365567783"
 
 def leer_datos_gsheet(url_tipo):
     try:

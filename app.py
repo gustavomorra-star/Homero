@@ -316,12 +316,12 @@ if opcion_menu == "📥 REGISTRO DE RECURSOS":
 # =====================================================================
 # SECCIÓN 1: FORMULARIO PRINCIPAL DE REGISTRO (Egresos)
 # =====================================================================
-elif opcion_menu == "📝 FORMULARIO DE REGISTRO":
+if opcion_menu == "📝 FORMULARIO DE REGISTRO":
     # ... acá continúa el resto de tu código original ...
 # =====================================================================
 # SECCIÓN: REGISTRO DE RECURSOS (INGRESOS)
 # =====================================================================
-elif opcion_menu == "📥 REGISTRO DE RECURSOS":
+if opcion_menu == "📥 REGISTRO DE RECURSOS":
     st.subheader("📥 Cargar Nuevo Recurso / Ingreso Presupuestario")
 
     # Cargar recursos actuales desde Google Sheet y backup local

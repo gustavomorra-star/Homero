@@ -132,53 +132,22 @@ opciones_clase = ["Corriente", "Capital"]
 opciones_tipo = ["Libre", "Afectado"]
 opciones_finalidad = ["Legislativa", "Salud", "Seguridad"]
 
-# =====================================================================
-# MENÚ NAVEGADOR LATERAL A LA IZQUIERDA (SIDEBAR)
-# =====================================================================
-with st.sidebar:
-    st.image("https://em-content.zobj.net/source/microsoft-teams/337/doughnut_1f369.png", width=60)
-    st.title("Navegación")
-    
-    opcion_menu = st.radio(
-        "Seleccioná una sección:",
-        [
-            "📝 FORMULARIO DE REGISTRO", 
-            "➕ GESTIÓN DE DESTINOS",
-            "📉 GENERAL (Base de Datos Sheet)",
-            "🏛️ REPORTE OFICIAL POR DESTINO",
-            "🛠️ PANEL DE MODIFICACIONES"
-        ]
-    )
+# DEFINICIÓN ÚNICA DE LAS 5 PESTAÑAS
+tab_formulario, tab_agregar_destino, tab_egresos, tab_oficial, tab_modificaciones = st.tabs([
+    "📝 FORMULARIO DE REGISTRO", 
+    "➕ GESTIÓN DE DESTINOS",
+    "📉 GENERAL (Base de Datos Sheet)",
+    "🏛️ REPORTE OFICIAL POR DESTINO",
+    "🛠️ PANEL DE MODIFICACIONES"
+])
 
-# =====================================================================
-# CONTENIDO SEGÚN LA OPCIÓN SELECCIONADA
-# =====================================================================
+with tab_formulario:
+    # ... código pestaña 1 ...
 
-if opcion_menu == "📝 FORMULARIO DE REGISTRO":
-    st.subheader("📥 Cargar Nuevo Renglón Presupuestario")
-    # Poner aquí todo el contenido que tenías dentro de 'with tab_formulario:'
-    # ...
+with tab_agregar_destino:
+    # ... código pestaña 2 ...
 
-elif opcion_menu == "➕ GESTIÓN DE DESTINOS":
-    st.subheader("⚙️ Panel de Configuración de Destinos")
-    # Poner aquí todo el contenido que tenías dentro de 'with tab_agregar_destino:'
-    # ...
-
-elif opcion_menu == "📉 GENERAL (Base de Datos Sheet)":
-    st.subheader("📊 Base de Datos General de Egresos")
-    # Poner aquí todo el contenido que tenías dentro de 'with tab_egresos:'
-    # ...
-
-elif opcion_menu == "🏛️ REPORTE OFICIAL POR DESTINO":
-    st.subheader("📋 Consulta de Presupuesto de Gasto por Destino Oficial")
-    # Poner aquí todo el contenido que tenías dentro de 'with tab_oficial:'
-    # ...
-
-elif opcion_menu == "🛠️ PANEL DE MODIFICACIONES":
-    st.subheader("🛠️ Panel Supervisor de Modificaciones y Actualización")
-    # Poner aquí todo el contenido que tenías dentro de 'with tab_modificaciones:'
-    # ...
-
+# etc...
 # =====================================================================
 # PESTAÑA 1: FORMULARIO PRINCIPAL DE REGISTRO
 # =====================================================================

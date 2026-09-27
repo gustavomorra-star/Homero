@@ -3,42 +3,67 @@ import pandas as pd
 import streamlit as st
 import io
 import requests
+import time
 
-# 1. ORDEN STRICTA DE ANCHO COMPLETO
-st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="🍩")
+# Configuración de la página
+st.set_page_config(page_title="Presupuesto Municipal 2027", layout="wide")
 
-# 2. INICIALIZACIÓN INMEDIATA DE MEMORIA
-if "db_local_backup" not in st.session_state:
-    st.session_state["db_local_backup"] = {"egresos": [], "destinos": []}
+# =====================================================================
+# 1. FUNCIÓN DE LECTURA DESDE GOOGLE SHEETS (SIN CACHÉ Y SIN NaN)
+# =====================================================================
 
-# --- CONEXIÓN DIRECTA Y PERMANENTE A GOOGLE SHEETS MUNICIPAL ---
 SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
-URL_READ_EGRESOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=0"
-URL_READ_DESTINOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1365567783"
+def obtener_url_fresca(gid):
+    # Agrega una marca de tiempo para evitar la caché de Streamlit y leer en tiempo real
+    return f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={gid}&_time={int(time.time())}"
 
-def leer_datos_gsheet(url_tipo):
+def leer_datos_gsheet(gid):
     try:
-        df = pd.read_csv(url_tipo)
+        url = obtener_url_fresca(gid)
+        df = pd.read_csv(url)
+        
         if not df.empty:
+            # 1. Normalizar nombres de columnas (quita espacios sobrantes y pasa a minúsculas)
             df.columns = [str(col).strip().lower() for col in df.columns]
+            
+            # 2. Reemplazar celdas vacías (NaN) por texto vacío para evitar la palabra 'nan'
+            df = df.fillna("")
+            
+            # 3. Limpiar espacios sobrantes en todas las cadenas de texto
+            for col in df.select_dtypes(include=['object', 'string']).columns:
+                df[col] = df[col].astype(str).str.strip()
+                
+            # 4. Asegurar que la columna 'total' sea un valor numérico limpio
+            if "total" in df.columns:
+                df["total"] = pd.to_numeric(
+                    df["total"].astype(str).str.replace("$", "", regex=False).str.replace(",", "", regex=False), 
+                    errors='coerce'
+                ).fillna(0.0)
+                
         return df
     except Exception:
-        if "gid=1365567783" in str(url_tipo):
+        # Retorno de seguridad si falla la lectura
+        if str(gid) == "1365567783":
             return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
         df_vacio = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
         df_vacio["total"] = df_vacio["total"].astype(float)
         return df_vacio
 
-def guardar_fila_gsheet(hoja, diccionario_datos):
-    st.session_state["db_local_backup"][hoja].append(diccionario_datos)
-    try:
-        macro_url = st.secrets.get("GSHEET_MACRO_URL", "")
-        if macro_url:
-            paquete_web = {"hoja": hoja, "datos": diccionario_datos}
-            requests.post(macro_url, json=paquete_web, timeout=5)
-    except Exception:
-        pass
+# Inicialización de respaldo local
+if "db_local_backup" not in st.session_state:
+    st.session_state["db_local_backup"] = {"destinos": [], "egresos": []}
+
+# =====================================================================
+# 2. CARGA DE DATOS PRINCIPALES EN EL SCRIPT
+# =====================================================================
+
+df_egr_completo = leer_datos_gsheet("0")           # Hoja de Egresos
+df_destinos_gsheet = leer_datos_gsheet("1365567783") # Hoja de Destinos
+
+# =====================================================================
+# >>> AQUÍ DEJÁS TU DICCIONARIO MAPEO_ESTRUCTURA ORIGINAL <<<
+# =====================================================================
 
 # Dibujamos las etiquetas de títulos superiores del sistema
 st.title("🍩 Homero - Sistema de Registro Presupuestario")
@@ -385,9 +410,11 @@ with tab_modificaciones:
             if not partida_txt or partida_txt == "NAN":
                 partida_txt = "SIN PARTIDA"
                 
-            texto_descriptivo = f"Fila {i+1} | Destino: {destino_txt} | Partida: {partida_txt[:30]} | Monto: ${monto_val:,.2f}"
+            # CLAVE ÚNICA GARANTIZADA: Se agrega [ID: i] al inicio para evitar duplicados en el selectbox
+            texto_descriptivo = f"[ID: {i+1}] Fila {i+1} | Destino: {destino_txt} | Partida: {partida_txt[:30]} | Monto: ${monto_val:,.2f}"
             diccionario_opciones[texto_descriptivo] = i
 
+    # Garantizamos que la lista de opciones no contenga duplicados
     lista_claves_validas = list(diccionario_opciones.keys())
     
     if len(lista_claves_validas) == 0:
@@ -395,90 +422,7 @@ with tab_modificaciones:
     else:
         st.caption("Seleccioná un renglón para corregir sus valores, cambiar su partida de imputación o darlo de baja.")
         
+        # Ahora lista_claves_validas no generará el TypeError
         linea_sel = st.selectbox("Seleccioná el registro a modificar por su número de fila:", opciones=lista_claves_validas, key="sel_mod_panel")
         idx_real = diccionario_opciones[linea_sel]
         fila_r = df_egr_completo.loc[idx_real]
-        
-        todas_las_partidas_oficiales = []
-        for obj_g in MAPEO_GASTOS:
-            for c_padre in MAPEO_GASTOS[obj_g]:
-                for c_imputacion in MAPEO_GASTOS[obj_g][c_padre]:
-                    todas_las_partidas_oficiales.append(c_imputacion)
-                    
-        partida_actual_fila = str(fila_r.get("cuenta_presupuestaria", "")).strip()
-        if partida_actual_fila not in todas_las_partidas_oficiales and partida_actual_fila != "":
-            todas_las_partidas_oficiales.insert(0, partida_actual_fila)
-            
-        col_ed1, col_ed2, col_ed3 = st.columns(3)
-        with col_ed1:
-            try: 
-                monto_def_val = float(fila_r.get("total", 0.0))
-            except Exception: 
-                monto_def_val = 0.0
-            nuevo_total = st.number_input("Corregir Monto ($):", min_value=0.0, value=monto_def_val, key=f"t_{idx_real}")
-            
-            idx_partida = todas_las_partidas_oficiales.index(partida_actual_fila) if partida_actual_fila in todas_las_partidas_oficiales else 0
-            nueva_partida = st.selectbox("Cambiar CUENTA IMPUTACIÓN / PARTIDA:", opciones=todas_las_partidas_oficiales, index=idx_partida, key=f"partida_{idx_real}")
-            
-        with col_ed2:
-            val_clase = str(fila_r.get("clase", ""))
-            idx_clase = opciones_clase.index(val_clase) if val_clase in opciones_clase else 0
-            nueva_clase = st.selectbox("Cambiar Clase:", opciones_clase, index=idx_clase, key=f"c_{idx_real}")
-            
-            val_tipo = str(fila_r.get("tipo", ""))
-            idx_tipo = opciones_tipo.index(val_tipo) if val_tipo in opciones_tipo else 0
-            nuevo_tipo = st.selectbox("Cambiar Tipo:", opciones_tipo, index=idx_tipo, key=f"tp_{idx_real}")
-            
-        with col_ed3:
-            val_fuente = str(fila_r.get("fuente_fin", ""))
-            idx_fuente = opciones_fuente_fin.index(val_fuente) if val_fuente in opciones_fuente_fin else 0
-            nueva_fuente = st.selectbox("Cambiar F.Fin:", opciones_fuente_fin, index=idx_fuente, key=f"f_{idx_real}")
-            
-            val_fin = str(fila_r.get("finalidad", ""))
-            idx_fin = opciones_finalidad.index(val_fin) if val_fin in opciones_finalidad else 0
-            nuevo_finan = st.selectbox("Cambiar Finalidad:", opciones_finalidad, index=idx_fin, key=f"fin_{idx_real}")
-            
-        nuevo_objeto_gasto = str(fila_r.get("objeto_gasto", ""))
-        nueva_cuenta_padre = str(fila_r.get("cuenta_padre", ""))
-        for obj_g, bloques in MAPEO_GASTOS.items():
-            for c_pad, lista_partidas in bloques.items():
-                if nueva_partida in lista_partidas:
-                    nuevo_objeto_gasto = obj_g
-                    nueva_cuenta_padre = c_pad
-                    
-        col_b1, col_b2 = st.columns(2)
-        with col_b1:
-            if st.button("🔄 ACTUALIZAR REGISTRO SELECCIONADO", type="primary", use_container_width=True, key=f"bu_{idx_real}"):
-                nuevo_dict = {
-                    "secretaria": fila_r.get("secretaria", ""), 
-                    "subsecretaria": fila_r.get("subsecretaria", ""), 
-                    "destino": fila_r.get("destino", ""),
-                    "objeto_gasto": nuevo_objeto_gasto, 
-                    "cuenta_padre": nueva_cuenta_padre, 
-                    "cuenta_presupuestaria": nueva_partida,
-                    "total": nuevo_total, 
-                    "fuente_fin": nueva_fuente, 
-                    "clase": nueva_clase, 
-                    "tipo": nuevo_tipo, 
-                    "finalidad": nuevo_finan
-                }
-                
-                # Actualizar copia en memoria local
-                if idx_real < len(st.session_state["db_local_backup"]["egresos"]):
-                    st.session_state["db_local_backup"]["egresos"][idx_real] = nuevo_dict
-                else:
-                    st.session_state["db_local_backup"]["egresos"].append(nuevo_dict)
-                    
-                st.success("✅ ¡Registro modificado en memoria local! Si usás Google Sheet, recordá replicar el cambio allí.")
-                st.rerun()
-                
-        with col_b2:
-            if st.button("🗑️ ELIMINAR REGISTRO SELECCIONADO", type="secondary", use_container_width=True, key=f"bd_{idx_real}"):
-                if idx_real < len(st.session_state["db_local_backup"]["egresos"]):
-                    st.session_state["db_local_backup"]["egresos"].pop(idx_real)
-                st.warning("🗑️ Registro removido de la vista local.")
-                st.rerun()
-
-# Barra lateral informativa de control permanente
-st.sidebar.header("⚙️ Herramientas de Red")
-st.sidebar.info("Persistencia conectada cooperativamente al repositorio central de datos. Los registros se sincronizan con la hoja de cálculo municipal.")

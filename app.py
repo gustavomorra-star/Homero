@@ -427,6 +427,8 @@ with tab_modificaciones:
     diccionario_opciones = {}
     if not df_egr_completo.empty:
         for i, r in df_egr_completo.iterrows():
+            sec_txt = str(r.get('secretaria', '')).strip().upper()
+            sub_txt = str(r.get('subsecretaria', '')).strip().upper()
             destino_txt = str(r.get('destino', '')).strip().upper()
             partida_txt = str(r.get('cuenta_presupuestaria', '')).strip()
 
@@ -448,36 +450,86 @@ with tab_modificaciones:
     if len(lista_claves_validas) == 0:
         st.info("💡 No hay registros contables activos para modificar en este momento. Los campos se habilitarán automáticamente cuando cargues tu primer renglón presupuestario en el sistema.")
     else:
-        st.caption("Seleccioná un renglón para corregir sus valores, cambiar su partida de imputación o darlo de baja.")
+        st.caption("Seleccioná un renglón para corregir sus valores contables o darlo de baja.")
 
         linea_sel = st.selectbox("Seleccioná el registro a modificar por su número de fila:", options=lista_claves_validas, key="sel_mod_panel")
         idx_real = diccionario_opciones[linea_sel]
         fila_r = df_egr_completo.loc[idx_real]
 
         st.markdown("---")
-        st.subheader(f"📝 Formulario de Edición (Fila {idx_real + 1})")
+        st.subheader(f"📝 Formulario de Edición Contable (Fila {idx_real + 1})")
 
-        col_mod1, col_mod2 = st.columns(2)
+        col_mod1, col_mod2 = st.columns([2, 1])
 
         with col_mod1:
-            st.markdown("#### ✏️ Cambiar Importe y Destino")
+            st.markdown("#### ✏️ Modificar Datos del Renglón")
+            
+            # --- DATOS FIJOS DE UBICACIÓN (DESHABILITADOS) ---
+            st.info(f"📍 **Ubicación Fija:** {fila_r.get('secretaria', '')} ➔ {fila_r.get('subsecretaria', '')} ➔ **{fila_r.get('destino', '')}**")
+            
             with st.form(key=f"form_modificacion_{idx_real}"):
-                mod_dest = st.text_input("Destino:", value=str(fila_r.get("destino", "")))
-                mod_monto = st.number_input("Monto Total ($):", value=float(fila_r.get("total", 0.0)), step=1000.0)
+                # 1. Campos de Impuntación / Partida
+                val_obj_act = str(fila_r.get("objeto_gasto", ""))
+                idx_obj = opciones_objetos.index(val_obj_act) if val_obj_act in opciones_objetos else 0
+                mod_obj = st.selectbox("OBJETO DE GASTO:", options=opciones_objetos, index=idx_obj)
+
+                # Cuentas Padre dinámicas según el objeto seleccionado
+                cuentas_padre_opts = list(MAPEO_GASTOS.get(mod_obj, {}).keys())
+                val_padre_act = str(fila_r.get("cuenta_padre", ""))
+                idx_padre = cuentas_padre_opts.index(val_padre_act) if val_padre_act in cuentas_padre_opts else 0
+                mod_padre = st.selectbox("CUENTA PADRE:", options=cuentas_padre_opts, index=idx_padre) if cuentas_padre_opts else st.text_input("CUENTA PADRE:", value=val_padre_act)
+
+                # Partidas dinámicas según la cuenta padre
+                cuentas_partida_opts = MAPEO_GASTOS.get(mod_obj, {}).get(mod_padre, [])
+                val_presup_act = str(fila_r.get("cuenta_presupuestaria", ""))
+                idx_presup = cuentas_partida_opts.index(val_presup_act) if val_presup_act in cuentas_partida_opts else 0
+                mod_presup = st.selectbox("CUENTA DE IMPUTACIÓN / PARTIDA:", options=cuentas_partida_opts, index=idx_presup) if cuentas_partida_opts else st.text_input("CUENTA DE IMPUTACIÓN / PARTIDA:", value=val_presup_act)
+
+                st.markdown("---")
                 
-                if st.form_submit_button("💾 Guardar Cambios"):
-                    # Actualizar en el dataframe en memoria local
+                # 2. Valores Numéricos y Financiamiento
+                col_m1, col_m2 = st.columns(2)
+                with col_m1:
+                    mod_monto = st.number_input("PRESUPUESTO / VALOR ($):", value=float(fila_r.get("total", 0.0)), min_value=0.0, step=100.0)
+                    
+                    val_fuente = str(fila_r.get("fuente_fin", ""))
+                    idx_f = opciones_fuente_fin.index(val_fuente) if val_fuente in opciones_fuente_fin else 0
+                    mod_fuente = st.selectbox("F.FIN:", options=opciones_fuente_fin, index=idx_f)
+
+                with col_m2:
+                    val_clase = str(fila_r.get("clase", ""))
+                    idx_c = opciones_clase.index(val_clase) if val_clase in opciones_clase else 0
+                    mod_clase = st.selectbox("CLASE:", options=opciones_clase, index=idx_c)
+
+                    val_tipo = str(fila_r.get("tipo", ""))
+                    idx_t = opciones_tipo.index(val_tipo) if val_tipo in opciones_tipo else 0
+                    mod_tipo = st.selectbox("TIPO:", options=opciones_tipo, index=idx_t)
+
+                val_fin = str(fila_r.get("finalidad", ""))
+                idx_fin = opciones_finalidad.index(val_fin) if val_fin in opciones_finalidad else 0
+                mod_finalidad = st.selectbox("FINALIDAD / FUNCIÓN:", options=opciones_finalidad, index=idx_fin)
+
+                if st.form_submit_button("💾 Guardar Cambios en este Registro", use_container_width=True, type="primary"):
+                    # Actualizar en la base de memoria local
                     if idx_real < len(st.session_state["db_local_backup"]["egresos"]):
-                        st.session_state["db_local_backup"]["egresos"][idx_real]["destino"] = mod_dest
-                        st.session_state["db_local_backup"]["egresos"][idx_real]["total"] = mod_monto
-                    st.success(f"¡Fila {idx_real + 1} modificada correctamente!")
+                        st.session_state["db_local_backup"]["egresos"][idx_real].update({
+                            "objeto_gasto": mod_obj,
+                            "cuenta_padre": mod_padre,
+                            "cuenta_presupuestaria": mod_presup,
+                            "total": mod_monto,
+                            "fuente_fin": mod_fuente,
+                            "clase": mod_clase,
+                            "tipo": mod_tipo,
+                            "finalidad": mod_finalidad
+                        })
+                    st.success(f"¡Renglón {idx_real + 1} actualizado correctamente!")
                     st.rerun()
 
         with col_mod2:
-            st.markdown("#### 🗑️ Dar de Baja Registro")
-            st.warning("Esta operación eliminará el registro seleccionado.")
-            if st.button("❌ Confirmar Baja de Fila", key=f"btn_del_{idx_real}"):
+            st.markdown("#### 🗑️ Dar de Baja")
+            st.warning("Esta operación eliminará permanentemente el registro seleccionado de la sesión.")
+            if st.button("❌ Confirmar Baja de Fila", key=f"btn_del_{idx_real}", use_container_width=True):
                 if idx_real < len(st.session_state["db_local_backup"]["egresos"]):
                     st.session_state["db_local_backup"]["egresos"].pop(idx_real)
-                st.success(f"Renglón {idx_real + 1} dado de baja.")
+                st.success(f"Renglón {idx_real + 1} eliminado.")
                 st.rerun()

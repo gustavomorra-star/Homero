@@ -4,38 +4,38 @@ import streamlit as st
 import io
 import requests
 
-# 1. ORDEN ESTRICTA DE MÁXIMO ANCHO DE INTERFAZ MUNICIPAL
+# 1. CONFIGURACIÓN DE PANTALLA EXCLUSIVA DE ANCHO COMPLETO
 st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="🍩")
 
-# 2. INICIALIZACIÓN INMEDIATA DE LA MEMORIA LOCAL DE CONTINGENCIA
+# 2. INICIALIZACIÓN INMEDIATA DE LA MEMORIA DE RESPALDO LOCAL
 if "db_local_backup" not in st.session_state:
     st.session_state["db_local_backup"] = {"egresos": [], "destinos": []}
 
 # --- CONEXIÓN DIRECTA Y PERMANENTE A GOOGLE SHEETS MUNICIPAL ---
 SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
-# Enlaces nativos directos con limpiador de caché dinámico e inalterable por ID de pestaña
-URL_BASE_EGRESOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=0"
-URL_BASE_DESTINOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=1365567783"
+# Rutas oficiales de consulta de datos de Google Drive (Formato nativo para romper caché)
+URL_BASE_EGRESOS = f"https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0"
+URL_BASE_DESTINOS = f"https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=1365567783"
 
 def leer_datos_gsheet(url_base):
     try:
-        # Agregamos un código de limpieza al final de la URL para obligar a Google a entregar los datos frescos
+        # Generamos un código de limpieza dinámico compatible con el motor gviz/tq
         url_limpia = url_base + f"&cache_bust={os.urandom(4).hex()}"
         df = pd.read_csv(url_limpia)
         if not df.empty:
-            # Normalizamos los encabezados para evitar problemas de mayúsculas accidentales en el Sheet
+            # Forzamos la normalización de todas las columnas a minúsculas
             df.columns = [str(col).strip().lower() for col in df.columns]
         return df
     except:
-        # Escudo protector de contingencia estructurado por si falla internet
+        # Matriz de contingencia estructurada si internet sufre una microcaída
         if "gid=1365567783" in str(url_base):
             return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
         df_vacio = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
         df_vacio["total"] = df_vacio["total"].astype(float)
         return df_vacio
 
-# Renombramos las variables para que el resto de las 5 solapas del código sigan funcionando sin tocar nada más
+# Sincronizamos las variables para que enlacen con el resto del código de tus 5 solapas
 URL_READ_EGRESOS = URL_BASE_EGRESOS
 URL_READ_DESTINOS = URL_BASE_DESTINOS
 
@@ -60,7 +60,7 @@ tab_formulario, tab_agregar_destino, tab_egresos, tab_oficial, tab_modificacione
     "🛠️ PANEL DE MODIFICACIONES"
 ])
 
-# DESCARGA GLOBAL UNIFICADA DE DATOS SINCRO
+# DESCARGA GLOBAL UNIFICADA PARA ABASTECER A LAS PESTAÑAS EN PARALELO
 df_egr_completo_raw = leer_datos_gsheet(URL_READ_EGRESOS)
 lista_egr_mostrar = []
 if not df_egr_completo_raw.empty:
@@ -74,6 +74,7 @@ if not lista_egr_mostrar:
 else:
     df_egr_completo = pd.DataFrame(lista_egr_mostrar)
 df_egr_completo["total"] = pd.to_numeric(df_egr_completo["total"], errors='coerce').fillna(0.0)
+
 
 # --- Plan de Cuentas Oficial Municipal ---
 MAPEO_GASTOS = {

@@ -4,16 +4,17 @@ import streamlit as st
 import io
 import requests
 
-# 1. ORDEN STRICTA DE ANCHO COMPLETO
+# 1. ORDEN ESTRICTA DE MÁXIMO ANCHO (Primera instrucción de la app)
 st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="🍩")
 
-# 2. INICIALIZACIÓN INMEDIATA DE MEMORIA
+# 2. INICIALIZACIÓN INMEDIATA DE LA PERSISTENCIA COOPERATIVA
 if "db_local_backup" not in st.session_state:
     st.session_state["db_local_backup"] = {"egresos": [], "destinos": []}
 
 # --- CONEXIÓN DIRECTA Y PERMANENTE A GOOGLE SHEETS MUNICIPAL ---
 SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
+# Enlaces de conexión directa indexados por el GID numérico real de tu Drive
 URL_READ_EGRESOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=0"
 URL_READ_DESTINOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=1365567783"
 
@@ -39,7 +40,7 @@ def guardar_fila_gsheet(hoja, diccionario_datos):
     except:
         pass
 
-# Dibujamos las etiquetas de títulos superiores del sistema
+# Encabezados institucionales superiores
 st.title("🍩 Homero - Sistema de Registro Presupuestario")
 st.write("📍 Municipalidad de Sunchales | Conexión Cooperativa a Google Sheets **2027**")
 
@@ -75,7 +76,7 @@ opciones_clase = ["Corriente", "Capital"]
 opciones_tipo = ["Libre", "Afectado"]
 opciones_finalidad = ["Legislativa", "Salud", "Seguridad"]
 
-# DEFINICIÓN ÚNICA DE LAS 5 PESTAÑAS (Para evitar el ValueError)
+# DEFINICIÓN UNIFICADA DE LAS 5 PESTAÑAS INDEPENDIENTES
 tab_formulario, tab_agregar_destino, tab_egresos, tab_oficial, tab_modificaciones = st.tabs([
     "📝 FORMULARIO DE REGISTRO", 
     "➕ GESTIÓN DE DESTINOS",
@@ -83,6 +84,21 @@ tab_formulario, tab_agregar_destino, tab_egresos, tab_oficial, tab_modificacione
     "🏛️ REPORTE OFICIAL POR DESTINO",
     "🛠️ PANEL DE MODIFICACIONES"
 ])
+
+# DESCARGA GLOBAL UNIFICADA (Abastece a todas las pestañas simultáneamente)
+df_egr_gsheet = leer_datos_gsheet(URL_READ_EGRESOS)
+lista_egr_mostrar = []
+if not df_egr_gsheet.empty:
+    lista_egr_mostrar = df_egr_gsheet.fillna({"total": 0.0}).fillna("").to_dict('records')
+for e_l in st.session_state["db_local_backup"]["egresos"]:
+    lista_egr_mostrar.append(e_l)
+
+if not lista_egr_mostrar:
+    df_egr_completo = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+    df_egr_completo["total"] = df_egr_completo["total"].astype(float)
+else:
+    df_egr_completo = pd.DataFrame(lista_egr_mostrar)
+df_egr_completo["total"] = pd.to_numeric(df_egr_completo["total"], errors='coerce').fillna(0.0)
 # =====================================================================
 # PESTAÑA 1: FORMULARIO PRINCIPAL DE REGISTRO
 # =====================================================================
@@ -124,7 +140,7 @@ with tab_formulario:
     st.markdown("---")
     col3, col4, col5 = st.columns(3)
     with col3:
-        f_total = st.number_input("PRESUPUELES / VALOR ($):", min_value=0.0, step=100.0)
+        f_total = st.number_input("PRESUPUESTO / VALOR ($):", min_value=0.0, step=100.0)
         f_fuente = st.selectbox("F.FIN:", [""] + opciones_fuente_fin, format_func=lambda x: "--- Elegí F.Fin ---" if x == "" else x)
     with col4:
         f_clase = st.selectbox("CLASE:", [""] + opciones_clase, format_func=lambda x: "--- Elegí Clase ---" if x == "" else x)
@@ -140,8 +156,7 @@ with tab_formulario:
             "total": f_total, "fuente_fin": f_fuente, "clase": f_clase, "tipo": f_tipo, "finalidad": f_finalidad
         }
         guardar_fila_gsheet("egresos", nuevo_renglon)
-        st.success("✅ ¡Renglón presupuestario guardado de forma cooperativa!")
-        st.balloons()
+        st.success("✅ ¡Renglón presupuestario guardado!")
         st.rerun()
 
 # =====================================================================
@@ -158,7 +173,7 @@ with tab_agregar_destino:
         if st.button("✨ Registrar Destino", type="secondary", use_container_width=True) and d_nombre:
             nuevo_destino = {"secretaria": d_sec, "subsecretaria": d_sub, "destino": d_nombre}
             guardar_fila_gsheet("destinos", nuevo_destino)
-            st.success("🎯 Destino añadido correctamente al repositorio.")
+            st.success("🎯 Destino añadido correctamente.")
             st.rerun()
     with col_b:
         st.markdown("**📋 Listado de Destinos Activos**")
@@ -172,70 +187,43 @@ with tab_agregar_destino:
         if lista_destinos_mostrar:
             df_dt_vista = pd.DataFrame(lista_destinos_mostrar).rename(columns={"subsecretaria": "SUBSECRETARÍA", "destino": "DESTINO"})
             st.dataframe(df_dt_vista, use_container_width=True, hide_index=True)
-
 # =====================================================================
-# PESTAÑA 3: BASE DE DATOS GENERAL (REPORTE TIPO SHEET MASIVO)
+# PESTAÑA 3: BASE DE DATOS GENERAL (REPORTE MASIVO TIPO SHEET)
 # =====================================================================
 with tab_egresos:
     st.subheader("📊 Base de Datos General de Egresos")
-    
-    df_egr_gsheet = leer_datos_gsheet(URL_READ_EGRESOS)
-    lista_egr_mostrar = []
-    
-    if not df_egr_gsheet.empty:
-        df_egr_gsheet = df_egr_gsheet.fillna({"total": 0.0}).fillna("")
-        lista_egr_mostrar = df_egr_gsheet.to_dict('records')
-        
-    for e_l in st.session_state["db_local_backup"]["egresos"]:
-        lista_egr_mostrar.append(e_l)
-        
-    if not lista_egr_mostrar:
-        df_egr_completo = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
-        df_egr_completo["total"] = df_egr_completo["total"].astype(float)
-    else:
-        df_egr_completo = pd.DataFrame(lista_egr_mostrar)
-        if "total" not in df_egr_completo.columns:
-            df_egr_completo["total"] = 0.0
-            
-    df_egr_completo["total"] = pd.to_numeric(df_egr_completo["total"], errors='coerce').fillna(0.0)
     st.metric(label="📋 TOTAL GENERAL ACUMULADO MUNICIPAL (EGRESOS)", value=f"${df_egr_completo['total'].sum():,.2f}")
     
+    # Rellenamos columnas por seguridad para asegurar la visualización masiva
     for col in ["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "fuente_fin", "clase", "tipo", "finalidad"]:
         if col not in df_egr_completo.columns:
             df_egr_completo[col] = ""
             
     df_plano_masivo = pd.DataFrame({
-        "SECRETARIA": df_egr_completo["secretaria"], "SUBSECRETARIA": df_egr_completo["subsecretaria"],
-        "DESTINO": df_egr_completo["destino"], "OBJETO DEL GASTO": df_egr_completo["objeto_gasto"],
-        "CUENTA PADRE": df_egr_completo["cuenta_padre"], "CUENTA IMPUTACIÓN": df_egr_completo["cuenta_presupuestaria"],
-        "TOTAL": df_egr_completo["total"].map(lambda x: f"${x:,.2f}"), "FUENTE FIN.": df_egr_completo["fuente_fin"],
-        "CLASE": df_egr_completo["clase"], "TIPO": df_egr_completo["tipo"], "FINALIDAD/FUNCIÓN": df_egr_completo["finalidad"]
+        "SECRETARIA": df_egr_completo["secretaria"], 
+        "SUBSECRETARIA": df_egr_completo["subsecretaria"], 
+        "DESTINO": df_egr_completo["destino"],
+        "OBJETO DEL GASTO": df_egr_completo["objeto_gasto"], 
+        "CUENTA PADRE": df_egr_completo["cuenta_padre"], 
+        "CUENTA IMPUTACIÓN": df_egr_completo["cuenta_presupuestaria"],
+        "TOTAL": df_egr_completo["total"].map(lambda x: f"${x:,.2f}"), 
+        "FUENTE FIN.": df_egr_completo["fuente_fin"], 
+        "CLASE": df_egr_completo["clase"], 
+        "TIPO": df_egr_completo["tipo"], 
+        "FINALIDAD/FUNCIÓN": df_egr_completo["finalidad"]
     })
     st.dataframe(df_plano_masivo, use_container_width=True, hide_index=True)
     
     st.markdown("---")
-    df_excel_global = pd.DataFrame({
-        "SECRETARIA": df_egr_completo["secretaria"], "SUBSECRETARIA": df_egr_completo["subsecretaria"],
-        "DESTINO": df_egr_completo["destino"], "OBJETO DEL GASTO": df_egr_completo["objeto_gasto"],
-        "CUENTA PADRE": df_egr_completo["cuenta_padre"], "CUENTA IMPUTACIÓN": df_egr_completo["cuenta_presupuestaria"],
-        "TOTAL": df_egr_completo["total"], "FUENTE FIN.": df_egr_completo["fuente_fin"],
-        "CLASE": df_egr_completo["clase"], "TIPO": df_egr_completo["tipo"], "FINALIDAD/FUNCIÓN": df_egr_completo["finalidad"]
-    })
-    csv_global_data = df_excel_global.to_csv(index=False, sep=';').encode('utf-8-sig')
+    csv_global_data = df_egr_completo.to_csv(index=False, sep=';').encode('utf-8-sig')
     st.download_button(label="📗 Descargar Base de Datos Completa en 11 Columnas (.xls)", data=csv_global_data, file_name="Base_De_Datos_Egresos_General.xls", mime="application/vnd.ms-excel", use_container_width=True)
-
 # =====================================================================
 # PESTAÑA 4: REPORTE GRÁFICO OFICIAL MUNICIPAL 2027
 # =====================================================================
 with tab_oficial:
     st.subheader("📋 Consulta de Presupuesto de Gasto por Destino Oficial")
-    
-    lista_of_mostrar = []
-    if not df_egr_completo.empty:
-        lista_of_mostrar = df_egr_completo.to_dict('records')
-        
-    if not lista_of_mostrar or (len(df_egr_completo) == 1 and df_egr_completo.iloc[0]["destino"] == ""):
-        st.info("No hay transacciones cargadas en el servidor actualmente.")
+    if df_egr_completo.empty or (len(df_egr_completo) == 1 and df_egr_completo.iloc[0]["destino"] == ""):
+        st.info("No hay transacciones cargadas actualmente en el sistema.")
     else:
         cf1, cf2, col_f3 = st.columns(3)
         with cf1: sec_s = st.selectbox("1. SELECCIONÁ SECRETARÍA:", options=[""] + opciones_secretarias, key="of_sec")
@@ -267,9 +255,6 @@ with tab_oficial:
                         <td style="width: 25%; text-align: center; background-color: #f5f5f5; vertical-align: middle;"><div style="font-size: 13px; font-weight: bold; border-bottom: 1px solid #000; padding: 4px 0;">Total Destino</div><div style="font-size: 18px; font-weight: bold;">${tot_dest:,.2f}</div></td>
                     </tr>
                 </table>
-                <div style="border-top: 1px solid #000; font-size: 11px; padding: 6px 10px;">
-                    <b>SECRETARÍA:</b> {sec_s} | <b>SUBSECRETARÍA:</b> {sub_s} | <span style="float: right;"><b>DESTINO:</b> {str(dest_s).upper()}</span>
-                </div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -286,13 +271,12 @@ with tab_oficial:
                         for _, r in df_pad.iterrows():
                             f_plan.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{r['cuenta_presupuestaria']}", "PRESUPUESTO": f"${r['total']:,.2f}", "F.FIN": r["fuente_fin"], "CLASE": r["clase"], "TIPO": r["tipo"], "FINANCIAMIENTO": r["finalidad"]})
                             html_rows += f'<tr><td style="text-align: left; padding-left: 40px;">{r["cuenta_presupuestaria"]}</td><td>${r["total"]:,.2f}</td><td>{r["fuente_fin"]}</td><td>{r["clase"]}</td><td>{r["tipo"]}</td><td>{r["finalidad"]}</td></tr>'
-
             if f_plan: st.write(pd.DataFrame(f_plan).to_html(escape=False, index=False), unsafe_allow_html=True)
 # =====================================================================
 # PESTAÑA 5: PANEL EXCLUSIVO DE MODIFICACIONES (SOLAPA AISLADA)
 # =====================================================================
 with tab_modificaciones:
-    st.subheader("🛠️ Panel Supervisor de Modificaciones y Actualización")
+    st.subheader("🛠️ Panel Supervisor de Modificaciones")
     
     diccionario_opciones = {}
     if not df_egr_completo.empty:
@@ -372,52 +356,8 @@ with tab_modificaciones:
                     st.rerun()
         except:
             st.info("💡 Sincronizando e indexando el listado del panel de control central...")
-            # =====================================================================
-            # MOTOR DE IMPRESIÓN AUTOMÁTICO HORIZONTAL (LANDSCAPE)
-            # =====================================================================
-            st.markdown("---")
-            html_imp = f"""
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <style>
-                    @page {{ size: A4 landscape; margin: 15mm; }}
-                    body {{ font-family: Arial, sans-serif; color: #000; margin: 0 auto; width: 100%; max-width: 1050px; }}
-                    .m-box {{ border: 1px solid #000; padding: 12px; margin-bottom: 20px; }}
-                    .t-hdr {{ width: 100%; border-collapse: collapse; }}
-                    .t-hdr td {{ padding: 5px; vertical-align: middle; border: none; }}
-                    .b-tot {{ border: 1px solid #000; background-color: #f5f5f5; text-align: center; }}
-                    .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }}
-                    .tabla-datos th {{ border-bottom: 2px solid #000; padding: 8px 5px; text-align: center; font-weight: bold; }}
-                    .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 8px 5px; vertical-align: middle; text-align: center; }}
-                    .tabla-datos th:first-child, .tabla-datos td:first-child {{ text-align: left !important; padding-left: 10px; }}
-                </style>
-            </head>
-            <body onload="window.print();">
-                <div class="m-box">
-                    <table class="t-hdr">
-                        <tr>
-                            <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Presupuesto Oficial 2027</span></td>
-                            <td style="width: 50%; text-align: center;"><b>PRESUPUESTO DE GASTO POR DESTINO</b><br><small>-2027-</small></td>
-                            <td style="width: 25%;" class="b-tot"><small>Total Destino</small><br><b>${tot_dest:,.2f}</b></td>
-                        </tr>
-                    </table>
-                    <div style="border-top: 1px solid #000; font-size: 11px; padding-top: 8px; margin-top: 8px;">
-                        <b>SECRETARÍA:</b> {sec_s} | <b>SUBSECRETARÍA:</b> {sub_s} | <span style="float: right;"><b>DESTINO:</b> {str(dest_s).upper()}</span>
-                    </div>
-                </div>
-                <table class="tabla-datos">
-                    <thead><tr><th>OBJETO DEL GASTO</th><th>PRESUPUESTO</th><th>F.FIN</th><th>CLASE</th><th>TIPO</th><th>FINANCIAMIENTO</th></tr></thead>
-                    <tbody>{html_rows}</tbody>
-                </table>
-            </body>
-            </html>
-            """
-            st.download_button(label="🖨️ GENERAR Y ABRIR REPORTE IMPRIMIBLE A PDF", data=html_imp, file_name=f"Reporte_{str(dest_s).replace(' ', '_')}.html", mime="text/html", use_container_width=True)
-            st.info("💡 Al hacer clic, se abrirá la ventana de impresión automática en horizontal con el membrete 2027.")
 
-# Barra lateral informativa de control permanente
+# --- BARRA LATERAL PERMANENTE ---
 st.sidebar.header("⚙️ Herramientas de Red")
 st.sidebar.info("Persistencia conectada cooperativamente al repositorio central de datos. Los registros se sincronizan con la hoja de cálculo municipal.")
-
 

@@ -211,7 +211,7 @@ with tab_agregar_destino:
         lista_destinos_mostrar = []
         if not df_dt_gsheet.empty and "destino" in df_dt_gsheet.columns:
             lista_destinos_mostrar = df_dt_gsheet[["subsecretaria", "destino"]].dropna().to_dict('records')
-        for d_l in st.session_state["db_local_backup"]["destinos"]:
+        for d_l in st.session_state.get("db_local_backup", {}).get("destinos", []):
             if {"subsecretaria": d_l["subsecretaria"], "destino": d_l["destino"]} not in lista_destinos_mostrar:
                 lista_destinos_mostrar.append({"subsecretaria": d_l["subsecretaria"], "destino": d_l["destino"]})
         if lista_destinos_mostrar:

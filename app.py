@@ -245,21 +245,24 @@ with tab_egresos:
     csv_global_data = df_excel_global.to_csv(index=False, sep=';').encode('utf-8-sig')
     st.download_button(label="📗 Descargar Base de Datos Completa en 11 Columnas (.xls)", data=csv_global_data, file_name="Base_De_Datos_Egresos_General.xls", mime="application/vnd.ms-excel", use_container_width=True)
 
-    # --- PANEL SUPERVISOR DE MODIFICACIONES CON CAMBIO DE PARTIDA ---
+    # --- PANEL SUPERVISOR DE MODIFICACIONES REPARADO ---
     if lista_egr_mostrar:
         st.markdown("---")
         st.markdown("### 🛠️ Panel Supervisor de Modificaciones")
         st.caption("Seleccioná un renglón para corregir sus valores, cambiar su partida de imputación o darlo de baja.")
         
-        opciones_mod = []
+        # Mapeamos las opciones usando un diccionario para vincular el texto con su índice real puro
+        diccionario_opciones = {}
         for idx, r in df_egr_completo.iterrows():
-            opciones_mod.append(f"Fila {idx+1} | Destino: {r['destino']} | Partida: {r['cuenta_presupuestaria']} | Monto: ${r['total']:,.2f}")
+            texto_descriptivo = f"Fila {idx+1} | Destino: {r['destino']} | Partida: {r['cuenta_presupuestaria']} | Monto: ${r['total']:,.2f}"
+            diccionario_opciones[texto_descriptivo] = idx
             
-        linea_sel = st.selectbox("Seleccioná el registro a modificar por su número de fila:", opciones_mod, key="sel_mod_panel")
-        idx_real = int(linea_sel.split(" ")) - 1
+        linea_sel = st.selectbox("Seleccioná el registro a modificar por su número de fila:", opciones=list(diccionario_opciones.keys()), key="sel_mod_panel")
+        
+        # Extraemos el índice numérico puro guardado en el diccionario sin romper textos
+        idx_real = diccionario_opciones[linea_sel]
         fila_r = df_egr_completo.iloc[idx_real]
         
-        # Recopilamos todas las partidas disponibles en tu plan de cuentas para armar la lista del selector
         todas_las_partidas_oficiales = []
         for obj_g in MAPEO_GASTOS:
             for c_padre in MAPEO_GASTOS[obj_g]:
@@ -281,7 +284,6 @@ with tab_egresos:
             nueva_fuente = st.selectbox("Cambiar F.Fin:", opciones_fuente_fin, index=opciones_fuente_fin.index(fila_r["fuente_fin"]) if fila_r["fuente_fin"] in opciones_fuente_fin else 0, key=f"f_{idx_real}")
             nuevo_finan = st.selectbox("Cambiar Finalidad:", opciones_finalidad, index=opciones_finalidad.index(fila_r["finalidad"]) if fila_r["finalidad"] in opciones_finalidad else 0, key=f"fin_{idx_real}")
             
-        # Buscamos de forma automática el Objeto y la Cuenta Padre que le corresponden a la nueva partida elegida
         nuevo_objeto_gasto = str(fila_r["objeto_gasto"])
         nueva_cuenta_padre = str(fila_r["cuenta_padre"])
         for obj_g, bloques in MAPEO_GASTOS.items():
@@ -293,11 +295,13 @@ with tab_egresos:
         col_b1, col_b2 = st.columns(2)
         with col_b1:
             if st.button("🔄 ACTUALIZAR REGISTRO SELECCIONADO", type="primary", use_container_width=True, key=f"bu_{idx_real}"):
-                st.session_state["db_local_backup"]["egresos"][idx_real] = {
-                    "secretaria": fila_r["secretaria"], "subsecretaria": fila_r["subsecretaria"], "destino": fila_r["destino"],
-                    "objeto_gasto": nuevo_objeto_gasto, "cuenta_padre": nueva_cuenta_padre, "cuenta_presupuestaria": nueva_partida,
-                    "total": nuevo_total, "fuente_fin": nueva_fuente, "clase": nueva_clase, "tipo": nuevo_tipo, "finalidad": nuevo_finan
-                }
+                # Modificamos de forma segura usando el índice numérico verificado
+                if idx_real < len(st.session_state["db_local_backup"]["egresos"]):
+                    st.session_state["db_local_backup"]["egresos"][idx_real] = {
+                        "secretaria": fila_r["secretaria"], "subsecretaria": fila_r["subsecretaria"], "destino": fila_r["destino"],
+                        "objeto_gasto": nuevo_objeto_gasto, "cuenta_padre": nueva_cuenta_padre, "cuenta_presupuestaria": nueva_partida,
+                        "total": nuevo_total, "fuente_fin": nueva_fuente, "clase": nueva_clase, "tipo": nuevo_tipo, "finalidad": nuevo_finan
+                    }
                 st.success("✅ ¡Registro modificado en memoria! Recordá replicar este cambio directamente en tu Google Sheet para mantener la sincronización.")
                 st.rerun()
         with col_b2:
@@ -307,7 +311,6 @@ with tab_egresos:
                 st.warning("🗑️ Registro removido del panel. Recordá borrar la fila correspondiente directamente en tu Google Sheet.")
                 st.rerun()
 
-# =====================================================================
 # =====================================================================
 # PESTAÑA 4: REPORTE GRÁFICO OFICIAL MUNICIPAL 2027
 # =====================================================================

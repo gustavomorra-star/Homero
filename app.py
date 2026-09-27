@@ -46,15 +46,6 @@ def guardar_fila_gsheet(hoja, diccionario_datos):
 st.title("🍩 Homero - Sistema de Registro Presupuestario")
 st.write("📍 Municipalidad de Sunchales | Conexión Cooperativa a Google Sheets **2027**")
 
-# Definición del ramillete de las 5 solapas independientes en la interfaz superior
-tab_formulario, tab_agregar_destino, tab_egresos, tab_oficial, tab_modificaciones = st.tabs([
-    "📝 FORMULARIO DE REGISTRO", 
-    "➕ GESTIÓN DE DESTINOS",
-    "📉 GENERAL (Base de Datos Sheet)",
-    "🏛️ REPORTE OFICIAL POR DESTINO",
-    "🛠️ PANEL DE MODIFICACIONES"
-])
-
 # --- Plan de Cuentas Oficial Municipal ---
 MAPEO_GASTOS = {
     "2. Bienes de consumo": {
@@ -91,7 +82,8 @@ tab_formulario, tab_agregar_destino, tab_egresos, tab_oficial = st.tabs([
     "📝 FORMULARIO DE REGISTRO", 
     "➕ GESTIÓN DE DESTINOS",
     "📉 GENERAL (Base de Datos Sheet)",
-    "🏛️ REPORTE OFICIAL POR DESTINO"
+    "🏛️ REPORTE OFICIAL POR DESTINO",
+    "🛠️ PANEL DE MODIFICACIONES"
 ])
 
 

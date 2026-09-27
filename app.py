@@ -437,3 +437,10 @@ with tab_oficial:
 
 st.sidebar.header("⚙️ Herramientas de Red")
 st.sidebar.info("Persistencia conectada cooperativamente al repositorio central de datos. Los registros se sincronizan con la hoja de cálculo municipal.")
+tab_formulario, tab_agregar_destino, tab_egresos, tab_oficial, tab_modificaciones = st.tabs([
+    "📝 FORMULARIO DE REGISTRO", 
+    "➕ GESTIÓN DE DESTINOS",
+    "📉 GENERAL (Base de Datos Sheet)",
+    "🏛️ REPORTE OFICIAL POR DESTINO",
+    "🛠️ PANEL DE MODIFICACIONES"
+])

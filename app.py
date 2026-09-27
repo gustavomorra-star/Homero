@@ -77,6 +77,7 @@ def leer_datos_gsheet(param_url_o_gid):
     df_vacio = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
     df_vacio["total"] = df_vacio["total"].astype(float)
     return df_vacio
+
 def guardar_fila_gsheet(pestana, nuevo_dict):
     if pestana in st.session_state["db_local_backup"]:
         st.session_state["db_local_backup"][pestana].append(nuevo_dict)
@@ -1027,7 +1028,7 @@ elif opcion_menu == "🏛️ REPORTE OFICIAL POR DESTINO":
 
                         for _, r in df_pad.iterrows():
                             f_plan.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{r['cuenta_presupuestaria']}", "PRESUPUESTO": f"${r['total']:,.2f}", "F.FIN": r["fuente_fin"], "CLASE": r["clase"], "TIPO": r["tipo"], "FINANCIAMIENTO": r["finalidad"]})
-                            html_rows += f'<tr><td style="text-align: left; padding-left: 40px;">{r["cuenta_presupuestaria"]}</td><td>${r["total"]:,.2f}</td><td>{r["fuente_fin"]}</td><td>{r["clase"]}</td><td>{r["tipo"]}</td><td>{r["finalidad"]}</td></tr>'
+                            html_rows += f'<tr><td style="text-align: left; padding-left: 40px;">{r["cuenta_presupuestaria"]}</td><td>${r["total']:,.2f}</td><td>{r["fuente_fin"]}</td><td>{r["clase"]}</td><td>{r["tipo"]}</td><td>{r["finalidad"]}</td></tr>'
 
                 st.write(pd.DataFrame(f_plan).to_html(escape=False, index=False), unsafe_allow_html=True)
 

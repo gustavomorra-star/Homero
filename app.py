@@ -310,7 +310,9 @@ opciones_clase = ["Corriente", "Capital"]
 opciones_tipo = ["Libre", "Afectado"]
 opciones_finalidad = ["Administración Central", "Promoción y asistencia social","Educación","Cultura","Ciencia y técnica","Servicios urbanos","Vivienda y urbanismo","Deuda Pública","Ecología y medio ambiente","Deporte y recreación","Obra pública","Apoyo a Instituciones","Desarrollo de Gestión","Legislativa", "Salud", "Seguridad","Promoción industrial y Laboral"]
 
+# =====================================================================
 # MENÚ LATERAL A LA IZQUIERDA (SIDEBAR)
+# =====================================================================
 with st.sidebar:
     st.title("🍩 Homero")
     st.caption("Municipalidad de Sunchales - 2027")
@@ -345,7 +347,7 @@ with st.sidebar:
 # =====================================================================
 # SECCIÓN: REGISTRO DE RECURSOS (INGRESOS)
 # =====================================================================
-elif opcion_menu == "📥 REGISTRO DE RECURSOS":
+if opcion_menu == "📥 REGISTRO DE RECURSOS":
     st.subheader("📥 Cargar Nuevo Recurso / Ingreso Presupuestario")
 
     df_rec_gsheet = leer_datos_gsheet(URL_READ_RECURSOS)
@@ -436,7 +438,7 @@ elif opcion_menu == "📥 REGISTRO DE RECURSOS":
         
         st.dataframe(df_v_rec, use_container_width=True, hide_index=True)
 
-        # --- BOTONES DE EXPORTACIÓN E IMPRESIÓN DENTRO DE LA PESTAÑA ---
+        # --- BOTONES DE EXPORTACIÓN E IMPRESIÓN ---
         st.markdown("---")
         col_exp1, col_exp2 = st.columns(2)
         
@@ -486,6 +488,12 @@ elif opcion_menu == "📥 REGISTRO DE RECURSOS":
         """, unsafe_allow_html=True)
     else:
         st.info("💡 Todavía no hay recursos registrados.")
+
+# =====================================================================
+# SECCIÓN 1: FORMULARIO PRINCIPAL DE REGISTRO (Egresos)
+# =====================================================================
+elif opcion_menu == "📝 FORMULARIO DE REGISTRO":
+    # ... resto de tus opciones con elif ...
 # =====================================================================
 # SECCIÓN 1: FORMULARIO PRINCIPAL DE REGISTRO (Egresos)
 # =====================================================================

@@ -33,17 +33,6 @@ for k in ["destinos", "egresos", "recursos"]:
     if k not in st.session_state["db_local_backup"] or not isinstance(st.session_state["db_local_backup"][k], list):
         st.session_state["db_local_backup"][k] = []
 
-# Opciones globales para el módulo de recursos
-opciones_origen_recurso = [
-    "Tributarios", 
-    "No Tributarios", 
-    "Coparticipación Provincial", 
-    "Coparticipación Nacional", 
-    "Transferencias y Afectaciones", 
-    "Recursos de Capital"
-]
-opciones_jurisdiccion = ["Municipal", "Provincial", "Nacional"]
-
 # Configuración de la página
 st.set_page_config(page_title="Presupuesto Municipal 2027", layout="wide")
 
@@ -111,7 +100,7 @@ def guardar_fila_gsheet(pestana, nuevo_dict):
 df_egr_completo = leer_datos_gsheet(URL_READ_EGRESOS)
 df_destinos_gsheet = leer_datos_gsheet(URL_READ_DESTINOS)
 
-# --- Plan de Cuentas Oficial Municipal ---
+# --- Plan de Cuentas Oficial Municipal (Egresos) ---
 MAPEO_GASTOS = {
     "1. Gastos en personal": {
         "21.1.0.0.00.000 - Personal Permanente": [
@@ -192,6 +181,119 @@ MAPEO_GASTOS = {
     }
 }
 
+# --- Plan de Cuentas Oficial de Recursos ---
+MAPEO_RECURSOS = {
+    "11.1.0.0.00.000 - Ingresos Tributarios": {
+        "11.1.2.0.00.000 - Sobre el Patrimonio": [
+            "11.1.2.1.01.000 - TGIU", "11.1.2.1.02.000 - TGIU Anual", "11.1.2.1.03.000 - TGIU Ejercicios Anteriores",
+            "11.1.2.2.01.000 - TGIS", "11.1.2.2.02.000 - TGIS Ejercicios Anteriores", "11.1.2.3.01.000 - TGIR",
+            "11.1.2.3.02.000 - TGIR Ejercicios Anteriores", "11.1.2.4.01.000 - Área de Promoción Industrial", "11.1.2.4.02.000 - Área de Promoción Industrial Ej. Anteriores"
+        ],
+        "11.1.3.1.00.000 - Derechos Registro e Inspección": ["11.1.3.1.01.000 - DREI", "11.1.3.1.02.000 - DREI Ejercicios Anteriores"],
+        "11.1.4.0.00.000 - Otros Tributos de Origen Nacional": ["11.1.4.1.01.000 - Coparticipación Impuestos Rtas. Gles."],
+        "11.1.5.0.00.000 - Otros Tributos de Jurisdicción Provincial": [
+            "11.1.5.1.01.000 - Coparticipación Ingresos Brutos", "11.1.5.1.02.000 - Coparticipación Patente Automotor",
+            "11.1.5.1.03.000 - Coparticipación Imp. Inmobiliario", "11.1.5.1.04.000 - Coparticipación Prode-Lotería",
+            "11.1.5.1.05.000 - Multas Convenio 3977", "11.1.5.1.06.000 - Convenio Pago Patente", "11.1.5.1.07.000 - Consenso Fiscal"
+        ],
+        "11.1.9.1.00.000 - Otros Ingresos": ["11.1.9.1.01.000 - Licencia de Conducir", "11.1.9.1.02.000 - E.P.E 6%"],
+        "11.1.9.2.00.000 - ADICIONALES A TRIBUTOS": [
+            "11.1.9.2.01.000 - Fondo de Serv. At. Médica (SAMCO)", "11.1.9.2.02.000 - Aporte ENRES",
+            "11.1.9.2.03.000 - Aporte Vol. Coop. Com. N 3", "11.1.9.2.04.000 - Fondo para Planta de Tratamiento de Residuos Urb",
+            "11.1.9.2.05.000 - Fondo Obra Solidario", "11.1.9.2.06.000 - Aporte Los Pumas",
+            "11.1.9.2.07.000 - Aporte Bomberos Voluntarios", "11.1.9.2.08.000 - Obras y Servicios Complementarios"
+        ]
+    },
+    "11.2.0.0.00.000 - Ingresos No Tributarios": {
+        "11.2.1.1.00.000 - Servicios Administrativos": [
+            "11.2.1.1.01.000 - Tasa Administrativa DREI", "11.2.1.1.02.000 - Tasas Administrativas Varias",
+            "11.2.1.2.01.000 - Publicidad Sonora", "11.2.1.2.02.001 - Visado Previo de Planos de Mensura",
+            "11.2.1.2.02.002 - Derecho planos de mensura/Subd", "11.2.1.2.02.003 - Permiso de Obra",
+            "11.2.1.2.03.000 - Servicios Cloacales y de Control", "11.2.1.2.04.000 - Tasa de Remate",
+            "11.2.1.2.05.000 - Fumigación rural (Desmalezado)", "11.2.1.2.06.000 - Cementerio -Conservación y mantenimiento anual-"
+        ],
+        "11.2.2.2.00.000 - Derecho Ocupación Vía Pública": [
+            "11.2.2.2.01.000 - Ocupación Dominio Público (Espacio Aéreo)", "11.2.2.2.02.000 - Exhibición de Mercaderías", "11.2.2.2.03.000 - Ocupación de veredas y calles"
+        ],
+        "11.2.2.7.00.000 - Derecho Permisos Generales": [
+            "11.2.2.7.01.000 - Derecho Uso de Maquinarias", "11.2.2.7.02.000 - Saneamiento Ambiental",
+            "11.2.2.7.03.000 - Derecho de antenas y estructuras", "11.2.2.7.04.000 - Derecho uso de plataforma Terminal", "11.2.2.7.05.000 - Derecho Disposición de residuos"
+        ],
+        "11.2.5.0.00.000 - Alquileres y Concesiones": ["11.2.5.1.00.000 - Alquiler de Nichos y Panteones", "11.2.5.2.00.000 - Alquiler Loc. Terminal"],
+        "11.2.6.0.00.000 - Multas": [
+            "11.2.6.1.00.000 - Recargo TGIU Atrasadas", "11.2.6.2.00.000 - Cobro Judicial de Tributos",
+            "11.2.6.3.00.000 - Recargo TGIR Atrasadas", "11.2.6.4.00.000 - Recargo TGIS Atrasadas",
+            "11.2.6.5.00.000 - Recargo DREI Atrasados", "11.2.6.6.00.000 - Faltas de Tránsito",
+            "11.2.6.7.08.000 - Multa por desmalezamiento", "11.2.6.9.01.000 - Recargo Ripio",
+            "11.2.6.9.02.000 - Recargo Cloacas Atrasadas", "11.2.6.9.03.000 - Recargo Cordón Cuneta atrasado",
+            "11.2.6.9.04.000 - Recargo Pavimento", "11.2.6.9.05.000 - Recargo Sunchalote"
+        ],
+        "11.2.9.0.00.000 - Otros Ingresos": [
+            "11.2.9.1.00.000 - Eventos Culturales", "11.2.9.2.00.000 - Estacionamiento Medido",
+            "11.2.9.3.00.000 - Cuota Liceo Municipal", "11.2.9.4.00.000 - Auspicios y Publicidad",
+            "11.2.9.5.00.000 - Otros Ingresos", "11.2.9.5.01.000 - Fondo Acción Vecinal"
+        ],
+        "11.4.0.0.00.000 - Venta de bienes y servicios": ["11.4.1.0.00.000 - Venta de Rezago"]
+    },
+    "11.6.0.0.00.000 - Renta de la Propiedad": {
+        "11.6.1.0.00.000 - Intereses por Préstamos": [
+            "11.6.1.1.00.000 - Intereses por Préstamos a Microemprendedores",
+            "11.6.1.2.00.000 - Intereses por préstamos a emprendedores",
+            "11.6.1.3.00.000 - Interes préstamos Ayudas Económicas reintegrables"
+        ],
+        "11.6.2.0.00.000 - Intereses por Depósitos y Plazos Fijos": [
+            "11.6.2.1.00.000 - Intereses FCI en $", "11.6.2.2.01.000 - Plazo Fijo BNA",
+            "11.6.2.2.02.000 - Plazo Fijo NBSF", "11.6.2.2.03.000 - Plazo Fijo Bco Macro", "11.6.4.0.00.000 - Comisión Santa Fe Servicios"
+        ]
+    },
+    "11.7.0.0.00.000 - Transferencias Corrientes": {
+        "11.7.5.0.00.000 - De Gobiernos e Instituciones Provinciales": [
+            "11.7.5.1.01.000 - Subsidio Área Mujer", "11.7.5.1.02.000 - Casa de Amparo",
+            "11.7.5.1.03.000 - Servicio local de promoción y protección de Derechos", "11.7.5.1.04.000 - Programa SUMAR",
+            "11.7.5.1.05.000 - Obras Menores", "11.7.5.1.05.001 - Obras Menores Ej. Anteriores",
+            "11.7.5.1.06.000 - Convenio SUJIT", "11.7.5.1.07.000 - Movilidad Rural",
+            "11.7.5.1.08.000 - Programa Parque de los Encuentros", "11.7.5.1.09.001 - Objetivo Dengue", "11.7.5.1.09.002 - Aporte para Eventos Culturales"
+        ]
+    },
+    "12.1.0.0.00.000 - Recursos Propios de Capital": {
+        "12.1.1.1.00.000 - Venta de Tierras y Terrenos": ["12.1.1.1.01.000 - Plan Sunchalote", "12.1.1.1.02.000 - Venta Lote GIRSU", "12.1.1.1.03.000 - Venta de Lotes Parque Industrial"],
+        "12.1.2.0.00.000 - Contribución por Mejoras": [
+            "12.1.2.1.01.000 - Construcción Pavimento Urbano", "12.1.2.1.02.000 - Construcción Pavimento Urbano Ej. Anteriores",
+            "12.1.2.2.01.000 - Ampl. Red Desagüe Cloacal", "12.1.2.2.02.000 - Ampl. Red Desagüe cloacal Ej. Anteriores",
+            "12.1.2.3.01.000 - Construcción Cordón Cuneta", "12.1.2.3.02.000 - Const. Cordón Cuneta Ej. Anteriores",
+            "12.1.2.4.01.000 - Cont. Mej. Caminos de la Ruralidad", "12.1.2.5.01.000 - Recambios Luminarias LED",
+            "12.1.2.6.03.001 - Pavimento Barrio Colón", "12.1.2.6.03.002 - Pavimento Lomas del Sur Este",
+            "12.1.2.6.03.003 - Pavimento Av. Sarmiento", "12.1.2.6.03.004 - Pavimento Hurra Llanura",
+            "12.1.2.6.04.001 - Cloacas Moreno-Alassia", "12.1.2.6.04.002 - Cloacas Sur",
+            "12.1.2.6.04.003 - Cloacas Roch-Rambaudi", "12.1.2.6.04.004 - Cloacas Moreno-Rossi"
+        ]
+    },
+    "12.2.0.0.00.000 - Transferencias de Capital": {
+        "12.2.1.0.00.000 - Del Sector Privado": ["12.2.1.1.00.000 - Aporte GSS Traslado Planta de Residuos"],
+        "12.2.2.0.00.000 - De la Administración Nacional": ["12.2.2.1.00.000 - Plan Habitacional Sunchales"],
+        "12.2.5.0.00.000 - De Gobiernos Provinciales y Municipales": [
+            "12.2.5.1.00.000 - Const. Viviendas Lote Propio", "12.2.5.2.00.000 - Obras Menores",
+            "12.2.5.2.01.000 - Obras Menores Ej. Anteriores", "12.2.5.3.00.000 - Plan Incluir",
+            "12.2.5.4.00.000 - Fondo Financiamiento Educativo", "12.2.5.5.00.000 - Ruralidad",
+            "12.2.5.6.00.000 - POU", "12.2.5.7.00.000 - Recambio Red Cloacal"
+        ]
+    },
+    "13.0.0.0.00.000 - Activos Financieros": {
+        "13.3.0.0.00.000 - Recuperación de Préstamos": [
+            "13.3.1.0.00.000 - Devolución Ayudas Económicas Reintegrables",
+            "13.3.2.0.00.000 - Devolución Préstamos Microemprendedores",
+            "13.3.3.0.00.000 - Devolución Créditos emprendedores"
+        ],
+        "13.7.0.0.00.000 - Obtención de Préstamos": ["13.7.1.0.00.000 - PRO.MU.DI"]
+    },
+    "Fuentes Financieras": {
+        "Remanentes": ["Remanente ejercicio anterior Libre", "Remanente ejercicio anterior afectado"]
+    }
+}
+
+opciones_origen_recurso = list(MAPEO_RECURSOS.keys())
+opciones_tipo_recurso = ["Corriente", "Capital"]
+
 MAPEO_ESTRUCTURA = {
     "AGENCIA MUNICIPAL DE SEGURIDAD": ["AGENCIA MUNICIPAL DE SEGURIDAD"],
     "SECRETARÍA DE GESTIÓN AMBIENTAL Y TERRITORIAL": ["SUBSECRETARÍA DE OBRAS", "SUBSECRETARÍA DE AMBIENTE Y ACCIÓN CLIMÁTICA"],
@@ -207,203 +309,8 @@ opciones_fuente_fin = ["Municipal", "Provincial", "Nacional"]
 opciones_clase = ["Corriente", "Capital"]
 opciones_tipo = ["Libre", "Afectado"]
 opciones_finalidad = ["Administración Central", "Promoción y asistencia social","Educación","Cultura","Ciencia y técnica","Servicios urbanos","Vivienda y urbanismo","Deuda Pública","Ecología y medio ambiente","Deporte y recreación","Obra pública","Apoyo a Instituciones","Desarrollo de Gestión","Legislativa", "Salud", "Seguridad","Promoción industrial y Laboral"]
-# =====================================================================
-# PLAN DE CUENTAS OFICIAL DE RECURSOS - MUNICIPALIDAD DE SUNCHALES
-# =====================================================================
-MAPEO_RECURSOS = {
-    "11.1.0.0.00.000 - Ingresos Tributarios": {
-        "11.1.2.0.00.000 - Sobre el Patrimonio": [
-            "11.1.2.1.01.000 - TGIU",
-            "11.1.2.1.02.000 - TGIU Anual",
-            "11.1.2.1.03.000 - TGIU Ejercicios Anteriores",
-            "11.1.2.2.01.000 - TGIS",
-            "11.1.2.2.02.000 - TGIS Ejercicios Anteriores",
-            "11.1.2.3.01.000 - TGIR",
-            "11.1.2.3.02.000 - TGIR Ejercicios Anteriores",
-            "11.1.2.4.01.000 - Área de Promoción Industrial",
-            "11.1.2.4.02.000 - Área de Promoción Industrial Ej. Anteriores"
-        ],
-        "11.1.3.1.00.000 - Derechos Registro e Inspección": [
-            "11.1.3.1.01.000 - DREI",
-            "11.1.3.1.02.000 - DREI Ejercicios Anteriores"
-        ],
-        "11.1.4.0.00.000 - Otros Tributos de Origen Nacional": [
-            "11.1.4.1.01.000 - Coparticipación Impuestos Rtas. Gles."
-        ],
-        "11.1.5.0.00.000 - Otros Tributos de Jurisdicción Provincial": [
-            "11.1.5.1.01.000 - Coparticipación Ingresos Brutos",
-            "11.1.5.1.02.000 - Coparticipación Patente Automotor",
-            "11.1.5.1.03.000 - Coparticipación Imp. Inmobiliario",
-            "11.1.5.1.04.000 - Coparticipación Prode-Lotería",
-            "11.1.5.1.05.000 - Multas Convenio 3977",
-            "11.1.5.1.06.000 - Convenio Pago Patente",
-            "11.1.5.1.07.000 - Consenso Fiscal"
-        ],
-        "11.1.9.1.00.000 - Otros Ingresos": [
-            "11.1.9.1.01.000 - Licencia de Conducir",
-            "11.1.9.1.02.000 - E.P.E 6%"
-        ],
-        "11.1.9.2.00.000 - ADICIONALES A TRIBUTOS": [
-            "11.1.9.2.01.000 - Fondo de Serv. At. Médica (SAMCO)",
-            "11.1.9.2.02.000 - Aporte ENRES",
-            "11.1.9.2.03.000 - Aporte Vol. Coop. Com. N 3",
-            "11.1.9.2.04.000 - Fondo para Planta de Tratamiento de Residuos Urb",
-            "11.1.9.2.05.000 - Fondo Obra Solidario",
-            "11.1.9.2.06.000 - Aporte Los Pumas",
-            "11.1.9.2.07.000 - Aporte Bomberos Voluntarios",
-            "11.1.9.2.08.000 - Obras y Servicios Complementarios"
-        ]
-    },
-    "11.2.0.0.00.000 - Ingresos No Tributarios": {
-        "11.2.1.1.00.000 - Servicios Administrativos": [
-            "11.2.1.1.01.000 - Tasa Administrativa DREI",
-            "11.2.1.1.02.000 - Tasas Administrativas Varias",
-            "11.2.1.2.01.000 - Publicidad Sonora",
-            "11.2.1.2.02.001 - Visado Previo de Planos de Mensura",
-            "11.2.1.2.02.002 - Derecho planos de mensura/Subd",
-            "11.2.1.2.02.003 - Permiso de Obra",
-            "11.2.1.2.03.000 - Servicios Cloacales y de Control",
-            "11.2.1.2.04.000 - Tasa de Remate",
-            "11.2.1.2.05.000 - Fumigación rural (Desmalezado)",
-            "11.2.1.2.06.000 - Cementerio -Conservación y mantenimiento anual-"
-        ],
-        "11.2.2.2.00.000 - Derecho Ocupación Vía Pública": [
-            "11.2.2.2.01.000 - Ocupación Dominio Público (Espacio Aéreo)",
-            "11.2.2.2.02.000 - Exhibición de Mercaderías",
-            "11.2.2.2.03.000 - Ocupación de veredas y calles"
-        ],
-        "11.2.2.7.00.000 - Derecho Permisos Generales": [
-            "11.2.2.7.01.000 - Derecho Uso de Maquinarias",
-            "11.2.2.7.02.000 - Saneamiento Ambiental",
-            "11.2.2.7.03.000 - Derecho de antenas y estructuras",
-            "11.2.2.7.04.000 - Derecho uso de plataforma Terminal",
-            "11.2.2.7.05.000 - Derecho Disposición de residuos"
-        ],
-        "11.2.5.0.00.000 - Alquileres y Concesiones": [
-            "11.2.5.1.00.000 - Alquiler de Nichos y Panteones",
-            "11.2.5.2.00.000 - Alquiler Loc. Terminal"
-        ],
-        "11.2.6.0.00.000 - Multas": [
-            "11.2.6.1.00.000 - Recargo TGIU Atrasadas",
-            "11.2.6.2.00.000 - Cobro Judicial de Tributos",
-            "11.2.6.3.00.000 - Recargo TGIR Atrasadas",
-            "11.2.6.4.00.000 - Recargo TGIS Atrasadas",
-            "11.2.6.5.00.000 - Recargo DREI Atrasados",
-            "11.2.6.6.00.000 - Faltas de Tránsito",
-            "11.2.6.7.08.000 - Multa por desmalezamiento",
-            "11.2.6.9.01.000 - Recargo Ripio",
-            "11.2.6.9.02.000 - Recargo Cloacas Atrasadas",
-            "11.2.6.9.03.000 - Recargo Cordón Cuneta atrasado",
-            "11.2.6.9.04.000 - Recargo Pavimento",
-            "11.2.6.9.05.000 - Recargo Sunchalote"
-        ],
-        "11.2.9.0.00.000 - Otros Ingresos": [
-            "11.2.9.1.00.000 - Eventos Culturales",
-            "11.2.9.2.00.000 - Estacionamiento Medido",
-            "11.2.9.3.00.000 - Cuota Liceo Municipal",
-            "11.2.9.4.00.000 - Auspicios y Publicidad",
-            "11.2.9.5.00.000 - Otros Ingresos",
-            "11.2.9.5.01.000 - Fondo Acción Vecinal"
-        ],
-        "11.4.0.0.00.000 - Venta de bienes y servicios": [
-            "11.4.1.0.00.000 - Venta de Rezago"
-        ]
-    },
-    "11.6.0.0.00.000 - Renta de la Propiedad": {
-        "11.6.1.0.00.000 - Intereses por Préstamos": [
-            "11.6.1.1.00.000 - Intereses por Préstamos a Microemprendedores",
-            "11.6.1.2.00.000 - Intereses por préstamos a emprendedores",
-            "11.6.1.3.00.000 - Interes préstamos Ayudas Económicas reintegrables"
-        ],
-        "11.6.2.0.00.000 - Intereses por Depósitos y Plazos Fijos": [
-            "11.6.2.1.00.000 - Intereses FCI en $",
-            "11.6.2.2.01.000 - Plazo Fijo BNA",
-            "11.6.2.2.02.000 - Plazo Fijo NBSF",
-            "11.6.2.2.03.000 - Plazo Fijo Bco Macro",
-            "11.6.4.0.00.000 - Comisión Santa Fe Servicios"
-        ]
-    },
-    "11.7.0.0.00.000 - Transferencias Corrientes": {
-        "11.7.5.0.00.000 - De Gobiernos e Instituciones Provinciales": [
-            "11.7.5.1.01.000 - Subsidio Área Mujer",
-            "11.7.5.1.02.000 - Casa de Amparo",
-            "11.7.5.1.03.000 - Servicio local de promoción y protección de Derechos",
-            "11.7.5.1.04.000 - Programa SUMAR",
-            "11.7.5.1.05.000 - Obras Menores",
-            "11.7.5.1.05.001 - Obras Menores Ej. Anteriores",
-            "11.7.5.1.06.000 - Convenio SUJIT",
-            "11.7.5.1.07.000 - Movilidad Rural",
-            "11.7.5.1.08.000 - Programa Parque de los Encuentros",
-            "11.7.5.1.09.001 - Objetivo Dengue",
-            "11.7.5.1.09.002 - Aporte para Eventos Culturales"
-        ]
-    },
-    "12.1.0.0.00.000 - Recursos Propios de Capital": {
-        "12.1.1.1.00.000 - Venta de Tierras y Terrenos": [
-            "12.1.1.1.01.000 - Plan Sunchalote",
-            "12.1.1.1.02.000 - Venta Lote GIRSU",
-            "12.1.1.1.03.000 - Venta de Lotes Parque Industrial"
-        ],
-        "12.1.2.0.00.000 - Contribución por Mejoras": [
-            "12.1.2.1.01.000 - Construcción Pavimento Urbano",
-            "12.1.2.1.02.000 - Construcción Pavimento Urbano Ej. Anteriores",
-            "12.1.2.2.01.000 - Ampl. Red Desagüe Cloacal",
-            "12.1.2.2.02.000 - Ampl. Red Desagüe cloacal Ej. Anteriores",
-            "12.1.2.3.01.000 - Construcción Cordón Cuneta",
-            "12.1.2.3.02.000 - Const. Cordón Cuneta Ej. Anteriores",
-            "12.1.2.4.01.000 - Cont. Mej. Caminos de la Ruralidad",
-            "12.1.2.5.01.000 - Recambios Luminarias LED",
-            "12.1.2.6.03.001 - Pavimento Barrio Colón",
-            "12.1.2.6.03.002 - Pavimento Lomas del Sur Este",
-            "12.1.2.6.03.003 - Pavimento Av. Sarmiento",
-            "12.1.2.6.03.004 - Pavimento Hurra Llanura",
-            "12.1.2.6.04.001 - Cloacas Moreno-Alassia",
-            "12.1.2.6.04.002 - Cloacas Sur",
-            "12.1.2.6.04.003 - Cloacas Roch-Rambaudi",
-            "12.1.2.6.04.004 - Cloacas Moreno-Rossi"
-        ]
-    },
-    "12.2.0.0.00.000 - Transferencias de Capital": {
-        "12.2.1.0.00.000 - Del Sector Privado": [
-            "12.2.1.1.00.000 - Aporte GSS Traslado Planta de Residuos"
-        ],
-        "12.2.2.0.00.000 - De la Administración Nacional": [
-            "12.2.2.1.00.000 - Plan Habitacional Sunchales"
-        ],
-        "12.2.5.0.00.000 - De Gobiernos Provinciales y Municipales": [
-            "12.2.5.1.00.000 - Const. Viviendas Lote Propio",
-            "12.2.5.2.00.000 - Obras Menores",
-            "12.2.5.2.01.000 - Obras Menores Ej. Anteriores",
-            "12.2.5.3.00.000 - Plan Incluir",
-            "12.2.5.4.00.000 - Fondo Financiamiento Educativo",
-            "12.2.5.5.00.000 - Ruralidad",
-            "12.2.5.6.00.000 - POU",
-            "12.2.5.7.00.000 - Recambio Red Cloacal"
-        ]
-    },
-    "13.0.0.0.00.000 - Activos Financieros": {
-        "13.3.0.0.00.000 - Recuperación de Préstamos": [
-            "13.3.1.0.00.000 - Devolución Ayudas Económicas Reintegrables",
-            "13.3.2.0.00.000 - Devolución Préstamos Microemprendedores",
-            "13.3.3.0.00.000 - Devolución Créditos emprendedores"
-        ],
-        "13.7.0.0.00.000 - Obtención de Préstamos": [
-            "13.7.1.0.00.000 - PRO.MU.DI"
-        ]
-    },
-    "Fuentes Financieras": {
-        "Remanentes": [
-            "Remanente ejercicio anterior Libre",
-            "Remanente ejercicio anterior afectado"
-        ]
-    }
-}
 
-opciones_origen_recurso = list(MAPEO_RECURSOS.keys())
-opciones_tipo_recurso = ["Corriente", "Capital"]
-# =====================================================================
 # MENÚ LATERAL A LA IZQUIERDA (SIDEBAR)
-# =====================================================================
 with st.sidebar:
     st.title("🍩 Homero")
     st.caption("Municipalidad de Sunchales - 2027")
@@ -413,7 +320,7 @@ with st.sidebar:
         [
             "📝 FORMULARIO DE REGISTRO", 
             "➕ GESTIÓN DE DESTINOS",
-            "📥 REGISTRO DE RECURSOS",  # <--- Asegurate que esté aquí en el menú
+            "📥 REGISTRO DE RECURSOS",
             "📉 GENERAL (Base de Datos Sheet)",
             "🏛️ REPORTE OFICIAL POR DESTINO",
             "🛠️ PANEL DE MODIFICACIONES",
@@ -434,13 +341,13 @@ with st.sidebar:
             "🔄 COMPARATIVO E HISTÓRICO"
         ]
     )
+
 # =====================================================================
 # SECCIÓN: REGISTRO DE RECURSOS (INGRESOS)
 # =====================================================================
 if opcion_menu == "📥 REGISTRO DE RECURSOS":
     st.subheader("📥 Cargar Nuevo Recurso / Ingreso Presupuestario")
 
-    # Cargar recursos actuales desde Google Sheet y backup local
     df_rec_gsheet = leer_datos_gsheet(URL_READ_RECURSOS)
     lista_rec_mostrar = []
     if not df_rec_gsheet.empty:
@@ -460,22 +367,34 @@ if opcion_menu == "📥 REGISTRO DE RECURSOS":
 
     col_r1, col_r2 = st.columns(2)
     with col_r1:
-        r_concepto = st.text_input("Concepto:", placeholder="Ej: Tasa General de Inmuebles...", key="rec_concepto")
+        st.markdown("**📍 1. Clasificación del Recurso**")
+        r_origen = st.selectbox("ORIGEN GENERAL:", options=[""] + opciones_origen_recurso, format_func=lambda x: "--- Seleccioná ---" if x == "" else x, key="rec_origen_map")
+        
+        r_cuenta_padre = ""
+        r_concepto = ""
+        if r_origen != "":
+            padre_opts = list(MAPEO_RECURSOS[r_origen].keys())
+            r_cuenta_padre = st.selectbox("PARTIDA / CUENTA PADRE:", options=[""] + padre_opts, format_func=lambda x: "--- Seleccioná ---" if x == "" else x, key="rec_padre_map")
+            
+            if r_cuenta_padre != "":
+                conceptos_opts = MAPEO_RECURSOS[r_origen][r_cuenta_padre]
+                r_concepto = st.selectbox("CONCEPTO ESPECÍFICO:", options=[""] + conceptos_opts, format_func=lambda x: "--- Seleccioná ---" if x == "" else x, key="rec_con_map")
+
+        r_tipo = st.selectbox("TIPO:", options=[""] + opciones_tipo_recurso, format_func=lambda x: "--- Seleccioná ---" if x == "" else x, key="rec_tipo_map")
+
+    with col_r2:
+        st.markdown("**📊 2. Destino y Montos**")
+        r_destino = st.text_input("Destino:", placeholder="Ej: Rentas Generales, Obras Públicas...", key="rec_destino")
         r_valor = st.number_input("VALOR ($):", min_value=0.0, step=100.0, key="rec_valor")
         r_totales = st.number_input("TOTALES ($):", min_value=0.0, step=100.0, key="rec_totales")
-    
-    with col_r2:
-        r_destino = st.text_input("Destino:", placeholder="Ej: Rentas Generales...", key="rec_destino")
-        r_tipo = st.selectbox("Tipo:", options=["", "Corriente", "Capital"], key="rec_tipo")
-        r_origen = st.selectbox("Origen:", options=["", "Tributario", "No Tributario", "Coparticipación", "Transferencia"], key="rec_origen")
 
     st.markdown("---")
     
-    recurso_completo = (r_concepto.strip() != "") and (r_valor > 0) and (r_destino.strip() != "") and (r_tipo != "") and (r_origen != "")
+    recurso_completo = (r_origen != "") and (r_concepto != "") and (r_tipo != "") and (r_destino.strip() != "") and (r_valor > 0)
 
     if st.button("💾 GUARDAR RECURSO EN GOOGLE SHEETS", type="primary", use_container_width=True, disabled=not recurso_completo):
         nuevo_recurso = {
-            "concepto": r_concepto.strip().upper(),
+            "concepto": f"{r_cuenta_padre} -> {r_concepto}".upper(),
             "valor": r_valor,
             "totales": r_totales,
             "destino": r_destino.strip().upper(),
@@ -508,7 +427,7 @@ if opcion_menu == "📥 REGISTRO DE RECURSOS":
         st.info("💡 Todavía no hay recursos registrados.")
 
 # =====================================================================
-# SECCIÓN 1: FORMULARIO PRINCIPAL DE REGISTRO
+# SECCIÓN 1: FORMULARIO PRINCIPAL DE REGISTRO (Egresos)
 # =====================================================================
 elif opcion_menu == "📝 FORMULARIO DE REGISTRO":
     st.subheader("📥 Cargar Nuevo Renglón Presupuestario")

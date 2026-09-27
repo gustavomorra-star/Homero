@@ -112,383 +112,632 @@ MAPEO_GASTOS = {
             "21.3.1.0.00.000 - Retribuciones extraordinarias",
             "21.3.2.0.00.000 - Sueldo anual complementario",
             "21.3.3.0.00.000 - Contribuciones patronales",
-            "21.3.4.0.00.000 - Otros Gastos en Personal"
+            "21.3.4.0.00.000 - Otros Gastos en Personal",
+            "21.3.4.1.00.000 - Aportes Personales",
+            "21.3.4.2.00.000 - Aportes Sindicales",
+            "21.3.5.0.00.000 - Anticipo Financiero"
         ],
         "21.4.0.0.00.000 - Asignaciones familiares": [
-            "21.4.1.0.00.000 - Asignaciones familiares"
+            "21.4.0.0.00.000 - Asignaciones familiares"
         ],
         "21.5.0.0.00.000 - Asistencia social al personal": [
-            "21.5.1.0.00.000 - Asistencia social al personal",
-            "21.5.2.0.00.000 - Seguros"
+            "21.5.1.0.00.000 - Seguro de riesto de trabajo",
+            "21.5.9.0.00.000 - Otras asistenvias sociales al personal"
         ],
         "21.6.0.0.00.000 - Beneficios y compensaciones": [
-            "21.6.1.0.00.000 - Indumentaria",
-            "21.6.2.0.00.000 - Servicios de Comedor",
-            "21.6.3.0.00.000 - Compensaciones"
+            "21.6.0.0.00.000 - Beneficios y compensaciones"
         ],
-        "21.7.0.0.00.000 - Gabinete Ejecutivo Municipal": [
-            "21.7.1.0.00.000 - Personal Gabinete",
-            "21.7.1.1.00.000 - Intendente",
-            "21.7.1.2.00.000 - Secretarios",
-            "21.7.1.3.00.000 - Subsecretarios",
-            "21.7.1.4.00.000 - Coordinadores y directores",
-            "21.7.1.5.00.000 - Fiscal Municipal",
-            "21.7.2.0.00.000 - Sueldo Anual Complementario",
-            "21.7.3.0.00.000 - Aportes Personales",
-            "21.7.4.0.00.000 - Contribuciones Patronales",
-            "21.7.5.0.00.000 - Gastos de Representación",
-            "21.7.6.0.00.000 - Anticipo Financiero"
+        "21.7.0.0.00.000 - Gabinete de autoridades superiores del poder Ejecutivo": [
+            "21.7.0.0.00.000 - Gabinete de autoridades superiores del poder Ejecutivo"
         ],
-        "21.8.0.0.00.000 - Concejales": [
-            "21.8.1.0.00.000 - Dietas Concejales",
-            "21.8.2.0.00.000 - Sueldo Anual Complementario",
-            "21.8.3.0.00.000 - Aportes Personales",
-            "21.8.4.0.00.000 - Contribuciones Patronales",
-            "21.8.5.0.00.000 - Gastos de Representación",
-            "21.8.6.0.00.000 - Anticipo Financiero"
+        "21.8.0.0.00.000 - Personal Contratado": [
+            "21.8.1.0.00.000 - Retribuciones por contratos",
+            "21.8.2.0.00.000 - Adicionales al contrato",
+            "21.8.3.0.00.000 - Sueldo Anual Complementario",
+            "21.8.5.0.00.000 - Contribuciones patronales",
+            "21.8.7.0.00.000 - Contratos especiales",
+            "21.8.8.0.00.000 - Otros Gastos en Personal",
+            "21.8.8.1.00.000 - Aportes Personales",
+            "21.8.8.2.00.000 - Aportes Sindicales",
+            "21.8.9.0.00.000 - Anticipo Financiero"
         ],
-        "21.9.0.0.00.000 - Secretarios Concejales": [
-            "21.9.1.0.00.000 - Haberes",
-            "21.9.2.0.00.000 - Sueldo Anual Complementario",
-            "21.9.3.0.00.000 - Aportes Personales",
-            "21.9.4.0.00.000 - Contribuciones Patronales",
-            "21.9.5.0.00.000 - Anticipo Financiero"
+        "21.1.9.0.00.000 - Retenciones PP": [
+            "21.1.9.1.00.000 - Retenciones Ganancias",
+            "21.1.9.2.00.000 - Retenciones Cuota Alimentaria",
+            "21.1.9.3.00.000 - Retenciones Sindicales",
+            "21.1.9.4.00.000 - Retenciones Aportes Partidarios",
+            "21.1.9.5.00.000 - Retenciones Caja de jubilaciones",
+            "21.1.9.6.00.000 - Retenciones IAPOS",
+            "21.1.9.7.00.000 - Retenciones Embargos"
         ],
-        "21.10.0.0.00.000 - Pasantias Educativas": [
-            "21.10.1.0.00.000 - Pasantias Educativas"
+        "21.2.9.0.00.000 - Retenciones PT": [
+            "21.2.9.1.00.000 - Retenciones Ganancias PT",
+            "21.2.9.2.00.000 - Retenciones Cuota Alimentaria PT",
+            "21.2.9.3.00.000.- Retenciones Sindicales PT",
+            "21.2.9.4.00.000 - Retenciones Aportes Partidarios PT",
+            "21.2.9.5.00.000 - Retenciones Embargos PT",
+            "21.2.9.6.00.000 - Retenciones IAPOS PT"
         ]
     },
     "2. Bienes de consumo": {
-        "22.1.0.0.00.000 - Alimentos y productos agroforestales": [
+        "22.1.0.0.00.000 - Productos alimenticios agropecuarios y forestales": [
             "22.1.1.0.00.000 - Alimentos para personas",
             "22.1.2.0.00.000 - Alimentos para animales",
-            "22.1.3.0.00.000 - Productos agroforestales"
+            "22.1.3.0.00.000 - Productos Pecuarios",
+            "22.1.4.0.00.000 - Productos agroforestales",
+            "22.1.5.0.00.000 - Madera, corcho y sus manufacturas",
+            "22.1.9.0.00.000 - Otros no especificados precedentemente"
         ],
-        "22.2.0.0.00.000 - Textiles y vestuario": [
-            "22.2.1.0.00.000 - Textiles y vestuarios",
-            "22.2.2.0.00.000 - Acabados textiles",
+        "22.2.0.0.00.000 - Textiles y vestuarios": [
+            "22.2.1.0.00.000 - Hilados y telas",
+            "22.2.2.0.00.000 - Prendas de vestir",
             "22.2.3.0.00.000 - Confecciones textiles",
-            "22.2.4.0.00.000 - Calzados"
+            "22.2.9.0.00.000 - Otros noi especificados precedentemente"
         ],
         "22.3.0.0.00.000 - Productos de papel, cartón e impresos": [
             "22.3.1.0.00.000 - Papel de escritorio y cartón",
             "22.3.2.0.00.000 - Papel para computación",
             "22.3.3.0.00.000 - Productos de artes gráficas",
-            "22.3.4.0.00.000 - Libros, revistas y periódicos",
-            "22.3.5.0.00.000 - Textos de enseñanza",
-            "22.3.9.0.00.000 - Otros"
+            "22.3.4.0.00.000 - Productos de papel y cartón",
+            "22.3.5.0.00.000 - Libros, revistas y periódicos",
+            "22.3.6.0.00.000 - Textos de enseñanza",
+            "22.3.7.0.00.000 - Especias timbradas y valores",
+            "22.3.9.0.00.000 - Otros no especificados precedentemente"
         ],
         "22.4.0.0.00.000 - Productos de cuero y caucho": [
-            "22.4.1.0.00.000 - Cuero",
-            "22.4.2.0.00.000 - Artículos de cuero",
-            "22.4.3.0.00.000 - Cubiertas y cámaras de aire",
-            "22.4.9.0.00.000 - Elementos de caucho"
+            "22.4.1.0.00.000 - Cueros y Pieles",
+            "22.4.2.0.00.000 - Artículos de Cuero",
+            "22.4.3.0.00.000 - Artículos de caucho",
+            "22.4.4.0.00.000 - Cubiertas y cámaras de aire",
+            "22.4.9.0.00.000 - Otros no especificados precedentemente"
         ],
         "22.5.0.0.00.000 - Productos químicos, combustibles y lubricantes": [
             "22.5.1.0.00.000 - Compuestos químicos",
             "22.5.2.0.00.000 - Productos farmacéuticos y medicinales",
-            "22.5.3.0.00.000 - Abonos y plaguicidas",
-            "22.5.4.0.00.000 - Insecticidas, fumigantes y desinfectantes",
-            "22.5.5.0.00.000 - Tintas, pinturas y colorantes",
+            "22.5.3.0.00.000 - Abonos y fertilizantes",
+            "22.5.4.0.00.000 - Insecticidas, fumigantes y otros",
+            "22.5.5.0.00.000 - Tintas, Pinturas y Colorantes",
             "22.5.6.0.00.000 - Combustibles y lubricantes",
-            "22.5.7.0.00.000 - Especies medicinales",
-            "22.5.8.0.00.000 - Productos de material plástico",
-            "22.5.9.0.00.000 - Otros"
+            "22.5.7.0.00.000 - Específicos veterinarios",
+            "22.5.8.0.00.000 - Productos de material plástivo",
+            "22.5.9.0.00.000 - Otros no especificados precedentemente",
+            "22.5.9.1.00.000 - Productos de Brea y material asfáltico"
         ],
         "22.6.0.0.00.000 - Productos minerales no metálicos": [
-            "22.6.1.0.00.000 - Vidrios",
-            "22.6.2.0.00.000 - Productos de loza y porcelana",
-            "22.6.3.0.00.000 - Productos de arcilla y cerámica",
-            "22.6.4.0.00.000 - Cemento, cal y yeso",
-            "22.6.5.0.00.000 - Productos de cemento, cal y yeso",
-            "22.6.9.0.00.000 - Otros"
+            "22.6.1.0.00.000 - Productos de arcilla y de cerámica",
+            "22.6.2.0.00.000 - Productos de Vidrio",
+            "22.6.3.0.00.000 - Productos de Loza y porcelana",
+            "22.6.4.0.00.000 - Productos de Cemento, asbesto y yeso",
+            "22.6.5.0.00.000 - Productos de Cemento, Cal y Yeso",
+            "22.6.9.0.00.000 - Otros no especificados precedentemente"
         ],
         "22.7.0.0.00.000 - Productos metálicos": [
-            "22.7.1.0.00.000 - Productos de hierro y acero",
-            "22.7.2.0.00.000 - Productos metálicos no ferrosos",
-            "22.7.3.0.00.000 - Estructuras metálicas acabadas",
-            "22.7.4.0.00.000 - Herramientas menores",
-            "22.7.9.0.00.000 - Otros"
+            "22.7.1.0.00.000 - Productos Ferrosos",
+            "22.7.2.0.00.000 - Productos no ferrosos",
+            "22.7.3.0.00.000 - Material de Guerra",
+            "22.7.4.0.00.000 - Estructuras metálicas acabadas",
+            "22.7.5.0.00.000 - Herramientas menores",
+            "22.7.9.0.00.000 - Otros no especificados precedentemente"
         ],
         "22.8.0.0.00.000 - Minerales": [
-            "22.8.1.0.00.000 - Carbón mineral",
-            "22.8.2.0.00.000 - Gas natural",
-            "22.8.3.0.00.000 - Minerales metalíferos",
-            "22.8.4.0.00.000 - Piedra, arcilla y arena",
-            "22.8.9.0.00.000 - Otros"
+            "22.8.1.0.00.000 - Minerales metalíferos",
+            "22.8.2.0.00.000 - Petróleo crudo y gas natural",
+            "22.8.3.0.00.000 - Carbón mineral",
+            "22.8.4.0.00.000 - Piedra, Arcilla y Arena",
+            "22.8.9.0.00.000 - Otros no especificados precedentemente"
         ],
         "22.9.0.0.00.000 - Otros bienes de consumo": [
             "22.9.1.0.00.000 - Elementos de limpieza",
-            "22.9.2.0.00.000 - Útiles de escritorio, oficina y enseñanza",
+            "22.9.2.0.00.000 - Útiles de escritorio, oficina y eseñanza",
             "22.9.3.0.00.000 - Útiles y materiales eléctricos",
-            "22.9.4.0.00.000 - Utensilios de cocina y comedor",
-            "22.9.5.0.00.000 - Elementos de señalamiento",
+            "22.9.4.0.00.000 - Utensillos de cocina y comedor",
+            "22.9.5.0.00.000 - Útiles menores médico-quirúrgico y de laboratorio",
             "22.9.6.0.00.000 - Repuestos y accesorios",
-            "22.9.7.0.00.000 - Bienes de consumo varios"
+            "22.9.7.0.00.000 - Equipos y Elementos de Seguridad",
+            "22.9.7.1.00.000 - Extintores y equipos contra incendios",
+            "22.9.7.2.00.000 - Señalización y Vallado",
+            "22.9.7.3.00.000 - EPP",
+            "22.9.7.3.01.000 - Calzado, Guantes e Indumentaria",
+            "22.9.7.3.02.000 - Protección Respiratoria, Auditiva y Visual",
+            "22.9.7.3.03.000 - Cascos y Arnes",
+            "22.9.9.0.00.000 - Otros no especificados precedentemente",
+            "22.9.9.1.00.000 - Artículos para el hogar",
+            "22.9.9.1.01.000 - Electrodomésticos",
+            "22.9.9.1.02.000 - Mobiliario de oficina",
+            "22.9.9.1.03.000 - Mobiliario de Cocina",
+            "22.9.9.1.04.000 - Mobiliarios Varios"
         ],
-        "22.10.0.0.00.000 - Bienes de consumo para reventa": [
-            "22.10.1.0.00.000 - Bienes de consumo para reventa"
+        "22.9.9.0.00.000 - Otros no especificados": [
+            "22.9.9.2.00.000 - Equipos y elementos deportivos"
         ]
     },
     "3. Servicios": {
         "23.1.0.0.00.000 - Servicios básicos": [
-            "23.1.1.0.00.000 - Energía eléctrica",
+            "23.1.1.0.00.000 - Energía Eléctrica",
             "23.1.2.0.00.000 - Agua",
             "23.1.3.0.00.000 - Gas",
-            "23.1.4.0.00.000 - Teléfonos, telex y telecopias",
+            "23.1.4.0.00.000 - Telefono, telex, telefax",
             "23.1.5.0.00.000 - Correos y telégrafos",
-            "23.1.9.0.00.000 - Otros"
+            "23.1.9.0.00.000 - Otros No especificados precedentemente"
         ],
         "23.2.0.0.00.000 - Alquileres y derechos": [
             "23.2.1.0.00.000 - Alquiler de edificios y locales",
-            "23.2.2.0.00.000 - Alquiler de tierras y terrenos",
-            "23.2.3.0.00.000 - Alquiler de maquinaria y equipos",
-            "23.2.4.0.00.000 - Alquiler de medios de transporte",
-            "23.2.5.0.00.000 - Alquiler de equipos de computación",
+            "23.2.2.0.00.000 - Alquiler de maquinaria, equipo y medios de transporte",
+            "23.2.3.0.00.000 - Alquiler de equipos de computación",
+            "23.2.4.0.00.000 - Alquiler de fotocopiadoras",
+            "23.2.5.0.00.000 - Alquiler de tierras y terrenos",
             "23.2.6.0.00.000 - Derechos de bienes intangibles",
-            "23.2.9.0.00.000 - Otros"
+            "23.2.9.0.00.000 - Otros alquileres no comprendidos precedentemente",
+            "23.2.9.1.00.000 - Alquiler de máquinas expendedoras de alimentos",
+            "23.2.9.2.00.000 - Alquiler de expendedores de agua",
+            "23.2.9.4.00.000 - Alquiler Estructuras Varias (Incluye Vallas Seguridad, Gradas, etc)",
+            "23.2.9.4.00.000 - Alquiler Vallas de Seguridad y Símil",
+            "23.2.9.3.00.000 - Alquiler de Baños químicos"
         ],
         "23.3.0.0.00.000 - Mantenimiento, reparación y limpieza": [
             "23.3.1.0.00.000 - Mantenimiento y reparación de edificios y locales",
-            "23.3.2.0.00.000 - Mantenimiento y reparación de maquinaria y equipos",
-            "23.3.3.0.00.000 - Mantenimiento y reparación de medios de transporte",
+            "23.3.2.0.00.000 - Mantenimiento y reparación de vehículos",
+            "23.3.3.0.00.000 - Mantenimiento y reparación de maquinaria y equipo",
             "23.3.4.0.00.000 - Mantenimiento y reparación de vías de comunicación",
-            "23.3.5.0.00.000 - Mantenimiento y reparación de equipos de computación",
-            "23.3.6.0.00.000 - Mantenimiento y reparación de obras de infraestructura",
-            "23.3.7.0.00.000 - Limpieza, aseo y fumigación",
-            "23.3.8.0.00.000 - Mantenimiento de espacios verdes",
-            "23.3.9.0.00.000 - Mantenimiento, reparación y limpieza varios"
+            "23.3.5.0.00.000 - Limpieza, aseo y fumigación",
+            "23.3.6.0.00.000 - Mantenimiento de sistemas informáticos y accesorios",
+            "23.3.9.0.00.000 - Otros no especificados precedentemente",
+            "23.3.9.1.00.000 - Mantenimiento de Espacios Verdes",
+            "23.3.9.1.01.000 - Corte de pasto y desmalezado",
+            "23.3.9.1.02.000 - Poda y mantenimiento de arbolado",
+            "23.3.9.2.00.000 - Mantenimiento y limpieza de desagües y canales",
+            "23.3.9.2.01.000 - Mantenimiento de Desagües",
+            "23.3.9.2.02.000 - Mantenimiento de Canales",
+            "23.3.9.2.03.000 - Mantenimiento de Cordón Cuneta",
+            "23.3.9.3.00.000 - Limpieza de calles y caminos",
+            "23.3.9.4.00.000 - Mantenimiento de conexiones cloacales",
+            "23.3.9.5.00.000 - Mantenimiento de Alumbrado Público y tendido eléctrico",
+            "23.3.9.6.00.000 - Mantenimiento de Señalización Vial",
+            "23.3.9.6.01.000 - Mantenimiento de Semáforos",
+            "23.3.9.6.02.000 - Mantenimiento de Señalización Vial"
         ],
         "23.4.0.0.00.000 - Servicios técnicos y profesionales": [
-            "23.4.1.0.00.000 - Estudios, investigaciones y proyectos de factibilidad",
-            "23.4.2.0.00.000 - Médicos y sanitarios",
+            "23.4.1.0.00.000 - Estudios, investigación y proyectos de factibilidad",
+            "23.4.2.0.00.000 - Médicos y Sanitarios",
             "23.4.3.0.00.000 - Jurídicos",
             "23.4.4.0.00.000 - Contabilidad y auditoría",
-            "23.4.5.0.00.000 - De informática y sistemas computarizados",
-            "23.4.6.0.00.000 - De capacitación",
-            "23.4.7.0.00.000 - Notariales",
-            "23.4.8.0.00.000 - De arquitectura e ingeniería",
-            "23.4.9.0.00.000 - Servicios técnicos y profesionales varios"
+            "23.4.5.0.00.000 - De Capacitación",
+            "23.4.6.0.00.000 - De Informática y sistemas computarizados",
+            "23.4.7.0.00.000 - De Turismo",
+            "23.4.8.0.00.000 - De Geriátricos",
+            "23.4.9.0.00.000 - Otros no especificados precedentemente",
+            "23.4.9.1.00.000 - Servicio de Alarma",
+            "23.4.9.2.00.000 - Servicio de Escribanía",
+            "23.4.9.3.00.000 - Servicio de Agrimensura",
+            "23.4.9.4.00.000 - Servicio de Arquitectura",
+            "23.4.9.5.00.000 - Servicios relacionados a la Agronomía",
+            "23.4.9.6.00.000 - Servicios de Ingeniería",
+            "23.4.9.6.01.000 - Servicios de Ingeniería Industrial",
+            "23.4.9.6.02.000 - Servicio de Ingeniería Agrónoma",
+            "23.4.9.6.03.000 - Servicio de Ingeniería Informática",
+            "23.4.9.6.04.000 - Servicio de Ingeniería Civil",
+            "23.4.9.6.05.000 - Servicios de Ingeniería Hídrica",
+            "23.4.9.7.00.000 - Servicio Sonido e Iluminación",
+            "23.4.9.9.00.000 - Otros NCP"
         ],
         "23.5.0.0.00.000 - Servicios comerciales y financieros": [
             "23.5.1.0.00.000 - Transporte",
             "23.5.2.0.00.000 - Almacenamiento",
             "23.5.3.0.00.000 - Imprenta, publicaciones y reproducciones",
             "23.5.4.0.00.000 - Primas y gastos de seguros",
-            "23.5.5.0.00.000 - Comisiones y gastos bancarios",
-            "23.5.6.0.00.000 - Publicidad y propaganda",
-            "23.5.7.0.00.000 - Organización de eventos",
-            "23.5.8.0.00.000 - Gastos de ceremonial y protocolo",
-            "23.5.9.0.00.000 - Servicios comerciales y financieros varios"
+            "23.5.5.0.00.000 - Comisiones y Gastos Bancarios",
+            "23.5.6.0.00.000 - Internet",
+            "23.5.9.0.00.000 - Otros no especificados precedentemente",
+            "23.5.9.1.00.000 - Estampillas y estampillados",
+            "23.5.9.2.00.000 - Gestión de Cobranza"
         ],
         "23.6.0.0.00.000 - Publicidad y propaganda": [
-            "23.6.1.0.00.000 - Publicidad y propaganda"
+            "23.6.1.0.00.000 - Publicidad y Propaganda MCS",
+            "23.6.2.0.00.000 - Publicidad y Propaganda rodante"
         ],
         "23.7.0.0.00.000 - Pasajes y viáticos": [
             "23.7.1.0.00.000 - Pasajes",
             "23.7.2.0.00.000 - Viáticos",
-            "23.7.9.0.00.000 - Gastos de movilidad"
+            "23.7.3.0.00.000 - Combustibles y Peajes"
         ],
-        "23.8.0.0.00.000 - Impuestos, derechos, tasas y juicios": [
-            "23.8.1.0.00.000 - Impuestos directos",
-            "23.8.2.0.00.000 - Impuestos indirectos",
-            "23.8.3.0.00.000 - Tasas y derechos",
-            "23.8.4.0.00.000 - Multas, recargos y juicios",
-            "23.8.9.0.00.000 - Otros"
+        "23.8.0.0.00.000 - Impuestos, derechos y tasas": [
+            "23.8.1.0.00.000 - Impuestos indirectos",
+            "23.8.2.0.00.000 - Impuestos directos",
+            "23.8.3.0.00.000 - Derechos y tasas",
+            "23.8.4.0.00.000 - Multas y recargos",
+            "23.8.5.0.00.000 - Regalías",
+            "23.8.6.0.00.000 - Juicios y mediaciones",
+            "23.8.7.0.00.000 - Aporte colegios profesionales",
+            "23.8.9.0.00.000 - Otros no especificados precedentemente"
         ],
         "23.9.0.0.00.000 - Otros servicios": [
-            "23.9.1.0.00.000 - Servicios de vigilancia",
-            "23.9.2.0.00.000 - Servicios de sepelio",
-            "23.9.9.0.00.000 - Servicios no especificados precedentemente"
+            "23.9.1.0.00.000 - Servicio de Ceremonial",
+            "23.9.2.0.00.000 - Gastos reservados",
+            "23.9.3.0.00.000 - Servicio de Vigilancia",
+            "23.9.4.0.00.000 - Gastos protocolares",
+            "23.9.5.0.00.000 - Edictos y publicaciones oficiales",
+            "23.9.6.0.00.000 - Becas de Investigación",
+            "23.9.7.0.00.000 - Contratación de Servicios Artísticos",
+            "23.9.9.1.00.000 - Hotelería",
+            "23.9.8.0.00.000 - Ambientación, arte y decoración",
+            "23.9.9.5.00.000 - Servicios relacionados con la comunicación",
+            "23.9.9.3.00.000 - Servicios relacionados a deporte y recreación"
         ],
-        "23.10.0.0.00.000 - Servicios no personales para reventa": [
-            "23.10.1.0.00.000 - Servicios no personales para reventa"
+        "23.6.0.0.00.000 - Publicida y Propaganda": [
+            "23.6.3.0.00.0000 - Publicidad"
         ]
     },
     "4. Bienes de Uso": {
         "24.1.0.0.00.000 - Bienes preexistentes": [
-            "24.1.1.0.00.000 - Tierras y terrenos",
+            "24.1.1.0.00.000 - Tierras y Terrenos",
             "24.1.2.0.00.000 - Edificios e instalaciones",
-            "24.1.9.0.00.000 - Otros"
+            "24.1.3.0.00.000 - Otros Bienes preexistentes"
         ],
         "24.2.0.0.00.000 - Construcciones": [
-            "24.2.1.0.00.000 - Edificaciones y ampliaciones",
-            "24.2.2.0.00.000 - Vías de comunicación",
-            "24.2.3.0.00.000 - Obras hidráulicas y de saneamiento",
-            "24.2.4.0.00.000 - Infraestructura urbana",
-            "24.2.9.0.00.000 - Otras construcciones"
+            "24.2.1.0.00.000 - Construcciones en Bienes de dominio Privado",
+            "24.2.1.1.00.000 - Const. de Dom. Priv. por Administración Central",
+            "24.2.1.1.01.000 - Materiales de Construcción y mano de obra",
+            "24.2.1.1.02.000 - Mano de Obra",
+            "24.2.1.2.00.000 - Const. de Dom. Priv. por terceros",
+            "24.2.1.2.01.000 - Materiales de Construcción",
+            "24.2.1.2.02.000 - Mano de Obra",
+            "24.2.2.0.00.000 - Construcciones en Bienes de Dominio Público",
+            "24.2.2.1.00.000 - Const. Dom. Pub. por Administración Central",
+            "24.2.2.1.01.000 - Materiales de Construcción y mano de obra",
+            "24.2.2.2.00.000 - Const. de Dom. Pub. por Terceros",
+            "24.2.2.2.01.000 - Materiales de Construcción",
+            "24.2.2.2.02.000 - Construcciones Bienes de Dominio Privado por Adm. Terceros"
+        ],
+        "24.2.2.1.00.000 - Const. Dom. Pub. por Administración Central": [
+            "24.2.2.1.02.000 - Construcciones Dom. Publ. por Adm. Central (Afectado)"
         ],
         "24.3.0.0.00.000 - Maquinaria y equipo": [
             "24.3.1.0.00.000 - Maquinaria y equipo de producción",
-            "24.3.2.0.00.000 - Equipo para vías de comunicación y transporte",
-            "24.3.3.0.00.000 - Equipo de transporte terrestre",
-            "24.3.4.0.00.000 - Equipo de telecomunicaciones",
-            "24.3.5.0.00.000 - Equipo de computación",
-            "24.3.6.0.00.000 - Equipo de oficina y mueblería",
-            "24.3.7.0.00.000 - Equipo médico, de laboratorio y sanitario",
-            "24.3.8.0.00.000 - Equipo educacional y recreativo",
-            "24.3.9.0.00.000 - Maquinaria y equipo varios"
+            "24.3.2.0.00.000 - Equipo de transporte, tracción y elevación",
+            "24.3.2.1.00.000 - Equipo de transporte, tracción y elevación (R. Prov)",
+            "24.3.2.2.00.000 - Equipo de transporte, tracción y elevación (R Propio)",
+            "24.3.3.0.00.000 - Equipo Sanitario y de Laboratorio",
+            "24.3.4.0.00.000 - Equipo de comunicación y señalamiento",
+            "24.3.5.0.00.000 - Equipo educacional y recreativo",
+            "24.3.6.0.00.000 - Equipo para computación",
+            "24.3.7.2.00.000 - Equipo de Oficina y Mueble (F Prov)",
+            "24.3.8.0.00.000 - Herramientos y repuestos mayores",
+            "24.3.9.0.00.000 - Equipos Varios"
         ],
         "24.4.0.0.00.000 - Equipo de seguridad": [
-            "24.4.1.0.00.000 - Equipo de seguridad e incendio"
+            "24.4.0.0.00.000 - Equipo de seguridad"
         ],
-        "24.5.0.0.00.000 - Libros, revistas y otros coleccionables": [
-            "24.5.1.0.00.000 - Libros y revistas",
-            "24.5.2.0.00.000 - Obras de arte y objetos de valor",
-            "24.5.9.0.00.000 - Otros"
+        "24.5.0.0.00.000 - Libros, revistas y otros elementos coleccionables": [
+            "24.5.0.0.00.000 - Libros, revistas y otros elementos coleccionables"
         ],
-        "24.6.0.0.00.000 - Semovientes": [
-            "24.6.1.0.00.000 - Animales de trabajo y reproducción"
+        "24.6.0.0.00.000 - Obras de arte": [
+            "24.6.0.0.00.000 - Obras de arte"
         ],
-        "24.7.0.0.00.000 - Intangibles": [
-            "24.7.1.0.00.000 - Programas de computación",
-            "24.7.2.0.00.000 - Marcas y patentes",
-            "24.7.9.0.00.000 - Otros intangibles"
+        "24.7.0.0.00.000 - Semovientes": [
+            "24.7.0.0.00.000 - Semovientes"
         ],
-        "24.8.0.0.00.000 - Obras de Arte": [
-            "24.8.1.0.00.000 - Obras de arte"
+        "24.8.0.0.00.000 - Activos intangibles": [
+            "24.8.1.0.00.000 - Programas de Computación y Software",
+            "24.8.9.0.00.000 - Otros activos intangible"
         ],
-        "24.9.0.0.00.000 - Aporte de Capital": [
-            "24.9.1.0.00.000 - Aporte de Capital"
+        "24.3.6.0.00.000 - Equipo para computación": [
+            "24.3.6.0,02.000 - Equipo para computación (Fondo Provincial)"
         ],
-        "24.10.0.0.00.000 - Obras Públicas - Pavimentación y Repavimentación": [
-            "24.10.1.0.00.000 - Obras Públicas - Pavimentación y Repavimentación"
+        "24.3.9.1.00.000-Equipos Varios": [
+            "24.3.9.1.01.000-Equipo y material de sonido (Fondo Propio)",
+            "24.3.9.2.00.000 - Teléfonos Celulares, Tablet y Símil",
+            "24.3.9.3.00.000 Electrodomésticos",
+            "24.3.9.1.01.000-Equipo y material de sonido (Fondo ProV)",
+            "24.3.9.1.02.000-Equipo y material de sonido (Fondo Provincial)"
         ],
-        "24.11.0.0.00.000 - Obras Públicas - Arquitectura y Urbanismo": [
-            "24.11.1.0.00.000 - Obras Públicas - Arquitectura y Urbanismo"
+        "24.3.9.4.00.000 - Equipos de y para Monitoreo": [
+            "24.3.9.4.00.000 - Equipos de y para Monitoreo"
         ],
-        "24.12.0.0.00.000 - Obras Públicas - Saneamiento e Infraestructura": [
-            "24.12.1.0.00.000 - Obras Públicas - Saneamiento e Infraestructura"
+        "24.3.9.0.00.000 - Equipos Varios": [
+            "24.3.9.2.00.000 - Teléfonos, Celulares, Tablet y Símil"
         ],
-        "24.13.0.0.00.000 - Obras Públicas - Electrificación y Alumbrado Público": [
-            "24.13.1.0.00.000 - Obras Públicas - Electrificación y Alumbrado Público"
+        "24.3.7.0.00.000 - Equipo de Oficina y Mueble": [
+            "24.3.7.1.00.000 - Equipo de Oficina y Mueble (F Propio)"
         ],
-        "24.14.0.0.00.000 - Obras Públicas - Mantenimiento y Reparaciones Mayores": [
-            "24.14.1.0.00.000 - Obras Públicas - Mantenimiento y Reparaciones Mayores"
-        ],
-        "24.15.0.0.00.000 - Adquisiciones con Fondos Afectados": [
-            "24.15.1.0.00.000 - Adquisiciones con Fondos Afectados"
+        "24.2.1.0.00.000 - Construcciones en Bienes de Dominio Privado": [
+            "24.2.1.1.02.000 - Const. Dominio Priv. por Adm. Central"
         ]
     },
     "5. Transferencias": {
         "25.1.0.0.00.000 - Transferencias al sector privado para financiar gastos corrientes": [
-            "25.1.1.0.00.000 - Becas y ayudas a estudiantes",
-            "25.1.2.0.00.000 - Subsidios a personas e instituciones de bien público",
-            "25.1.3.0.00.000 - Aportes a entidades deportivas y culturales",
-            "25.1.4.0.00.000 - Ayudas sociales a personas y familias",
-            "25.1.5.0.00.000 - Promoción industrial y comercial",
-            "25.1.9.0.00.000 - Otras transferencias al sector privado"
+            "25.1.0.0.00.000 - Transferencias al sector privado para financiar gastos corrientes",
+            "25.1.1.0.00.000 - Jubilaciones y/o retiros",
+            "25.1.2.0.00.000 - Pensiones",
+            "25.1.3.0.00.000 - Becas y Pasantías",
+            "25.1.4.0.00.000 - Ayudas Sociales a Personas",
+            "25.1.4.1.00.000 - Ayudas Sociales a Personas",
+            "25.1.4.1.01.000 - Ayudas. Soc. a Personas (Viáticos Salud)",
+            "25.1.4.1.02.000 - Ayudas Soc. a Personas para gastos de Alquiler",
+            "25.1.4.1.03.000 - Ayudas Soc. a Personas para pago de Servicios",
+            "25.1.4.1.04.000 - Ayudas Soc. a Personas para Sepelios",
+            "25.1.4.1.05.000 - Ayudas Soc. a Personas para Medicamentos y Prod. Farmacéuticos",
+            "25.1.4.1.06.000 - Ayudas Soc. a Personas para Gasto Corriente",
+            "25.1.4.1.07.000 - Ayudas Soc. a Personas para eventos Deportivos",
+            "25.1.4.2.00.000 - Premios, recompensas y reconocimientos destacados",
+            "25.1.4.3.00.000 - Promoción Social",
+            "25.1.4.4.00.000 - Boleto Educativo",
+            "25.1.5.0.00.000 - Transferencias a Instituciones de Enseñanza",
+            "25.1.5.1.00.000 - Fondo Asistencia Educativa",
+            "25.1.5.1.01.000 - Instituciones Públicas",
+            "25.1.5.1.02.000 - Instituciones Privadas",
+            "25.1.5.2.00.000 - Otras Instituciones de Enseñanza",
+            "25.1.6.0.00.000 - Transferencias para actividades científicas o académicas",
+            "25.1.7.0.00.000 - Transferencias a Instituciones culturales y sociales sin fines de lucro",
+            "25.1.7.1.00.000 - Transferencia a Instituciones Culturales y/o religiosas",
+            "25.1.7.2.00.000 - Transferencia a Instituciones Sociales",
+            "25.1.7.3.00.000 - Bomberos Voluntarios",
+            "25.1.7.4.00.000 - ADESU",
+            "25.1.7.5.00.000 - Vecinales",
+            "25.1.7.5.01.000 - B. Centro",
+            "25.1.7.5.02.000 - B. Sur",
+            "25.1.7.5.03.000 - B. Sancor",
+            "25.1.7.5.04.000 - B. Colón",
+            "25.1.7.5.05.000 - B. Villa del Parque",
+            "25.1.7.5.06.000 - B. Moreno",
+            "25.1.7.5.07.000 - B. Cooperativo",
+            "25.1.7.5.08.000 - B. Villa Autódromo",
+            "25.1.7.5.09.000 - B. 9 de Julio",
+            "25.1.7.6.00.000 - Centro Comercial y de la Producción",
+            "25.1.7.7.00.000 - Instituciones de Bien Público",
+            "25.1.7.8.00.000 - Presupuesto Participativo",
+            "25.1.7.9.00.000 - Otras Instituciones",
+            "25.1.7.9.01.000 - Comparsas",
+            "25.1.7.9.02.000 - Instituciones Deportivas",
+            "25.1.7.9.03.000 - Transferencia LAZOS",
+            "25.1.8.0.00.000 - Transferencias a Cooperativas",
+            "25.1.9.0.00.000 - Transferencias a empresas privadas"
         ],
         "25.2.0.0.00.000 - Transferencias al sector privado para financiar gastos de capital": [
-            "25.2.1.0.00.000 - Subsidios para inversiones y equipamiento",
-            "25.2.2.0.00.000 - Aportes de capital a emprendimientos de interés municipal",
-            "25.2.9.0.00.000 - Otras transferencias de capital al sector privado"
+            "25.2.1.0.00.000 - Transferencias a Personas",
+            "25.2.1.1.00.000 - Trasnferencias a Personas Mejoramiento Habitacional",
+            "25.2.1.1.01.000 - Transf. Personas. Mej. Hab. Mano de Obra",
+            "25.2.1.1.02.000 - Trans. Const. Lote Propio",
+            "25.2.1.2.00.000 - Transferencias a Personas para adquisición de Otros Bienes Tangibles",
+            "25.2.1.3.00.000 - Transferencias a Personas para adquisición de Bienes Intangibles",
+            "25.2.2.0.00.000 - Transferencias a Instituciones de Enseñanza",
+            "25.2.2.1.00.000 - Fondo Asistencia Educativa",
+            "25.2.2.1.01.000 - Instituciones Privadas",
+            "25.2.2.1.02.000 - Instituciones Públicas",
+            "25.2.3.0.00.000 - Transferencias para actividades científicas y/o académicas",
+            "25.2.4.0.00.000 - Transferencias a otras instituciones culturales y sociales sin fines de lucro",
+            "25.2.4.1.00.000 - Transferencias a Instituciones culturales y/o religiosas",
+            "25.2.4.2.00.000 - Transferencias a Instituciones Sociales",
+            "25.2.4.3.00.000 - Bomberos Voluntarios",
+            "25.2.4.4.00.000 - ADESU",
+            "25.2.4.5.00.000 - Vecinales",
+            "25.2.4.5.01.000 - B. Centro",
+            "25.2.4.5.02.000 - B. Sur",
+            "25.2.4.5.03.000 - B. Sancor",
+            "25.2.4.5.04.000 - B. Colón",
+            "25.2.4.5.05.000 - B. Villa del Parque",
+            "25.2.4.5.06.000 - B. Moreno",
+            "25.2.4.5.07.000 - B. Cooperativo",
+            "25.2.4.5.08.000 - B. Villa Autódromo",
+            "25.2.4.5.09.000 - B. 9 de Julio",
+            "25.2.4.6.00.000 - Centro Comercial y de la Producción",
+            "25.2.4.7.00.000 - Instituciones de Bien Público",
+            "25.2.4.8.00.000 - Presupuesto Participativo",
+            "25.2.4.8.01.000 - Barrio Centro",
+            "25.2.4.8.02.000 - Barrio Sur",
+            "25.2.4.8.03.000 - Barrio Sancor",
+            "25.2.4.8.04.000 - Barrio Colón",
+            "25.2.4.8.05.000 - Barrio Villa del Parque",
+            "25.2.4.8.06.000 - Barrio Moreno",
+            "25.2.4.8.07.000 - Barrio Cooperativo",
+            "25.2.4.8.08.000 - Barrio Villa Autódromo",
+            "25.2.4.8.09.000 - Barrio 9 de Julio",
+            "25.2.4.9.00.000 - Otras Instituciones",
+            "25.2.4.9.01.000 - Comparsas",
+            "25.2.4.9.02.000 - Instituciones Deportivas",
+            "25.2.5.0.00.000 - Transferencias a Cooperativas",
+            "25.2.5.1.00.000 - Transferencias a Cooperativas Escolares",
+            "25.2.5.2.00.000 - Transferencias a Cooperativas empresariales con fines de lucro",
+            "25.2.5.3.00.000 - Transferencias a Cooperativas empresariales sin fines de lucro",
+            "25.2.5.4.00.000 - Transferencia a otras Cooperativas",
+            "25.2.6.0.00.000 - Transferencias a empresas privadas",
+            "25.2.4.8.01.000 - B. Centro",
+            "25.2.4.8.04.000 - B. Colón",
+            "25.2.4.8.02.000 - B. Sur",
+            "25.2.4.8.03.000 - B. Sancor",
+            "25.2.4.8.05.000 - B. Villa del Parque",
+            "25.2.4.8.09.000 - B. 9 de Julio",
+            "25.2.4.8.06.000 - B. Moreno",
+            "25.2.4.8.07.000 - B. Cooperativo",
+            "25.2.4.8.08.000 - B. Villa Autódromo"
         ],
-        "25.3.0.0.00.000 - Transferencias al sector público para financiar gastos corrientes": [
-            "25.3.1.0.00.000 - Aportes a comunas y municipios",
-            "25.3.2.0.00.000 - Aportes a la provincia",
-            "25.3.3.0.00.000 - Aportes a entes descentralizados e interjurisdiccionales",
-            "25.3.9.0.00.000 - Otras transferencias corrientes al sector público"
+        "25.3.0.0.00.000 - Transferencias al sector publico nacional para financiar gastos corrientes": [
+            "25.3.1.0.00.000 - Transferecnias a la administración central para financiar gastos corrientes",
+            "25.3.2.0.00.000 - Transferencias a Organismos descentralizados para financiar gastos corrientes",
+            "25.3.3.0.00.000 - Transferencias a Instituciones de Seguridad Social para financiar gastos corrientes"
         ],
-        "25.4.0.0.00.000 - Transferencias al sector público para financiar gastos de capital": [
-            "25.4.1.0.00.000 - Transferencias de capital a comunas y municipios",
-            "25.4.2.0.00.000 - Transferencias de capital a entes públicos",
-            "25.4.9.0.00.000 - Otras transferencias de capital al sector público"
+        "25.4.0.0.00.000 - Transferencias al sector publico nacional para financiar gastos de capital": [
+            "25.4.1.0.00.000 - Transferencias a la administración central para gastos de Capital",
+            "25.4.2.0.00.000 - Transferencias a Organismos descentralizados para financiar gastos de capital",
+            "25.4.3.0.00.000 - Transferencias a instituciones de seguridad social para financiar gastos de capital"
         ],
-        "25.5.0.0.00.000 - Transferencias al sector externo": [
-            "25.5.1.0.00.000 - Transferencias al sector externo"
+        "25.5.0.0.00.000 - Transferencias al sector publico empresarial": [
+            "25.5.1.0.00.000 - Transferencias a Instituciones públñicas financieras para financiar Gastos Corrientes",
+            "25.5.2.0.00.000 - Transferecnias a empresas públicas no financieras para financiar gastos corrientes",
+            "25.5.3.0.00.000 - Transferencias a empresas públicas multinacionales para financiar gastos corrientes",
+            "25.5.4.0.00.000 - Transferencias a fondos fiduciarios y otros entes del sector público nacional no financiero para GC",
+            "25.5.6.0.00.000 - Transferecnias a instituciones públicas financieras para financiar gastos de Capital",
+            "25.5.7.0.00.000 - Transferencias a instituciones públicas financieras para financiar gastos de capital",
+            "25.5.8.0.00.000 - Transferencias a empresas públicas multinacionales para financiar gastos de capital",
+            "25.5.9.0.00.000 - Transferencias a fondos fiduciarios y otros entes del sect. público nacional no financiero"
         ],
-        "25.6.0.0.00.000 - Subsidios y Asistencia Social": [
-            "25.6.1.0.00.000 - Subsidios e Indemnizaciones Sociales",
-            "25.6.2.0.00.000 - Asistencia Médica, Farmacéutica y Sanitaria",
-            "25.6.3.0.00.000 - Aportes Institucionales y Comunitarios",
-            "25.6.4.0.00.000 - Aportes Educativos, Becas y Pasantías",
-            "25.6.5.0.00.000 - Fomento Económico, Comercial y Emprendimientos",
-            "25.6.6.0.00.000 - Fondo de Asistencia Educativa (F.A.E.)",
-            "25.6.7.0.00.000 - Programas Sociales y Comunitarios Especiales"
+        "25.6.0.0.00.000 - Transferencias a universidades nacionales": [
+            "25.6.1.0.00.000 - Transferencias a Universidades nacionales para financiar Gastos Corrientes",
+            "25.6.2.0.00.000 - Transferencias a Universidades Nacionales para financiar Gastos de Capital"
         ],
-        "25.7.0.0.00.000 - Aportes a Entidades Interjurisdiccionales y Organismos Especiales": [
-            "25.7.1.0.00.000 - Aportes a Entidades Interjurisdiccionales y Organismos Especiales"
+        "25.7.0.0.00.000 - Transferencias a instituciones provinciales y municipales para financiar gastos corrientes": [
+            "25.7.1.0.00.000 - Transferencias a Gobiernos Provinciales",
+            "25.7.2.0.00.000 - Transferencias a instituciones públicas financieras provinciales",
+            "25.7.3.0.00.000 - Transferencias a empresas públicas no financieras provinciales",
+            "25.7.4.0.00.000 - Transferencias a instituciones de enseñanza provinciales",
+            "25.7.4.1.00.000 - Fondo de Asistencia Educativa",
+            "25.7.5.0.00.000 - Transferencias a Instituciones Públicas no financieras municipales",
+            "25.7.6.0.00.000 - Transferencias a gobiernos y entes municipales",
+            "25.7.6.1.00.000 - Concejo Municipal",
+            "25.7.6.2.00.000 - Patrimonio Cultural Sunchalense",
+            "25.7.6.3.00.000 - Concejo de Inclusión y Discapacidad",
+            "25.7.6.4.00.000 - Comisión Niños y Adolescentes",
+            "25.7.6.5.00.000 - Fondo Acción Vecinal",
+            "25.7.6.6.00.000 - GIRSU",
+            "25.7.6.7.00.000 - Instituto Municipal de la Vivienda",
+            "25.7.7.0.00.000 - Transferencias a instituciones públicas financieras municipales",
+            "25.7.8.0.00.000 - Transferencias a empresas públicas no financieras municipales",
+            "25.7.9.0.00.000 - Transferencias a instituciones públicas provinciales",
+            "25.7.9.1.00.000 - Transferencia S.A.M.C.O",
+            "25.7.9.2.00.000 - Transferencia Policía de Santa Fe",
+            "25.7.9.3.00.000 - Transferencia Policía Rural \"Los Pumas\"",
+            "25.7.9.5.00.000 - ENRESS",
+            "25.7.9.6.00.000 - Fondo Departamento Castellanos"
         ],
-        "25.8.0.0.00.000 - Transferencias para Financiar Gastos de Capital": [
-            "25.8.1.0.00.000 - Transferencias para Financiar Gastos de Capital"
+        "25.8.0.0.00.000 - Transferencias a instituciones provinciales y municipales para financiar gastos de capital": [
+            "25.8.1.0.00.000 - Transferencias a gobiernos provinciales",
+            "25.8.2.0.00.000 - Transferencias a instituciones públicas financieras provinciales",
+            "25.8.3.0.00.000 - Transferencias a gobiernos y entes municipales",
+            "25.8.3.1.00.000 - Concejo Municipal",
+            "25.8.3.2.00.000 - Patrimonio Cultural Sunchalense",
+            "25.8.3.3.00.000 - Concejo de Inclusión y Discapacidad",
+            "25.8.3.4.00.000 - Comisión Niños y Adolescentes",
+            "25.8.3.5.00.000 - Fondo de Acción Vecinal",
+            "25.8.3.6.00.000 - GIRSU",
+            "25.8.3.7.00.000 - Instituto Municipal de la Vivienda",
+            "25.8.4.0.00.000 - Transferencias a Instituciones Públicas Provinciales",
+            "25.8.4.1.00.000 - Transferencia S.A.M.C.O",
+            "25.8.4.2.00.000 - Transferencia Policía de Santa Fe",
+            "25.8.4.3.00.000 - Transferencia Policía Rural \"Los Pumas\"",
+            "25.8.5.0.00.000 - Transferencia a Instituciones de enseñanza",
+            "25.8.5.1.00.000 - Transferencias a Instituciones de enseñanza Provincial",
+            "25.8.5.1.01.000 - Transferencia a Instituciones de enseñanza Provincial Privada",
+            "25.8.5.1.01.001 - Fondo de Asistencia Educativa",
+            "25.8.5.1.02.000 - Transferencias a Instituciones de enseñanza Provincial Pública",
+            "25.8.5.1.02.001 - Fondo de Asistencia Educativa",
+            "25.8.5.2.00.000 - Transferencias a Instituciones de enseñanza Local",
+            "25.8.5.2.01.000 - Transferencias a Instituciones de enseñanza local Privada",
+            "25.8.5.2.01.001 - Fondo de Asistencia Educativa",
+            "25.8.5.2.02.000 - Transferencias a Instituciones de enseñanza local Pública",
+            "25.8.5.2.02.001 - Fondo de Asistencia Educativa",
+            "25.8.5.1.02.002 Transferencia a Instituciones de enseñanza Pública Provincial"
         ]
     },
     "6. Activos Financieros": {
-        "26.1.0.0.00.000 - Adquisición de títulos y valores": [
-            "26.1.1.0.00.000 - Títulos públicos",
-            "26.1.2.0.00.000 - Acciones y participaciones de capital",
-            "26.1.9.0.00.000 - Otros títulos y valores"
+        "26.1.0.0.00.000 - Aportes de capital": [
+            "26.1.1.0.00.000 - Aportes de Capital a empresas privadas",
+            "26.1.2.0.00.000 - Aportes de Capital a empresas públicas no financieras",
+            "26.1.3.0.00.000 - Aportes de Capital a Instituciones Públicas Financieras"
         ],
-        "26.2.0.0.00.000 - Concesión de préstamos": [
-            "26.2.1.0.00.000 - Préstamos a personas",
-            "26.2.2.0.00.000 - Préstamos a empresas privadas",
-            "26.2.3.0.00.000 - Préstamos al sector público",
-            "26.2.9.0.00.000 - Otros préstamos"
+        "26.2.0.0.00.000 - Prestamos a corto plazo": [
+            "26.2.1.0.00.000 - Préstamos a Corto plazo al Sector Privado",
+            "26.2.1.1.00.000 - Préstamo a Microemprendedores",
+            "26.2.1.2.00.000 - Préstamo a Emprendedores",
+            "26.2.1.3.00.000 - Préstamos a empresas",
+            "26.2.1.4.00.000 - Préstamos a Pymes",
+            "26.2.1.5.00.000 - Préstamos a Instituciones",
+            "26.2.1.5.01.000 - Préstamos a Instituciones Públicas No Financieras",
+            "26.2.1.5.02.000 - Préstamo a Instituciones Públicas Financieras",
+            "26.2.1.5.03.000 - Préstamo a Instituciones Privadas No Financieras",
+            "26.2.1.5.04.000 - Préstamo a Instituciones Privadas Financieras",
+            "26.2.1.6.00.000 - Préstamo a Personas",
+            "26.2.1.6.01.000 - Préstamos Aportes Sociales Reintegrables",
+            "26.2.1.6.01.001 - Préstamos Aporte Social Reintegrable para Salud",
+            "26.2.1.6.01.002 - Préstamo Aporte Social Reintegrable para Alquiler",
+            "26.2.1.6.01.003 - Préstamo Aporte Social Reintegrable para Sepelio",
+            "26.2.1.6.01.004 - Préstamo Aporte Social Reintegrable para Servicios Básicos",
+            "26.2.1.6.01.005 - Préstamo Aporte Social Reintegrable (Otros)",
+            "26.2.1.6.02.000 - Préstamos Empleados"
         ],
-        "26.3.0.0.00.000 - Incremento de caja y bancos": [
-            "26.3.1.0.00.000 - Depósitos a plazo fijo",
-            "26.3.9.0.00.000 - Otros activos financieros"
+        "26.3.0.0.00.000 - Prestamos a largo plazo": [
+            "26.3.1.0.00.000 - Préstamos a Largo Plazo al Sector Privado",
+            "26.3.1.1.00.000 - Préstamos a Microemprendedores",
+            "26.3.1.2.00.000 - Préstamos a Emprendedores",
+            "26.3.1.3.00.000 - Préstamos a Empresas",
+            "26.3.1.4.00.000 - Préstamo a Pymes",
+            "26.3.1.5.00.000 - Préstamos a Instituciones",
+            "26.3.1.5.01.000 - Préstamo a Instituciones Públicas No Financieras",
+            "26.3.1.5.02.000 - Préstamo a Instituciones Públicas Financieras",
+            "26.3.1.5.03.000 - Préstamo a Instituciones Privadas No Financieras",
+            "26.3.1.5.04.000 - Préstamo a Instituciones Privadas Financieras"
         ],
-        "26.4.0.0.00.000 - Anticipos a Proveedores y Contratistas": [
-            "26.4.1.0.00.000 - Anticipos a Proveedores y Contratistas"
+        "26.4.0.0.00.000 - Titulos y valores": [
+            "26.4.1.0.00.000 - Títulos y Valores a Corto Plazo",
+            "26.4.2.0.00.000 - Títulos y Valores a Largo Plazo"
         ],
-        "26.5.0.0.00.000 - Otorgamiento de Créditos y Microcréditos": [
-            "26.5.1.0.00.000 - Otorgamiento de Créditos y Microcréditos"
+        "26.5.0.0.00.000 - Incremento de disponibilidades": [
+            "26.5.1.0.00.000 - Incremento de Caja y Bancos",
+            "26.5.2.0.00.000 - Incremento de Inversiones financieras temporarias",
+            "26.6.0.0.00.000 - Incremento de cuentas a cobrar",
+            "26.6.1.0.00.000 - Incremento de Ctas. Comerciales a cobrar a corto plazo",
+            "26.6.2.0.00.000 - Incremento de Otras Ctas. a cobrar a corto plazo",
+            "26.6.3.0.00.000 - Incremento de Ctas. a cobrar comerciales a largo plazo",
+            "26.6.4.0.00.000 - Incremento de otros documentos a cobrar a largo plazo"
         ],
-        "26.6.0.0.00.000 - Integración de Capital y Aportes Financieros": [
-            "26.6.1.0.00.000 - Integración de Capital y Aportes Financieros"
+        "26.7.0.0.00.000 - Incremento de documentos a cobrar": [
+            "26.7.1.0.00.000 - Incremento de documentos comerciales a cobrar a corto plazo",
+            "26.7.2.0.00.000 - Incremento de otros documentos a cobrar a corto plazo",
+            "26.7.3.0.00.000 - Incremento de documentos comerciales a cobrar a largo plazo",
+            "26.7.4.0.00.000 - Incremento de otros documentos a cobrar a largo plazo"
         ],
-        "26.7.0.0.00.000 - Constituciones de Depósitos a Plazo y Fondos de Reserva": [
-            "26.7.1.0.00.000 - Constituciones de Depósitos a Plazo y Fondos de Reserva"
+        "26.8.0.0.00.000 - Incremento de activos diferidos y adelantos a proveedores y contratistas": [
+            "26.8.0.0.00.000 - Incremento de activos diferidos y adelantos a proveedores y contratistas"
         ]
     },
     "7. Servicio de la deuda": {
-        "27.1.0.0.00.000 - Amortización de la deuda interna": [
-            "27.1.1.0.00.000 - Amortización de préstamos del sector financiero",
-            "27.1.2.0.00.000 - Amortización de préstamos del gobierno provincial",
-            "27.1.3.0.00.000 - Amortización de títulos y bonos municipales",
-            "27.1.4.0.00.000 - Amortización de la deuda consolidada",
-            "27.1.9.0.00.000 - Otras amortizaciones de deuda interna"
+        "27.0.0.0.00.000 - Servicio de la deuda y disminución de otros pasivos": [
+            "27.1.0.0.00.000 - Servicio de la deuda interna",
+            "27.1.1.0.00.000 - Intereses de la deuda a Corto Plazo",
+            "27.1.2.0.00.000 - Amortización de la deuda interna a corto plazo",
+            "27.1.3.0.00.000 - Comisiones y otros gastos de la deuda interna a corto plazo",
+            "27.1.7.0.00.000 - Amortización de la deuda interna a largo plazo"
         ],
-        "27.2.0.0.00.000 - Intereses de la deuda interna": [
-            "27.2.1.0.00.000 - Intereses de préstamos del sector financiero",
-            "27.2.2.0.00.000 - Intereses de préstamos del gobierno provincial",
-            "27.2.3.0.00.000 - Intereses de títulos y bonos municipales",
-            "27.2.9.0.00.000 - Otros intereses de deuda interna"
+        "27.2.0.0.00.000 - Servicio de la deuda externa": [
+            "27.2.0.0.00.000 - Servicio de la deuda externa"
         ],
-        "27.3.0.0.00.000 - Gastos de la deuda interna": [
-            "27.3.1.0.00.000 - Comisiones y gastos de refinanciación y colocación"
+        "27.3.0.0.00.000 - Intereses por prestamos recibidos": [
+            "27.3.0.0.00.000 - Intereses por prestamos recibidos"
         ],
-        "27.4.0.0.00.000 - Amortización de la deuda flotante": [
-            "27.4.1.0.00.000 - Cancelación de deuda con proveedores de ejercicios anteriores",
-            "27.4.2.0.00.000 - Cancelación de deuda por personal de ejercicios anteriores",
-            "27.4.9.0.00.000 - Cancelación de otros pasivos de ejercicios anteriores"
+        "27.4.0.0.00.000 - Disminucion de prestamos a corto plazo": [
+            "27.4.0.0.00.000 - Disminucion de prestamos a corto plazo"
         ],
-        "27.5.0.0.00.000 - Amortización de Deuda Consolidada y Empréstitos": [
-            "27.5.1.0.00.000 - Amortización de Deuda Consolidada y Empréstitos"
+        "27.5.0.0.00.000 - Disminucion de prestamos a largo plazo": [
+            "27.5.0.0.00.000 - Disminucion de prestamos a largo plazo",
+            "27.5.5.0.00.000 - Disminución de préstamos a largo plazo recibidos de provincia y municipalidades"
         ],
-        "27.6.0.0.00.000 - Pago de Intereses y Gastos Financieros": [
-            "27.6.1.0.00.000 - Pago de Intereses y Gastos Financieros"
+        "27.6.0.0.00.000 - Disminucion de cuentas y documentos a pagar": [
+            "27.6.1.0.00.000 - Disminucion de cuentas comerciales a pagar",
+            "27.6.1.0.00.000 - Disminucion de cuentas y documentos a pagar",
+            "27.6.2.0.00.000 - Disminucion de otras cuentas a pagar a corto plazo"
         ],
-        "27.7.0.0.00.000 - Cancelación de Deuda Flotante y Ejercicios Anteriores": [
-            "27.7.1.0.00.000 - Cancelación de Deuda Flotante y Ejercicios Anteriores"
+        "27.7.0.0.00.000 - Disminucion de depósitos en instituciones públicas financieras": [
+            "27.7.0.0.00.000 - Disminucion de depósitos en instituciones públicas financieras"
         ],
-        "27.8.0.0.00.000 - Devolución de Garantías y Depósitos en Garantía": [
-            "27.8.1.0.00.000 - Devolución de Garantías y Depósitos en Garantía"
+        "27.8.0.0.00.000 - Disminucion de otros pasivos": [
+            "27.8.0.0.00.000 - Disminucion de otros pasivos"
         ],
-        "27.9.0.0.00.000 - Cumplimiento de Sentencias Judiciales": [
-            "27.9.1.0.00.000 - Cumplimiento de Sentencias Judiciales"
+        "27.9.0.0.00.000 - Conversion de la deuda": [
+            "27.9.0.0.00.000 - Conversion de la deuda"
         ]
     },
     "8. Otros Gastos": {
-        "28.1.0.0.00.000 - Fondo de Reserva y Contingencias Presupuestarias": [
-            "28.1.1.0.00.000 - Fondo de Reserva y Contingencias Presupuestarias"
+        "28.0.0.0.00.000 - Otros gastos": [
+            "28.1.0.0.00.000 - Intereses de instituciones publicas financieras",
+            "28.2.0.0.00.000 - Depreciacon y amortizacion",
+            "28.3.0.0.00.000 - Descuentos y bonificaciones",
+            "28.4.0.0.00.000 - Otras perdidas",
+            "28.5.0.0.00.000 - Disminucion del patrimonio"
         ]
     },
     "9. Gastos figurativos": {
-        "29.1.0.0.00.000 - Gastos figurativos para transacciones corrientes": [
-            "29.1.1.0.00.000 - Contribución a la administración central / entes descentralizados"
+        "29.0.0.0.00.000 - Gastos figurativos": [
+            "29.1.0.0.00.000 - Gastos figurativos de la administración provincial para transacciones corrientes",
+            "29.2.0.0.00.000 - Gastos figurativos de la administración provincial para transacciones de capital",
+            "29.3.0.0.00.000 - Gastos figurativos de la administración provincial para aplicaciones"
         ]
     }
 }

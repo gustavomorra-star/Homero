@@ -2230,7 +2230,7 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
 
 
 # =====================================================================
-# SECCIÓN 20: COMPARATIVO E HISTÓRICO DE MODIFICACIONES (PARSEO FORMATEADO)
+# SECCIÓN 20: COMPARATIVO E HISTÓRICO DE MODIFICACIONES (CONEXIÓN NUEVA PLANILLA)
 # =====================================================================
 elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     st.subheader("🔄 Comparativo e Histórico Presupuestario (2026 vs 2027)")
@@ -2238,47 +2238,65 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados para el proyecto 2027.")
     else:
-        st.caption("Cruce en tiempo real con la base de **Evaluación de Ejecución Presupuestaria 2026**.")
+        st.caption("Cruce en tiempo real contra la base oficial de **Saldos Presupuestarios**.")
 
-        CSV_URL_2026 = "https://docs.google.com/spreadsheets/d/1rDFoL0KPCiqmo1pBobrRuibAwtT9anRPZPLgjrPCBWo/export?format=csv&gid=966286745"
+        # URL de la nueva planilla de Saldos Presupuestarios (gid=2027704109)
+        CSV_URL_SALDOS = "https://docs.google.com/spreadsheets/d/1JLCDkHYiSFV_cCOjVigcIXLkpD61pHpoxOmJ1CvK2m4/export?format=csv&gid=2027704109"
+
+        # -------------------------------------------------------------
+        # SELECTOR DE MODO DE COMPARACIÓN
+        # -------------------------------------------------------------
+        c_mod1, c_mod2 = st.columns(2)
+        with c_mod1:
+            modo_comparacion = st.selectbox(
+                "📌 Seleccionar Base de Comparación para 2026:",
+                ["Presupuesto Aprobado / Inicial (Columna Presupuestado)", "Gasto Real Efectivo (Columna EJECUTADO)", "Gasto Devengado (Columna Devengado)"]
+            )
 
         try:
-            # Lectura del CSV desde Google Sheets
-            df_2026_raw = pd.read_csv(CSV_URL_2026)
+            # 1. Lectura directa del CSV
+            df_2026_raw = pd.read_csv(CSV_URL_SALDOS)
             df_2026 = pd.DataFrame(df_2026_raw)
 
-            # Limpieza de nombres de columnas (quitar espacios extras y pasar a mayúsculas)
+            # Normalizar nombres de columnas (quitar espacios sobrantes y pasar a mayúsculas)
             df_2026.columns = [str(c).strip().upper() for c in df_2026.columns]
 
-            # Buscar la columna de montos según la estructura del reporte (EJECUTADO, DEVENGADO o SALDO INICIAL)
-            col_monto_2026 = None
-            for col_candidata in ["EJECUTADO", "DEVENGADO", "SALDO INICIAL", "TOTAL"]:
-                if col_candidata in df_2026.columns:
-                    col_monto_2026 = col_candidata
-                    break
+            # 2. Mapear columna según la selección del usuario
+            if "Inicial" in modo_comparacion:
+                col_monto_target = "PRESUPUESTADO"
+            elif "Efectivo" in modo_comparacion:
+                col_monto_target = "EJECUTADO"
+            else:
+                col_monto_target = "DEVENGADO"
 
-            if col_monto_2026:
-                # FUNCIÓN DE LIMPIEZA DE FORMATO NUMÉRICO ARGENTINO (ej: "7.228.087,50" -> 7228087.50)
-                def limpiar_monto_arg(val):
-                    if pd.isna(val):
-                        return 0.0
-                    val_str = str(val).strip().replace("$", "").replace(" ", "")
-                    # Si tiene formato con puntos de miles y coma decimal
-                    if "," in val_str:
-                        val_str = val_str.replace(".", "").replace(",", ".")
-                    return pd.to_numeric(val_str, errors="coerce")
+            # Si por algún motivo no la encuentra con ese nombre exacto, hace búsqueda flexible
+            if col_monto_target not in df_2026.columns:
+                for c in df_2026.columns:
+                    if col_monto_target in c:
+                        col_monto_target = c
+                        break
 
-                df_2026["TOTAL_2026_CLEAN"] = df_2026[col_monto_2026].apply(limpiar_monto_arg).fillna(0.0)
+            # 3. Limpieza de números con formato de moneda argentino (ej: "585.147.576,21" -> 585147576.21)
+            def parse_num_arg(val):
+                if pd.isna(val):
+                    return 0.0
+                s = str(val).strip().replace("$", "").replace(" ", "")
+                if "," in s:
+                    s = s.replace(".", "").replace(",", ".")
+                return pd.to_numeric(s, errors="coerce")
+
+            if col_monto_target in df_2026.columns:
+                df_2026["TOTAL_2026_CLEAN"] = df_2026[col_monto_target].apply(parse_num_arg).fillna(0.0)
             else:
                 df_2026["TOTAL_2026_CLEAN"] = 0.0
 
             hay_datos_2026 = True
         except Exception as e:
             hay_datos_2026 = False
-            st.error("⚠️ No se pudo procesar la planilla de 2026.")
+            st.error(f"⚠️ No se pudo procesar la planilla de Saldos Presupuestarios: {e}")
 
         # -------------------------------------------------------------
-        # PROCESAMIENTO COMPARATIVO 2026 vs 2027
+        # PROCESAR Y DESPLEGAR COMPARATIVA
         # -------------------------------------------------------------
         if hay_datos_2026 and not df_2026.empty:
             tot_2026 = df_2026["TOTAL_2026_CLEAN"].sum()
@@ -2287,11 +2305,12 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             incremento = tot_2027 - tot_2026
             porc_incremento = (incremento / tot_2026) * 100 if tot_2026 > 0 else 0.0
 
+            st.markdown("---")
             st.markdown("##### 📊 Variación Interanual Global")
             m_h1, m_h2, m_h3 = st.columns(3)
-            m_h1.metric("Ejecutado / Base 2026", f"${tot_2026:,.2f}")
+            m_h1.metric(f"Base 2026 ({col_monto_target})", f"${tot_2026:,.2f}")
             m_h2.metric("Proyecto 2027", f"${tot_2027:,.2f}")
-            m_h3.metric("Variación Real", f"${incremento:,.2f}", f"{porc_incremento:+.2f}%")
+            m_h3.metric("Variación Interanual", f"${incremento:,.2f}", f"{porc_incremento:+.2f}%")
 
             st.markdown("---")
             st.markdown("##### 🏛️ Comparativo por Secretaría (2026 vs 2027)")
@@ -2302,29 +2321,32 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             sec_2027["SECRETARÍA"] = sec_2027["SECRETARÍA"].astype(str).str.strip().str.upper()
 
             # Agrupamiento 2026
-            if "SECRETARÍA" in df_2026.columns:
-                df_2026["SECRETARÍA"] = df_2026["SECRETARÍA"].astype(str).str.strip().str.upper()
-                sec_2026 = df_2026.groupby("SECRETARÍA")["TOTAL_2026_CLEAN"].sum().reset_index()
-                sec_2026.columns = ["SECRETARÍA", "EJECUTADO 2026 ($)"]
+            col_sec_2026 = "SECRETARÍA" if "SECRETARÍA" in df_2026.columns else ("SECRETARIA" if "SECRETARIA" in df_2026.columns else None)
+
+            if col_sec_2026:
+                df_2026[col_sec_2026] = df_2026[col_sec_2026].astype(str).str.strip().str.upper()
+                sec_2026 = df_2026.groupby(col_sec_2026)["TOTAL_2026_CLEAN"].sum().reset_index()
+                sec_2026.columns = ["SECRETARÍA", f"BASE 2026 ({col_monto_target}) ($)"]
             else:
-                sec_2026 = pd.DataFrame(columns=["SECRETARÍA", "EJECUTADO 2026 ($)"])
+                sec_2026 = pd.DataFrame(columns=["SECRETARÍA", f"BASE 2026 ({col_monto_target}) ($)"])
 
             # Merge / Cruzamiento por Secretaría
             df_comp_sec = pd.merge(sec_2027, sec_2026, on="SECRETARÍA", how="outer").fillna(0.0)
-            
-            # Descartar filas vacías de Secretaría
-            df_comp_sec = df_comp_sec[df_comp_sec["SECRETARÍA"] != "NAN"]
+            col_base_nom = f"BASE 2026 ({col_monto_target}) ($)"
 
-            df_comp_sec["VARIACIÓN ($)"] = df_comp_sec["PROYECTO 2027 ($)"] - df_comp_sec["EJECUTADO 2026 ($)"]
+            # Limpiar filas vacías o con nulos
+            df_comp_sec = df_comp_sec[~df_comp_sec["SECRETARÍA"].isin(["NAN", "NONE", "", "0.0", "UNNAMED: 0"])]
+
+            df_comp_sec["VARIACIÓN ($)"] = df_comp_sec["PROYECTO 2027 ($)"] - df_comp_sec[col_base_nom]
             df_comp_sec["% VARIACIÓN"] = df_comp_sec.apply(
-                lambda r: ((r["VARIACIÓN ($)"] / r["EJECUTADO 2026 ($)"]) * 100) if r["EJECUTADO 2026 ($)"] > 0 else 0.0, 
+                lambda r: ((r["VARIACIÓN ($)"] / r[col_base_nom]) * 100) if r[col_base_nom] > 0 else 0.0, 
                 axis=1
             )
 
             st.dataframe(
                 df_comp_sec.style.format({
                     "PROYECTO 2027 ($)": "${:,.2f}",
-                    "EJECUTADO 2026 ($)": "${:,.2f}",
+                    col_base_nom: "${:,.2f}",
                     "VARIACIÓN ($)": "${:,.2f}",
                     "% VARIACIÓN": "{:+.2f}%"
                 }),

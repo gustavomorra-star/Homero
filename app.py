@@ -85,20 +85,413 @@ df_destinos_gsheet = leer_datos_gsheet(URL_READ_DESTINOS)
 
 # --- Plan de Cuentas Oficial Municipal ---
 MAPEO_GASTOS = {
+    "1. Gastos en personal": {
+        "21.1.0.0.00.000 - Personal Permanente": [
+            "21.1.2.0.00.000 - Retribución a personal Directivo y de control",
+            "21.1.3.0.00.000 - Retribuciones que no hacen al cargo",
+            "21.1.4.0.00.000 - Sueldo Anual Complementario",
+            "21.1.5.0.00.000 - Otros gastos en personal",
+            "21.1.5.1.00.000 - Aportes Personales",
+            "21.1.5.2.00.000 - Aportes Sindicales",
+            "21.1.6.0.00.000 - Contribuciones Patronales",
+            "21.1.7.0.00.000 - Complementos",
+            "21.1.8.0.00.000 - Anticipo Financiero"
+        ],
+        "21.2.0.0.00.000 - Personal Temporario": [
+            "21.2.1.0.00.000 - Retribución del cargo",
+            "21.2.2.0.00.000 - Retribuciones que no hacen al cargo",
+            "21.2.3.0.00.000 - Sueldo Anual Complementario",
+            "21.2.4.0.00.000 - Otros gastos en personal",
+            "21.2.4.1.00.000 - Aportes personales",
+            "21.2.4.2.00.000 - Aportes Sindicales",
+            "21.2.5.0.00.000 - Contribuciones patronales",
+            "21.2.6.0.00.000 - Complementos",
+            "21.2.7.0.00.000 - Anticipo Financiero"
+        ],
+        "21.3.0.0.00.000 - Servicios extraordinarios": [
+            "21.3.1.0.00.000 - Retribuciones extraordinarias",
+            "21.3.2.0.00.000 - Sueldo anual complementario",
+            "21.3.3.0.00.000 - Contribuciones patronales",
+            "21.3.4.0.00.000 - Otros Gastos en Personal"
+        ],
+        "21.4.0.0.00.000 - Asignaciones familiares": [
+            "21.4.1.0.00.000 - Asignaciones familiares"
+        ],
+        "21.5.0.0.00.000 - Asistencia social al personal": [
+            "21.5.1.0.00.000 - Asistencia social al personal",
+            "21.5.2.0.00.000 - Seguros"
+        ],
+        "21.6.0.0.00.000 - Beneficios y compensaciones": [
+            "21.6.1.0.00.000 - Indumentaria",
+            "21.6.2.0.00.000 - Servicios de Comedor",
+            "21.6.3.0.00.000 - Compensaciones"
+        ],
+        "21.7.0.0.00.000 - Gabinete Ejecutivo Municipal": [
+            "21.7.1.0.00.000 - Personal Gabinete",
+            "21.7.1.1.00.000 - Intendente",
+            "21.7.1.2.00.000 - Secretarios",
+            "21.7.1.3.00.000 - Subsecretarios",
+            "21.7.1.4.00.000 - Coordinadores y directores",
+            "21.7.1.5.00.000 - Fiscal Municipal",
+            "21.7.2.0.00.000 - Sueldo Anual Complementario",
+            "21.7.3.0.00.000 - Aportes Personales",
+            "21.7.4.0.00.000 - Contribuciones Patronales",
+            "21.7.5.0.00.000 - Gastos de Representación",
+            "21.7.6.0.00.000 - Anticipo Financiero"
+        ],
+        "21.8.0.0.00.000 - Concejales": [
+            "21.8.1.0.00.000 - Dietas Concejales",
+            "21.8.2.0.00.000 - Sueldo Anual Complementario",
+            "21.8.3.0.00.000 - Aportes Personales",
+            "21.8.4.0.00.000 - Contribuciones Patronales",
+            "21.8.5.0.00.000 - Gastos de Representación",
+            "21.8.6.0.00.000 - Anticipo Financiero"
+        ],
+        "21.9.0.0.00.000 - Secretarios Concejales": [
+            "21.9.1.0.00.000 - Haberes",
+            "21.9.2.0.00.000 - Sueldo Anual Complementario",
+            "21.9.3.0.00.000 - Aportes Personales",
+            "21.9.4.0.00.000 - Contribuciones Patronales",
+            "21.9.5.0.00.000 - Anticipo Financiero"
+        ],
+        "21.10.0.0.00.000 - Pasantias Educativas": [
+            "21.10.1.0.00.000 - Pasantias Educativas"
+        ]
+    },
     "2. Bienes de consumo": {
-        "22.5.0.0.00.000 - Productos químicos, combustibles y lubricantes": ["22.5.5.0.00.000 - Tintas, Pinturas y Colorantes"],
-        "22.6.0.0.00.000 - Productos minerales no metálicos": ["22.6.5.0.00.000 - Productos de Cemento, Cal y Yeso"],
-        "22.8.0.0.00.000 - Minerales": ["22.8.4.0.00.000 - Piedra, Arcilla y Arena"],
-        "22.9.0.0.00.000 - Otros bienes de consumo": ["22.9.3.0.00.000 - Útiles y materiales eléctricos", "22.9.6.0.00.000 - Repuestos y accesorios"]
+        "22.1.0.0.00.000 - Alimentos y productos agroforestales": [
+            "22.1.1.0.00.000 - Alimentos para personas",
+            "22.1.2.0.00.000 - Alimentos para animales",
+            "22.1.3.0.00.000 - Productos agroforestales"
+        ],
+        "22.2.0.0.00.000 - Textiles y vestuario": [
+            "22.2.1.0.00.000 - Textiles y vestuarios",
+            "22.2.2.0.00.000 - Acabados textiles",
+            "22.2.3.0.00.000 - Confecciones textiles",
+            "22.2.4.0.00.000 - Calzados"
+        ],
+        "22.3.0.0.00.000 - Productos de papel, cartón e impresos": [
+            "22.3.1.0.00.000 - Papel de escritorio y cartón",
+            "22.3.2.0.00.000 - Papel para computación",
+            "22.3.3.0.00.000 - Productos de artes gráficas",
+            "22.3.4.0.00.000 - Libros, revistas y periódicos",
+            "22.3.5.0.00.000 - Textos de enseñanza",
+            "22.3.9.0.00.000 - Otros"
+        ],
+        "22.4.0.0.00.000 - Productos de cuero y caucho": [
+            "22.4.1.0.00.000 - Cuero",
+            "22.4.2.0.00.000 - Artículos de cuero",
+            "22.4.3.0.00.000 - Cubiertas y cámaras de aire",
+            "22.4.9.0.00.000 - Elementos de caucho"
+        ],
+        "22.5.0.0.00.000 - Productos químicos, combustibles y lubricantes": [
+            "22.5.1.0.00.000 - Compuestos químicos",
+            "22.5.2.0.00.000 - Productos farmacéuticos y medicinales",
+            "22.5.3.0.00.000 - Abonos y plaguicidas",
+            "22.5.4.0.00.000 - Insecticidas, fumigantes y desinfectantes",
+            "22.5.5.0.00.000 - Tintas, pinturas y colorantes",
+            "22.5.6.0.00.000 - Combustibles y lubricantes",
+            "22.5.7.0.00.000 - Especies medicinales",
+            "22.5.8.0.00.000 - Productos de material plástico",
+            "22.5.9.0.00.000 - Otros"
+        ],
+        "22.6.0.0.00.000 - Productos minerales no metálicos": [
+            "22.6.1.0.00.000 - Vidrios",
+            "22.6.2.0.00.000 - Productos de loza y porcelana",
+            "22.6.3.0.00.000 - Productos de arcilla y cerámica",
+            "22.6.4.0.00.000 - Cemento, cal y yeso",
+            "22.6.5.0.00.000 - Productos de cemento, cal y yeso",
+            "22.6.9.0.00.000 - Otros"
+        ],
+        "22.7.0.0.00.000 - Productos metálicos": [
+            "22.7.1.0.00.000 - Productos de hierro y acero",
+            "22.7.2.0.00.000 - Productos metálicos no ferrosos",
+            "22.7.3.0.00.000 - Estructuras metálicas acabadas",
+            "22.7.4.0.00.000 - Herramientas menores",
+            "22.7.9.0.00.000 - Otros"
+        ],
+        "22.8.0.0.00.000 - Minerales": [
+            "22.8.1.0.00.000 - Carbón mineral",
+            "22.8.2.0.00.000 - Gas natural",
+            "22.8.3.0.00.000 - Minerales metalíferos",
+            "22.8.4.0.00.000 - Piedra, arcilla y arena",
+            "22.8.9.0.00.000 - Otros"
+        ],
+        "22.9.0.0.00.000 - Otros bienes de consumo": [
+            "22.9.1.0.00.000 - Elementos de limpieza",
+            "22.9.2.0.00.000 - Útiles de escritorio, oficina y enseñanza",
+            "22.9.3.0.00.000 - Útiles y materiales eléctricos",
+            "22.9.4.0.00.000 - Utensilios de cocina y comedor",
+            "22.9.5.0.00.000 - Elementos de señalamiento",
+            "22.9.6.0.00.000 - Repuestos y accesorios",
+            "22.9.7.0.00.000 - Bienes de consumo varios"
+        ],
+        "22.10.0.0.00.000 - Bienes de consumo para reventa": [
+            "22.10.1.0.00.000 - Bienes de consumo para reventa"
+        ]
     },
     "3. Servicios": {
-        "23.3.0.0.00.000 - Mantenimiento, reparación y limpieza": ["23.3.1.0.00.000 - Mantenimiento y reparación de edificios y locales"]
+        "23.1.0.0.00.000 - Servicios básicos": [
+            "23.1.1.0.00.000 - Energía eléctrica",
+            "23.1.2.0.00.000 - Agua",
+            "23.1.3.0.00.000 - Gas",
+            "23.1.4.0.00.000 - Teléfonos, telex y telecopias",
+            "23.1.5.0.00.000 - Correos y telégrafos",
+            "23.1.9.0.00.000 - Otros"
+        ],
+        "23.2.0.0.00.000 - Alquileres y derechos": [
+            "23.2.1.0.00.000 - Alquiler de edificios y locales",
+            "23.2.2.0.00.000 - Alquiler de tierras y terrenos",
+            "23.2.3.0.00.000 - Alquiler de maquinaria y equipos",
+            "23.2.4.0.00.000 - Alquiler de medios de transporte",
+            "23.2.5.0.00.000 - Alquiler de equipos de computación",
+            "23.2.6.0.00.000 - Derechos de bienes intangibles",
+            "23.2.9.0.00.000 - Otros"
+        ],
+        "23.3.0.0.00.000 - Mantenimiento, reparación y limpieza": [
+            "23.3.1.0.00.000 - Mantenimiento y reparación de edificios y locales",
+            "23.3.2.0.00.000 - Mantenimiento y reparación de maquinaria y equipos",
+            "23.3.3.0.00.000 - Mantenimiento y reparación de medios de transporte",
+            "23.3.4.0.00.000 - Mantenimiento y reparación de vías de comunicación",
+            "23.3.5.0.00.000 - Mantenimiento y reparación de equipos de computación",
+            "23.3.6.0.00.000 - Mantenimiento y reparación de obras de infraestructura",
+            "23.3.7.0.00.000 - Limpieza, aseo y fumigación",
+            "23.3.8.0.00.000 - Mantenimiento de espacios verdes",
+            "23.3.9.0.00.000 - Mantenimiento, reparación y limpieza varios"
+        ],
+        "23.4.0.0.00.000 - Servicios técnicos y profesionales": [
+            "23.4.1.0.00.000 - Estudios, investigaciones y proyectos de factibilidad",
+            "23.4.2.0.00.000 - Médicos y sanitarios",
+            "23.4.3.0.00.000 - Jurídicos",
+            "23.4.4.0.00.000 - Contabilidad y auditoría",
+            "23.4.5.0.00.000 - De informática y sistemas computarizados",
+            "23.4.6.0.00.000 - De capacitación",
+            "23.4.7.0.00.000 - Notariales",
+            "23.4.8.0.00.000 - De arquitectura e ingeniería",
+            "23.4.9.0.00.000 - Servicios técnicos y profesionales varios"
+        ],
+        "23.5.0.0.00.000 - Servicios comerciales y financieros": [
+            "23.5.1.0.00.000 - Transporte",
+            "23.5.2.0.00.000 - Almacenamiento",
+            "23.5.3.0.00.000 - Imprenta, publicaciones y reproducciones",
+            "23.5.4.0.00.000 - Primas y gastos de seguros",
+            "23.5.5.0.00.000 - Comisiones y gastos bancarios",
+            "23.5.6.0.00.000 - Publicidad y propaganda",
+            "23.5.7.0.00.000 - Organización de eventos",
+            "23.5.8.0.00.000 - Gastos de ceremonial y protocolo",
+            "23.5.9.0.00.000 - Servicios comerciales y financieros varios"
+        ],
+        "23.6.0.0.00.000 - Publicidad y propaganda": [
+            "23.6.1.0.00.000 - Publicidad y propaganda"
+        ],
+        "23.7.0.0.00.000 - Pasajes y viáticos": [
+            "23.7.1.0.00.000 - Pasajes",
+            "23.7.2.0.00.000 - Viáticos",
+            "23.7.9.0.00.000 - Gastos de movilidad"
+        ],
+        "23.8.0.0.00.000 - Impuestos, derechos, tasas y juicios": [
+            "23.8.1.0.00.000 - Impuestos directos",
+            "23.8.2.0.00.000 - Impuestos indirectos",
+            "23.8.3.0.00.000 - Tasas y derechos",
+            "23.8.4.0.00.000 - Multas, recargos y juicios",
+            "23.8.9.0.00.000 - Otros"
+        ],
+        "23.9.0.0.00.000 - Otros servicios": [
+            "23.9.1.0.00.000 - Servicios de vigilancia",
+            "23.9.2.0.00.000 - Servicios de sepelio",
+            "23.9.9.0.00.000 - Servicios no especificados precedentemente"
+        ],
+        "23.10.0.0.00.000 - Servicios no personales para reventa": [
+            "23.10.1.0.00.000 - Servicios no personales para reventa"
+        ]
     },
-    "21.0.0.0.00.000 - Gastos de Personal": {
-        "21.1.0.0.00.000 - Personal Permanente": ["21.1.1.0.00.000 - Retribución del Cargo", "21.1.4.0.00.000 - SAC"]
+    "4. Bienes de Uso": {
+        "24.1.0.0.00.000 - Bienes preexistentes": [
+            "24.1.1.0.00.000 - Tierras y terrenos",
+            "24.1.2.0.00.000 - Edificios e instalaciones",
+            "24.1.9.0.00.000 - Otros"
+        ],
+        "24.2.0.0.00.000 - Construcciones": [
+            "24.2.1.0.00.000 - Edificaciones y ampliaciones",
+            "24.2.2.0.00.000 - Vías de comunicación",
+            "24.2.3.0.00.000 - Obras hidráulicas y de saneamiento",
+            "24.2.4.0.00.000 - Infraestructura urbana",
+            "24.2.9.0.00.000 - Otras construcciones"
+        ],
+        "24.3.0.0.00.000 - Maquinaria y equipo": [
+            "24.3.1.0.00.000 - Maquinaria y equipo de producción",
+            "24.3.2.0.00.000 - Equipo para vías de comunicación y transporte",
+            "24.3.3.0.00.000 - Equipo de transporte terrestre",
+            "24.3.4.0.00.000 - Equipo de telecomunicaciones",
+            "24.3.5.0.00.000 - Equipo de computación",
+            "24.3.6.0.00.000 - Equipo de oficina y mueblería",
+            "24.3.7.0.00.000 - Equipo médico, de laboratorio y sanitario",
+            "24.3.8.0.00.000 - Equipo educacional y recreativo",
+            "24.3.9.0.00.000 - Maquinaria y equipo varios"
+        ],
+        "24.4.0.0.00.000 - Equipo de seguridad": [
+            "24.4.1.0.00.000 - Equipo de seguridad e incendio"
+        ],
+        "24.5.0.0.00.000 - Libros, revistas y otros coleccionables": [
+            "24.5.1.0.00.000 - Libros y revistas",
+            "24.5.2.0.00.000 - Obras de arte y objetos de valor",
+            "24.5.9.0.00.000 - Otros"
+        ],
+        "24.6.0.0.00.000 - Semovientes": [
+            "24.6.1.0.00.000 - Animales de trabajo y reproducción"
+        ],
+        "24.7.0.0.00.000 - Intangibles": [
+            "24.7.1.0.00.000 - Programas de computación",
+            "24.7.2.0.00.000 - Marcas y patentes",
+            "24.7.9.0.00.000 - Otros intangibles"
+        ],
+        "24.8.0.0.00.000 - Obras de Arte": [
+            "24.8.1.0.00.000 - Obras de arte"
+        ],
+        "24.9.0.0.00.000 - Aporte de Capital": [
+            "24.9.1.0.00.000 - Aporte de Capital"
+        ],
+        "24.10.0.0.00.000 - Obras Públicas - Pavimentación y Repavimentación": [
+            "24.10.1.0.00.000 - Obras Públicas - Pavimentación y Repavimentación"
+        ],
+        "24.11.0.0.00.000 - Obras Públicas - Arquitectura y Urbanismo": [
+            "24.11.1.0.00.000 - Obras Públicas - Arquitectura y Urbanismo"
+        ],
+        "24.12.0.0.00.000 - Obras Públicas - Saneamiento e Infraestructura": [
+            "24.12.1.0.00.000 - Obras Públicas - Saneamiento e Infraestructura"
+        ],
+        "24.13.0.0.00.000 - Obras Públicas - Electrificación y Alumbrado Público": [
+            "24.13.1.0.00.000 - Obras Públicas - Electrificación y Alumbrado Público"
+        ],
+        "24.14.0.0.00.000 - Obras Públicas - Mantenimiento y Reparaciones Mayores": [
+            "24.14.1.0.00.000 - Obras Públicas - Mantenimiento y Reparaciones Mayores"
+        ],
+        "24.15.0.0.00.000 - Adquisiciones con Fondos Afectados": [
+            "24.15.1.0.00.000 - Adquisiciones con Fondos Afectados"
+        ]
+    },
+    "5. Transferencias": {
+        "25.1.0.0.00.000 - Transferencias al sector privado para financiar gastos corrientes": [
+            "25.1.1.0.00.000 - Becas y ayudas a estudiantes",
+            "25.1.2.0.00.000 - Subsidios a personas e instituciones de bien público",
+            "25.1.3.0.00.000 - Aportes a entidades deportivas y culturales",
+            "25.1.4.0.00.000 - Ayudas sociales a personas y familias",
+            "25.1.5.0.00.000 - Promoción industrial y comercial",
+            "25.1.9.0.00.000 - Otras transferencias al sector privado"
+        ],
+        "25.2.0.0.00.000 - Transferencias al sector privado para financiar gastos de capital": [
+            "25.2.1.0.00.000 - Subsidios para inversiones y equipamiento",
+            "25.2.2.0.00.000 - Aportes de capital a emprendimientos de interés municipal",
+            "25.2.9.0.00.000 - Otras transferencias de capital al sector privado"
+        ],
+        "25.3.0.0.00.000 - Transferencias al sector público para financiar gastos corrientes": [
+            "25.3.1.0.00.000 - Aportes a comunas y municipios",
+            "25.3.2.0.00.000 - Aportes a la provincia",
+            "25.3.3.0.00.000 - Aportes a entes descentralizados e interjurisdiccionales",
+            "25.3.9.0.00.000 - Otras transferencias corrientes al sector público"
+        ],
+        "25.4.0.0.00.000 - Transferencias al sector público para financiar gastos de capital": [
+            "25.4.1.0.00.000 - Transferencias de capital a comunas y municipios",
+            "25.4.2.0.00.000 - Transferencias de capital a entes públicos",
+            "25.4.9.0.00.000 - Otras transferencias de capital al sector público"
+        ],
+        "25.5.0.0.00.000 - Transferencias al sector externo": [
+            "25.5.1.0.00.000 - Transferencias al sector externo"
+        ],
+        "25.6.0.0.00.000 - Subsidios y Asistencia Social": [
+            "25.6.1.0.00.000 - Subsidios e Indemnizaciones Sociales",
+            "25.6.2.0.00.000 - Asistencia Médica, Farmacéutica y Sanitaria",
+            "25.6.3.0.00.000 - Aportes Institucionales y Comunitarios",
+            "25.6.4.0.00.000 - Aportes Educativos, Becas y Pasantías",
+            "25.6.5.0.00.000 - Fomento Económico, Comercial y Emprendimientos",
+            "25.6.6.0.00.000 - Fondo de Asistencia Educativa (F.A.E.)",
+            "25.6.7.0.00.000 - Programas Sociales y Comunitarios Especiales"
+        ],
+        "25.7.0.0.00.000 - Aportes a Entidades Interjurisdiccionales y Organismos Especiales": [
+            "25.7.1.0.00.000 - Aportes a Entidades Interjurisdiccionales y Organismos Especiales"
+        ],
+        "25.8.0.0.00.000 - Transferencias para Financiar Gastos de Capital": [
+            "25.8.1.0.00.000 - Transferencias para Financiar Gastos de Capital"
+        ]
+    },
+    "6. Activos Financieros": {
+        "26.1.0.0.00.000 - Adquisición de títulos y valores": [
+            "26.1.1.0.00.000 - Títulos públicos",
+            "26.1.2.0.00.000 - Acciones y participaciones de capital",
+            "26.1.9.0.00.000 - Otros títulos y valores"
+        ],
+        "26.2.0.0.00.000 - Concesión de préstamos": [
+            "26.2.1.0.00.000 - Préstamos a personas",
+            "26.2.2.0.00.000 - Préstamos a empresas privadas",
+            "26.2.3.0.00.000 - Préstamos al sector público",
+            "26.2.9.0.00.000 - Otros préstamos"
+        ],
+        "26.3.0.0.00.000 - Incremento de caja y bancos": [
+            "26.3.1.0.00.000 - Depósitos a plazo fijo",
+            "26.3.9.0.00.000 - Otros activos financieros"
+        ],
+        "26.4.0.0.00.000 - Anticipos a Proveedores y Contratistas": [
+            "26.4.1.0.00.000 - Anticipos a Proveedores y Contratistas"
+        ],
+        "26.5.0.0.00.000 - Otorgamiento de Créditos y Microcréditos": [
+            "26.5.1.0.00.000 - Otorgamiento de Créditos y Microcréditos"
+        ],
+        "26.6.0.0.00.000 - Integración de Capital y Aportes Financieros": [
+            "26.6.1.0.00.000 - Integración de Capital y Aportes Financieros"
+        ],
+        "26.7.0.0.00.000 - Constituciones de Depósitos a Plazo y Fondos de Reserva": [
+            "26.7.1.0.00.000 - Constituciones de Depósitos a Plazo y Fondos de Reserva"
+        ]
+    },
+    "7. Servicio de la deuda": {
+        "27.1.0.0.00.000 - Amortización de la deuda interna": [
+            "27.1.1.0.00.000 - Amortización de préstamos del sector financiero",
+            "27.1.2.0.00.000 - Amortización de préstamos del gobierno provincial",
+            "27.1.3.0.00.000 - Amortización de títulos y bonos municipales",
+            "27.1.4.0.00.000 - Amortización de la deuda consolidada",
+            "27.1.9.0.00.000 - Otras amortizaciones de deuda interna"
+        ],
+        "27.2.0.0.00.000 - Intereses de la deuda interna": [
+            "27.2.1.0.00.000 - Intereses de préstamos del sector financiero",
+            "27.2.2.0.00.000 - Intereses de préstamos del gobierno provincial",
+            "27.2.3.0.00.000 - Intereses de títulos y bonos municipales",
+            "27.2.9.0.00.000 - Otros intereses de deuda interna"
+        ],
+        "27.3.0.0.00.000 - Gastos de la deuda interna": [
+            "27.3.1.0.00.000 - Comisiones y gastos de refinanciación y colocación"
+        ],
+        "27.4.0.0.00.000 - Amortización de la deuda flotante": [
+            "27.4.1.0.00.000 - Cancelación de deuda con proveedores de ejercicios anteriores",
+            "27.4.2.0.00.000 - Cancelación de deuda por personal de ejercicios anteriores",
+            "27.4.9.0.00.000 - Cancelación de otros pasivos de ejercicios anteriores"
+        ],
+        "27.5.0.0.00.000 - Amortización de Deuda Consolidada y Empréstitos": [
+            "27.5.1.0.00.000 - Amortización de Deuda Consolidada y Empréstitos"
+        ],
+        "27.6.0.0.00.000 - Pago de Intereses y Gastos Financieros": [
+            "27.6.1.0.00.000 - Pago de Intereses y Gastos Financieros"
+        ],
+        "27.7.0.0.00.000 - Cancelación de Deuda Flotante y Ejercicios Anteriores": [
+            "27.7.1.0.00.000 - Cancelación de Deuda Flotante y Ejercicios Anteriores"
+        ],
+        "27.8.0.0.00.000 - Devolución de Garantías y Depósitos en Garantía": [
+            "27.8.1.0.00.000 - Devolución de Garantías y Depósitos en Garantía"
+        ],
+        "27.9.0.0.00.000 - Cumplimiento de Sentencias Judiciales": [
+            "27.9.1.0.00.000 - Cumplimiento de Sentencias Judiciales"
+        ]
+    },
+    "8. Otros Gastos": {
+        "28.1.0.0.00.000 - Fondo de Reserva y Contingencias Presupuestarias": [
+            "28.1.1.0.00.000 - Fondo de Reserva y Contingencias Presupuestarias"
+        ]
+    },
+    "9. Gastos figurativos": {
+        "29.1.0.0.00.000 - Gastos figurativos para transacciones corrientes": [
+            "29.1.1.0.00.000 - Contribución a la administración central / entes descentralizados"
+        ]
     }
 }
-
 MAPEO_ESTRUCTURA = {
     "AGENCIA MUNICIPAL DE SEGURIDAD": ["AGENCIA MUNICIPAL DE SEGURIDAD"],
     "SECRETARÍA DE GESTIÓN AMBIENTAL Y TERRITORIAL": ["SUBSECRETARÍA DE OBRAS", "SUBSECRETARÍA DE AMBIENTE Y ACCIÓN CLIMÁTICA"],

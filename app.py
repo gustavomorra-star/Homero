@@ -270,7 +270,7 @@ with tab_egresos:
     st.download_button(label="📗 Descargar Base de Datos Completa en 11 Columnas (.xls)", data=csv_global_data, file_name="Base_De_Datos_Egresos_General.xls", mime="application/vnd.ms-excel", use_container_width=True)
 
 # =====================================================================
-# PESTAÑA 4: REPORTE GRÁFICO OFICIAL MUNICIPAL 2027 (CORREGIDA)
+# PESTAÑA 4: REPORTE GRÁFICO OFICIAL MUNICIPAL 2027 (PROTEGIDO CONTRA KEYERROR)
 # =====================================================================
 with tab_oficial:
     st.subheader("📋 Consulta de Presupuesto de Gasto por Destino Oficial")
@@ -286,48 +286,43 @@ with tab_oficial:
         with cf1: 
             sec_s = st.selectbox("1. SELECCIONÁ SECRETARÍA:", options=[""] + opciones_secretarias, key="of_sec")
         with cf2:
-            sb_opts = [""] + MAPEO_ESTRUCTURA[sec_s] if sec_s != "" else [""]
+            sb_opts = [""] + MAPEO_ESTRUCTURA[sec_s] if (sec_s != "" and sec_s in MAPEO_ESTRUCTURA) else [""]
             sub_s = st.selectbox("2. SELECCIONÁ SUBSECRETARÍA:", options=sb_opts, key="of_sub")
         with col_f3:
             if sec_s != "" and sub_s != "":
                 lista_dest_oficial = []
-                df_d_g = leer_datos_gsheet(URL_READ_DESTINOS)
+                df_d_g = leer_datos_gsheet("1365567783")
                 
-                # Cargar destinos desde Google Sheet normalizados
                 if not df_d_g.empty and "destino" in df_d_g.columns:
-                    df_fil = df_d_g[(df_d_g["secretaria"].astype(str).str.strip() == sec_s.strip()) & 
-                                    (df_d_g["subsecretaria"].astype(str).str.strip() == sub_s.strip())]
-                    lista_dest_oficial = [str(d).strip().upper() for d in df_fil["destino"].dropna().tolist() if str(d).strip() != ""]
+                    mask_dest = (df_d_g["secretaria"].astype(str).str.strip().str.upper() == sec_s.strip().upper()) & \
+                                (df_d_g["subsecretaria"].astype(str).str.strip().str.upper() == sub_s.strip().upper())
+                    lista_dest_oficial = [str(d).strip().upper() for d in df_d_g[mask_dest]["destino"].dropna().tolist() if str(d).strip() != ""]
                 
-                # Cargar destinos locales normalizados
-# CÓDIGO NUEVO CORREGIDO:
-backup_destinos = st.session_state.get("db_local_backup", {})
-if isinstance(backup_destinos, dict):
-    for d_l in backup_destinos.get("destinos", []):
-        if str(d_l.get("secretaria","")).strip().upper() == sec_s.strip().upper() and str(d_l.get("subsecretaria","")).strip().upper() == sub_s.strip().upper():
-            d_nom = str(d_l.get("destino","")).strip().upper()
-            if d_nom and d_nom not in lista_dest_oficial:
-                lista_dest_oficial.append(d_nom)
+                # REVISION SEGURA DE BACKUP LOCAL (Evita KeyError)
+                backup_data = st.session_state.get("db_local_backup", {})
+                if isinstance(backup_data, dict):
+                    lista_dest_backup = backup_data.get("destinos", [])
+                    if isinstance(lista_dest_backup, list):
+                        for d_l in lista_dest_backup:
+                            if isinstance(d_l, dict):
+                                if str(d_l.get("secretaria","")).strip().upper() == sec_s.strip().upper() and str(d_l.get("subsecretaria","")).strip().upper() == sub_s.strip().upper():
+                                    d_nom = str(d_l.get("destino","")).strip().upper()
+                                    if d_nom and d_nom not in lista_dest_oficial:
+                                        lista_dest_oficial.append(d_nom)
                             
                 dest_s = st.selectbox("3. SELECCIONÁ DESTINO:", options=[""] + sorted(list(set(lista_dest_oficial))), format_func=lambda x: "--- Seleccioná ---" if x == "" else str(x).upper(), key="of_dest")
             else: 
                 dest_s = st.selectbox("3. SELECCIONÁ DESTINO:", options=[""], key="of_dest")
 
         if sec_s != "" and sub_s != "" and dest_s != "":
-            # NORMALIZACIÓN CLAVE DE FILTRADO (Ignora espacios extra y diferencias de mayúsculas)
-            sec_clean = str(sec_s).strip().upper()
-            sub_clean = str(sub_s).strip().upper()
-            dest_clean = str(dest_s).strip().upper()
+            dest_target = str(dest_s).strip().upper()
 
             df_f_of = df_egr_completo[
-                (df_egr_completo["secretaria"].astype(str).str.strip().str.upper() == sec_clean) & 
-                (df_egr_completo["subsecretaria"].astype(str).str.strip().str.upper() == sub_clean) & 
-                (df_egr_completo["destino"].astype(str).str.strip().str.upper() == dest_clean)
+                df_egr_completo["destino"].astype(str).str.strip().str.upper() == dest_target
             ].copy()
 
             tot_dest = df_f_of["total"].sum() if not df_f_of.empty else 0.0
 
-            # Encabezado Oficial
             st.markdown(f"""
             <div style="border: 1px solid #000; padding: 0px; border-radius: 2px; background-color: #fff; font-family: Arial, sans-serif;">
                 <table style="width: 100%; border-collapse: collapse;">
@@ -344,7 +339,7 @@ if isinstance(backup_destinos, dict):
             """, unsafe_allow_html=True)
 
             if df_f_of.empty:
-                st.warning(f"⚠️ El destino **{dest_s}** está registrado pero aún no tiene renglones de gasto asociados en el formulario. Cargá un gasto asignado a este destino para visualizarlo aquí.")
+                st.warning(f"⚠️ No se encontraron gastos registrados para **{dest_s}**. Verificá que en la Pestaña 3 (Base de Datos General) aparezca exactamente este mismo destino cargado.")
             else:
                 f_plan, html_rows = [], ""
                 for obj, df_obj in df_f_of.groupby("objeto_gasto"):
@@ -363,7 +358,6 @@ if isinstance(backup_destinos, dict):
 
                 st.write(pd.DataFrame(f_plan).to_html(escape=False, index=False), unsafe_allow_html=True)
                 
-                # Botón de Reporte PDF/Imprimible
                 st.markdown("---")
                 html_imp = f"""
                 <html>

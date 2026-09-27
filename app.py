@@ -2228,9 +2228,8 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
             type="primary"
         )
 
-
 # =====================================================================
-# SECCIÓN 20: COMPARATIVO E HISTÓRICO DE MODIFICACIONES (CONEXIÓN NUEVA PLANILLA)
+# SECCIÓN 20: COMPARATIVO E HISTÓRICO DE MODIFICACIONES (PARSEO DINÁMICO DATOS)
 # =====================================================================
 elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     st.subheader("🔄 Comparativo e Histórico Presupuestario (2026 vs 2027)")
@@ -2238,14 +2237,10 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados para el proyecto 2027.")
     else:
-        st.caption("Cruce en tiempo real contra la base oficial de **Saldos Presupuestarios**.")
+        st.caption("Cruce en tiempo real con la base oficial de **Consulta Saldos Presupuestarios**.")
 
-        # URL de la nueva planilla de Saldos Presupuestarios (gid=2027704109)
         CSV_URL_SALDOS = "https://docs.google.com/spreadsheets/d/1JLCDkHYiSFV_cCOjVigcIXLkpD61pHpoxOmJ1CvK2m4/export?format=csv&gid=2027704109"
 
-        # -------------------------------------------------------------
-        # SELECTOR DE MODO DE COMPARACIÓN
-        # -------------------------------------------------------------
         c_mod1, c_mod2 = st.columns(2)
         with c_mod1:
             modo_comparacion = st.selectbox(
@@ -2254,14 +2249,21 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             )
 
         try:
-            # 1. Lectura directa del CSV
-            df_2026_raw = pd.read_csv(CSV_URL_SALDOS)
-            df_2026 = pd.DataFrame(df_2026_raw)
+            # 1. Leer archivo crudo sin encabezados para ubicar la fila de la cabecera real
+            df_raw_no_header = pd.read_csv(CSV_URL_SALDOS, header=None)
+            
+            header_row_idx = 0
+            for idx, row in df_raw_no_header.iterrows():
+                row_str = " ".join([str(val).upper() for val in row.values])
+                if "PRESUPUESTADO" in row_str and "DEVENGADO" in row_str:
+                    header_row_idx = idx
+                    break
 
-            # Normalizar nombres de columnas (quitar espacios sobrantes y pasar a mayúsculas)
+            # 2. Cargar el DataFrame salteando las filas previas
+            df_2026 = pd.read_csv(CSV_URL_SALDOS, skiprows=header_row_idx)
             df_2026.columns = [str(c).strip().upper() for c in df_2026.columns]
 
-            # 2. Mapear columna según la selección del usuario
+            # 3. Mapear columna según la selección
             if "Inicial" in modo_comparacion:
                 col_monto_target = "PRESUPUESTADO"
             elif "Efectivo" in modo_comparacion:
@@ -2269,14 +2271,14 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             else:
                 col_monto_target = "DEVENGADO"
 
-            # Si por algún motivo no la encuentra con ese nombre exacto, hace búsqueda flexible
-            if col_monto_target not in df_2026.columns:
-                for c in df_2026.columns:
-                    if col_monto_target in c:
-                        col_monto_target = c
-                        break
+            # Búsqueda flexible si hay espacios extras en los títulos
+            col_encontrada = None
+            for c in df_2026.columns:
+                if col_monto_target in c:
+                    col_encontrada = c
+                    break
 
-            # 3. Limpieza de números con formato de moneda argentino (ej: "585.147.576,21" -> 585147576.21)
+            # 4. Función de limpieza de moneda argentina (ej: "585.147.576,21" -> 585147576.21)
             def parse_num_arg(val):
                 if pd.isna(val):
                     return 0.0
@@ -2285,8 +2287,8 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                     s = s.replace(".", "").replace(",", ".")
                 return pd.to_numeric(s, errors="coerce")
 
-            if col_monto_target in df_2026.columns:
-                df_2026["TOTAL_2026_CLEAN"] = df_2026[col_monto_target].apply(parse_num_arg).fillna(0.0)
+            if col_encontrada:
+                df_2026["TOTAL_2026_CLEAN"] = df_2026[col_encontrada].apply(parse_num_arg).fillna(0.0)
             else:
                 df_2026["TOTAL_2026_CLEAN"] = 0.0
 
@@ -2334,7 +2336,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             df_comp_sec = pd.merge(sec_2027, sec_2026, on="SECRETARÍA", how="outer").fillna(0.0)
             col_base_nom = f"BASE 2026 ({col_monto_target}) ($)"
 
-            # Limpiar filas vacías o con nulos
+            # Filtrar filas nulas o no válidas de secretaría
             df_comp_sec = df_comp_sec[~df_comp_sec["SECRETARÍA"].isin(["NAN", "NONE", "", "0.0", "UNNAMED: 0"])]
 
             df_comp_sec["VARIACIÓN ($)"] = df_comp_sec["PROYECTO 2027 ($)"] - df_comp_sec[col_base_nom]

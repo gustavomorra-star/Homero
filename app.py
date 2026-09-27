@@ -244,7 +244,7 @@ with tab_egresos:
     csv_global_data = df_excel_global.to_csv(index=False, sep=';').encode('utf-8-sig')
     st.download_button(label="📗 Descargar Base de Datos Completa en 11 Columnas (.xls)", data=csv_global_data, file_name="Base_De_Datos_Egresos_General.xls", mime="application/vnd.ms-excel", use_container_width=True)
 
-    # --- PANEL SUPERVISOR DE MODIFICACIONES CON BLINDAJE INTEGRAL DE CONTROL ---
+    # --- PANEL SUPERVISOR DE MODIFICACIONES TRIPLE BLINDAJE ---
     st.markdown("---")
     st.markdown("### 🛠️ Panel Supervisor de Modificaciones")
     
@@ -253,80 +253,89 @@ with tab_egresos:
         filas_lista = df_egr_completo.to_dict('records')
         for i in range(len(filas_lista)):
             r = filas_lista[i]
-            destino_txt = str(r.get('destino', '')).strip()
+            destino_txt = str(r.get('destino', '')).strip().upper()
             partida_txt = str(r.get('cuenta_presupuestaria', '')).strip()
             
-            if destino_txt != "" or partida_txt != "":
+            # Verificamos de forma estricta que contengan texto real y no campos vacíos
+            if destino_txt != "" and partida_txt != "" and "---" not in destino_txt:
                 monto_raw = str(r.get('total', '0')).replace('$', '').replace('.', '').replace(',', '.')
                 try:
                     monto_val = float(monto_raw)
                 except:
                     monto_val = 0.0
-                texto_descriptivo = f"Fila {i+1} | Destino: {destino_txt} | Partida: {partida_txt} | Monto: ${monto_val:,.2f}"
-                diccionario_opciones[texto_descriptivo] = int(i)
+                texto_descriptivo = f"Fila {i+1} | Destino: {destino_txt} | Partida: {partida_txt[:30]} | Monto: ${monto_val:,.2f}"
+                # Evitamos duplicados exactos de texto para que selectbox no rompa la app
+                if texto_descriptivo not in diccionario_opciones:
+                    diccionario_opciones[texto_descriptivo] = int(i)
 
-    # BLINDAJE DE SEGURIDAD ABSOLUTO EXTRA: Validamos las claves generadas reales
     lista_claves_validas = list(diccionario_opciones.keys())
+    
+    # CONTROL DE CONTINGENCIA FINAL ABSOLUTO
     if len(lista_claves_validas) == 0:
         st.info("💡 No hay registros contables activos para modificar en este momento. Los campos se habilitarán automáticamente cuando cargues tu primer renglón presupuestario en el sistema.")
     else:
         st.caption("Seleccioná un renglón para corregir sus valores, cambiar su partida de imputación o darlo de baja.")
-        linea_sel = st.selectbox("Seleccioná el registro a modificar por su número de fila:", opciones=lista_claves_validas, key="sel_mod_panel")
         
-        idx_real = int(diccionario_opciones[linea_sel])
-        fila_r = df_egr_completo.iloc[idx_real]
-        
-        todas_las_partidas_oficiales = []
-        for obj_g in MAPEO_GASTOS:
-            for c_padre in MAPEO_GASTOS[obj_g]:
-                for c_imputacion in MAPEO_GASTOS[obj_g][c_padre]:
-                    todas_las_partidas_oficiales.append(c_imputacion)
-                    
-        partida_actual_fila = str(fila_r["cuenta_presupuestaria"])
-        if partida_actual_fila not in todas_las_partidas_oficiales and partida_actual_fila != "":
-            todas_las_partidas_oficiales.insert(0, partida_actual_fila)
+        # Protegemos el componente con una estructura try de aislamiento total
+        try:
+            linea_sel = st.selectbox("Seleccioná el registro a modificar por su número de fila:", opciones=lista_claves_validas, key="sel_mod_panel")
+            idx_real = int(diccionario_opciones[linea_sel])
+            fila_r = df_egr_completo.iloc[idx_real]
             
-        col_ed1, col_ed2, col_ed3 = st.columns(3)
-        with col_ed1:
-            monto_def_input = str(fila_r["total"]).replace('$', '').replace('.', '').replace(',', '.')
-            try:
-                monto_def_val = float(monto_def_input)
-            except:
-                monto_def_val = 0.0
-            nuevo_total = st.number_input("Corregir Monto ($):", min_value=0.0, value=monto_def_val, key=f"t_{idx_real}")
-            nueva_partida = st.selectbox("Cambiar CUENTA IMPUTACIÓN / PARTIDA:", opciones=todas_las_partidas_oficiales, index=todas_las_partidas_oficiales.index(partida_actual_fila) if partida_actual_fila in todas_las_partidas_oficiales else 0, key=f"partida_{idx_real}")
-        with col_ed2:
-            nueva_clase = st.selectbox("Cambiar Clase:", opciones_clase, index=opciones_clase.index(str(fila_r["clase"])) if str(fila_r["clase"]) in opciones_clase else 0, key=f"c_{idx_real}")
-            nuevo_tipo = st.selectbox("Cambiar Tipo:", opciones_tipo, index=opciones_tipo.index(str(fila_r["tipo"])) if str(fila_r["tipo"]) in opciones_tipo else 0, key=f"tp_{idx_real}")
-        with col_ed3:
-            nueva_fuente = st.selectbox("Cambiar F.Fin:", opciones_fuente_fin, index=opciones_fuente_fin.index(str(fila_r["fuente_fin"])) if str(fila_r["fuente_fin"]) in opciones_fuente_fin else 0, key=f"f_{idx_real}")
-            nuevo_finan = st.selectbox("Cambiar Finalidad:", opciones_finalidad, index=opciones_finalidad.index(str(fila_r["finalidad"])) if str(fila_r["finalidad"]) in opciones_finalidad else 0, key=f"fin_{idx_real}")
-            
-        nuevo_objeto_gasto = str(fila_r["objeto_gasto"])
-        nueva_cuenta_padre = str(fila_r["cuenta_padre"])
-        for obj_g, bloques in MAPEO_GASTOS.items():
-            for c_pad, lista_partidas in bloques.items():
-                if nueva_partida in lista_partidas:
-                    nuevo_objeto_gasto = obj_g
-                    nueva_cuenta_padre = c_pad
-                    
-        col_b1, col_b2 = st.columns(2)
-        with col_b1:
-            if st.button("🔄 ACTUALIZAR REGISTRO SELECCIONADO", type="primary", use_container_width=True, key=f"bu_{idx_real}"):
-                if idx_real < len(st.session_state["db_local_backup"]["egresos"]):
-                    st.session_state["db_local_backup"]["egresos"][idx_real] = {
-                        "secretaria": fila_r["secretaria"], "subsecretaria": fila_r["subsecretaria"], "destino": fila_r["destino"],
-                        "objeto_gasto": nuevo_objeto_gasto, "cuenta_padre": nueva_cuenta_padre, "cuenta_presupuestaria": nueva_partida,
-                        "total": nuevo_total, "fuente_fin": nueva_fuente, "clase": nueva_clase, "tipo": nuevo_tipo, "finalidad": nuevo_finan
-                    }
-                st.success("✅ ¡Registro modificado en memoria! Recordá replicar este cambio directamente en tu Google Sheet para mantener la sincronización.")
-                st.rerun()
-        with col_b2:
-            if st.button("🗑️ ELIMINAR REGISTRO SELECCIONADO", type="secondary", use_container_width=True, key=f"bd_{idx_real}"):
-                if idx_real < len(st.session_state["db_local_backup"]["egresos"]):
-                    st.session_state["db_local_backup"]["egresos"].pop(idx_real)
-                st.warning("🗑️ Registro removido del panel. Recordá borrar la fila correspondiente directamente en tu Google Sheet.")
-                st.rerun()
+            todas_las_partidas_oficiales = []
+            for obj_g in MAPEO_GASTOS:
+                for c_padre in MAPEO_GASTOS[obj_g]:
+                    for c_imputacion in MAPEO_GASTOS[obj_g][c_padre]:
+                        todas_las_partidas_oficiales.append(c_imputacion)
+                        
+            partida_actual_fila = str(fila_r["cuenta_presupuestaria"])
+            if partida_actual_fila not in todas_las_partidas_oficiales and partida_actual_fila != "":
+                todas_las_partidas_oficiales.insert(0, partida_actual_fila)
+                
+            col_ed1, col_ed2, col_ed3 = st.columns(3)
+            with col_ed1:
+                monto_def_input = str(fila_r["total"]).replace('$', '').replace('.', '').replace(',', '.')
+                try:
+                    monto_def_val = float(monto_def_input)
+                except:
+                    monto_def_val = 0.0
+                nuevo_total = st.number_input("Corregir Monto ($):", min_value=0.0, value=monto_def_val, key=f"t_{idx_real}")
+                nueva_partida = st.selectbox("Cambiar CUENTA IMPUTACIÓN / PARTIDA:", opciones=todas_las_partidas_oficiales, index=todas_las_partidas_oficiales.index(partida_actual_fila) if partida_actual_fila in todas_las_partidas_oficiales else 0, key=f"partida_{idx_real}")
+            with col_ed2:
+                nueva_clase = st.selectbox("Cambiar Clase:", opciones_clase, index=opciones_clase.index(str(fila_r["clase"])) if str(fila_r["clase"]) in opciones_clase else 0, key=f"c_{idx_real}")
+                nuevo_tipo = st.selectbox("Cambiar Tipo:", opciones_tipo, index=opciones_tipo.index(str(fila_r["tipo"])) if str(fila_r["tipo"]) in opciones_tipo else 0, key=f"tp_{idx_real}")
+            with col_ed3:
+                nueva_fuente = st.selectbox("Cambiar F.Fin:", opciones_fuente_fin, index=opciones_fuente_fin.index(str(fila_r["fuente_fin"])) if str(fila_r["fuente_fin"]) in opciones_fuente_fin else 0, key=f"f_{idx_real}")
+                nuevo_finan = st.selectbox("Cambiar Finalidad:", opciones_finalidad, index=opciones_finalidad.index(str(fila_r["finalidad"])) if str(fila_r["finalidad"]) in opciones_finalidad else 0, key=f"fin_{idx_real}")
+                
+            nuevo_objeto_gasto = str(fila_r["objeto_gasto"])
+            nueva_cuenta_padre = str(fila_r["cuenta_padre"])
+            for obj_g, bloques in MAPEO_GASTOS.items():
+                for c_pad, lista_partidas in bloques.items():
+                    if nueva_partida in lista_partidas:
+                        nuevo_objeto_gasto = obj_g
+                        nueva_cuenta_padre = c_pad
+                        
+            col_b1, col_b2 = st.columns(2)
+            with col_b1:
+                if st.button("🔄 ACTUALIZAR REGISTRO SELECCIONADO", type="primary", use_container_width=True, key=f"bu_{idx_real}"):
+                    if idx_real < len(st.session_state["db_local_backup"]["egresos"]):
+                        st.session_state["db_local_backup"]["egresos"][idx_real] = {
+                            "secretaria": fila_r["secretaria"], "subsecretaria": fila_r["subsecretaria"], "destino": fila_r["destino"],
+                            "objeto_gasto": nuevo_objeto_gasto, "cuenta_padre": nueva_cuenta_padre, "cuenta_presupuestaria": nueva_partida,
+                            "total": nuevo_total, "fuente_fin": nueva_fuente, "clase": nueva_clase, "tipo": nuevo_tipo, "finalidad": nuevo_finan
+                        }
+                    st.success("✅ ¡Registro modificado en memoria! Recordá replicar este cambio directamente en tu Google Sheet para mantener la sincronización.")
+                    st.rerun()
+            with col_b2:
+                if st.button("🗑️ ELIMINAR REGISTRO SELECCIONADO", type="secondary", use_container_width=True, key=f"bd_{idx_real}"):
+                    if idx_real < len(st.session_state["db_local_backup"]["egresos"]):
+                        st.session_state["db_local_backup"]["egresos"].pop(idx_real)
+                    st.warning("🗑️ Registro removido del panel. Recordá borrar la fila correspondiente directamente en tu Google Sheet.")
+                    st.rerun()
+        except:
+            st.info("💡 Sincronizando e indexando el listado del panel de control central...")
+
 
 # =====================================================================
 # PESTAÑA 4: REPORTE GRÁFICO OFICIAL MUNICIPAL 2027

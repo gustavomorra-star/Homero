@@ -782,9 +782,11 @@ with st.sidebar:
             "🏆 RANKING Y MAYORES EROGACIONES",
             "⚖️ COMPARATIVO DE ESTRUCTURA Y FUENTES",
             "🧹 AUDITORÍA Y CONTROL DE CALIDAD",
-            # --- NUEVAS PESTAÑAS (2) ---
             "🏢 VISTA POR SECRETARÍA Y SUBSECRETARÍA",
-            "🎯 REPORTE POR FINALIDAD Y FUNCIÓN"
+            "🎯 REPORTE POR FINALIDAD Y FUNCIÓN",
+            # --- NUEVAS PESTAÑAS (2) ---
+            "📦 TOTALES POR OBJETO DEL GASTO",
+            "📊 MATRIZ SUBSECRETARÍA VS OBJETOS"
         ]
     )
 # =====================================================================
@@ -1755,6 +1757,243 @@ elif opcion_menu == "🎯 REPORTE POR FINALIDAD Y FUNCIÓN":
             label="🖨️ GENERAR Y DESCARGAR REPORTE DE FINALIDAD Y FUNCIÓN (PDF / FIRMAS)",
             data=html_ff_oficial,
             file_name=f"Reporte_Finalidad_y_Funcion_2027.html",
+            mime="text/html",
+            use_container_width=True,
+            type="primary"
+        )
+# =====================================================================
+# SECCIÓN 14: TOTALES POR OBJETO DEL GASTO (NUEVA)
+# =====================================================================
+elif opcion_menu == "📦 TOTALES POR OBJETO DEL GASTO":
+    st.subheader("📦 Consolidado Presupuestario por Objeto del Gasto")
+
+    if df_egr_completo.empty:
+        st.info("💡 No hay registros contables cargados para generar el reporte por Objeto del Gasto.")
+    else:
+        st.caption("Resumen general del presupuesto acumulado por cada **Objeto del Gasto**, con porcentajes de participación y opción de impresión oficial.")
+
+        tot_general_obj = df_egr_completo["total"].sum()
+        st.metric("💰 TOTAL GENERAL PRESUPUESTO", f"${tot_general_obj:,.2f}")
+
+        # Agrupamiento por Objeto del Gasto
+        df_obj_res = df_egr_completo.groupby("objeto_gasto")["total"].sum().reset_index()
+        df_obj_res["porcentaje"] = (df_obj_res["total"] / (tot_general_obj if tot_general_obj > 0 else 1)) * 100
+        
+        # Tabla en Pantalla
+        st.markdown("---")
+        st.markdown("##### 📋 Resumen en Pantalla")
+        
+        df_obj_pantalla = df_obj_res.copy()
+        df_obj_pantalla["total_fmt"] = df_obj_pantalla["total"].map(lambda x: f"${x:,.2f}")
+        df_obj_pantalla["porcentaje_fmt"] = df_obj_pantalla["porcentaje"].map(lambda x: f"{x:.2f}%")
+
+        st.dataframe(
+            df_obj_pantalla[["objeto_gasto", "total_fmt", "porcentaje_fmt"]].rename(
+                columns={
+                    "objeto_gasto": "OBJETO DEL GASTO",
+                    "total_fmt": "TOTAL PRESUPUESTADO ($)",
+                    "porcentaje_fmt": "% DEL TOTAL"
+                }
+            ),
+            use_container_width=True,
+            hide_index=True
+        )
+
+        # -------------------------------------------------------------
+        # REPORTES IMPRESO / PDF (A4 PORTRAIT)
+        # -------------------------------------------------------------
+        rows_obj_html = ""
+        for _, r in df_obj_res.iterrows():
+            rows_obj_html += f"""
+            <tr>
+                <td style="text-align: left; padding-left: 10px;">{r['objeto_gasto']}</td>
+                <td style="text-align: right;">${r['total']:,.2f}</td>
+                <td style="text-align: center;">{r['porcentaje']:.2f}%</td>
+            </tr>
+            """
+
+        html_obj_oficial = f"""
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                @page {{ size: A4 portrait; margin: 12mm; }}
+                body {{ font-family: Arial, sans-serif; color: #000; margin: 0 auto; width: 100%; max-width: 900px; }}
+                .m-box {{ border: 1px solid #000; padding: 10px; margin-bottom: 20px; background-color: #fff; }}
+                .t-hdr {{ width: 100%; border-collapse: collapse; }}
+                .t-hdr td {{ padding: 4px; vertical-align: middle; border: none; }}
+                .b-tot {{ border: 1px solid #000; background-color: #f5f5f5; text-align: center; }}
+                .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; margin-bottom: 25px; }}
+                .tabla-datos th {{ border-bottom: 2px solid #000; padding: 6px 4px; text-align: center; font-weight: bold; background-color: #f2f2f2; }}
+                .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 6px 4px; vertical-align: middle; }}
+                .firmas-container {{ margin-top: 50px; width: 100%; page-break-inside: avoid; }}
+                .firma-box {{ width: 30%; float: left; text-align: center; border-top: 1px solid #000; padding-top: 5px; margin: 0 1.5%; font-size: 11px; font-weight: bold; }}
+                .resumen-final {{ border: 2px solid #000; padding: 12px; margin-top: 20px; background-color: #fafafa; text-align: center; font-size: 13px; page-break-inside: avoid; }}
+            </style>
+        </head>
+        <body onload="window.print();">
+            <div class="m-box">
+                <table class="t-hdr">
+                    <tr>
+                        <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Presupuesto Oficial 2027</span></td>
+                        <td style="width: 50%; text-align: center;"><b>CONSOLIDADO POR OBJETO DEL GASTO</b><br><small>-2027-</small></td>
+                        <td style="width: 25%;" class="b-tot"><small>Total Presupuesto</small><br><b>${tot_general_obj:,.2f}</b></td>
+                    </tr>
+                </table>
+            </div>
+
+            <table class="tabla-datos">
+                <thead>
+                    <tr>
+                        <th style="text-align: left; padding-left: 10px;">OBJETO DEL GASTO</th>
+                        <th style="text-align: right;">PRESUPUESTO ($)</th>
+                        <th style="text-align: center;">% DEL TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows_obj_html}
+                </tbody>
+            </table>
+
+            <div class="resumen-final">
+                <b>TOTAL GENERAL DEL PRESUPUESTO MUNICIPAL:</b> ${tot_general_obj:,.2f}
+            </div>
+
+            <div class="firmas-container">
+                <div class="firma-box">Responsable Presupuesto</div>
+                <div class="firma-box">Contaduría General</div>
+                <div class="firma-box">Intendente / Secretario</div>
+            </div>
+        </body>
+        </html>
+        """
+
+        st.markdown("---")
+        st.download_button(
+            label="🖨️ GENERAR Y DESCARGAR REPORTE POR OBJETO (PDF / FIRMAS)",
+            data=html_obj_oficial,
+            file_name="Reporte_Totales_Por_Objeto_Gasto_2027.html",
+            mime="text/html",
+            use_container_width=True,
+            type="primary"
+        )
+
+
+# =====================================================================
+# SECCIÓN 15: MATRIZ SUBSECRETARÍA VS OBJETOS DE GASTO (NUEVA)
+# =====================================================================
+elif opcion_menu == "📊 MATRIZ SUBSECRETARÍA VS OBJETOS":
+    st.subheader("📊 Matriz Cruzada: Subsecretarías vs Objetos del Gasto")
+
+    if df_egr_completo.empty:
+        st.info("💡 No hay registros contables cargados para generar la matriz cruzada.")
+    else:
+        st.caption("Cuadro comparativo donde la **Columna 1 es la Subsecretaría** y las columnas continuas representan cada **Objeto del Gasto**.")
+
+        # Generar Pivot Table
+        matriz_pivot = pd.pivot_table(
+            df_egr_completo,
+            values="total",
+            index="subsecretaria",
+            columns="objeto_gasto",
+            aggfunc="sum",
+            fill_value=0.0
+        )
+
+        # Calcular Total por fila (Subsecretaría)
+        matriz_pivot["TOTAL GENERAL"] = matriz_pivot.sum(axis=1)
+
+        st.markdown("##### 📋 Matriz Cruzada en Pantalla ($)")
+        st.dataframe(matriz_pivot.style.format("${:,.2f}"), use_container_width=True)
+
+        # -------------------------------------------------------------
+        # GENERACIÓN DEL DOCUMENTO HORIZONTAL (A4 LANDSCAPE)
+        # -------------------------------------------------------------
+        cols_objetos = [c for c in matriz_pivot.columns if c != "TOTAL GENERAL"]
+        tot_general_matriz = matriz_pivot["TOTAL GENERAL"].sum()
+
+        # Encabezados de la tabla HTML
+        th_cols_html = "".join([f'<th style="text-align: right; font-size: 9px;">{col}</th>' for col in cols_objetos])
+        
+        # Filas de datos HTML
+        rows_matriz_html = ""
+        for sub_nom, r in matriz_pivot.iterrows():
+            tds_objetos = "".join([f'<td style="text-align: right;">${r[col]:,.2f}</td>' for col in cols_objetos])
+            rows_matriz_html += f"""
+            <tr>
+                <td style="text-align: left; font-weight: bold; padding-left: 5px;">{sub_nom}</td>
+                {tds_objetos}
+                <td style="text-align: right; font-weight: bold; background-color: #f5f5f5;">${r['TOTAL GENERAL']:,.2f}</td>
+            </tr>
+            """
+
+        # Fila final de Totales por columna
+        tds_totales_cols = "".join([f'<td style="text-align: right; font-weight: bold;">${matriz_pivot[col].sum():,.2f}</td>' for col in cols_objetos])
+        row_totales_final = f"""
+        <tr style="background-color: #e6e6e6; border-top: 2px solid #000;">
+            <td style="text-align: left; font-weight: bold; padding-left: 5px;">TOTAL GENERAL</td>
+            {tds_totales_cols}
+            <td style="text-align: right; font-weight: bold;">${tot_general_matriz:,.2f}</td>
+        </tr>
+        """
+
+        html_matriz_oficial = f"""
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                @page {{ size: A4 landscape; margin: 10mm; }}
+                body {{ font-family: Arial, sans-serif; color: #000; margin: 0 auto; width: 100%; max-width: 1100px; }}
+                .m-box {{ border: 1px solid #000; padding: 8px; margin-bottom: 12px; background-color: #fff; }}
+                .t-hdr {{ width: 100%; border-collapse: collapse; }}
+                .t-hdr td {{ padding: 3px; vertical-align: middle; border: none; }}
+                .b-tot {{ border: 1px solid #000; background-color: #f5f5f5; text-align: center; }}
+                .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; margin-bottom: 20px; }}
+                .tabla-datos th {{ border-bottom: 2px solid #000; padding: 5px 3px; font-weight: bold; background-color: #f2f2f2; }}
+                .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 5px 3px; vertical-align: middle; }}
+                .firmas-container {{ margin-top: 40px; width: 100%; page-break-inside: avoid; }}
+                .firma-box {{ width: 30%; float: left; text-align: center; border-top: 1px solid #000; padding-top: 5px; margin: 0 1.5%; font-size: 11px; font-weight: bold; }}
+            </style>
+        </head>
+        <body onload="window.print();">
+            <div class="m-box">
+                <table class="t-hdr">
+                    <tr>
+                        <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Presupuesto Oficial 2027</span></td>
+                        <td style="width: 50%; text-align: center;"><b>MATRIZ DE GASTOS POR SUBSECRETARÍA Y OBJETO</b><br><small>-2027-</small></td>
+                        <td style="width: 25%;" class="b-tot"><small>Total Presupuesto</small><br><b>${tot_general_matriz:,.2f}</b></td>
+                    </tr>
+                </table>
+            </div>
+
+            <table class="tabla-datos">
+                <thead>
+                    <tr>
+                        <th style="text-align: left; padding-left: 5px;">SUBSECRETARÍA</th>
+                        {th_cols_html}
+                        <th style="text-align: right; background-color: #e6e6e6;">TOTAL GENERAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows_matriz_html}
+                    {row_totales_final}
+                </tbody>
+            </table>
+
+            <div class="firmas-container">
+                <div class="firma-box">Responsable Presupuesto</div>
+                <div class="firma-box">Contaduría General</div>
+                <div class="firma-box">Intendente / Secretario</div>
+            </div>
+        </body>
+        </html>
+        """
+
+        st.markdown("---")
+        st.download_button(
+            label="🖨️ GENERAR Y DESCARGAR MATRIZ HORIZONTAL (PDF / FIRMAS)",
+            data=html_matriz_oficial,
+            file_name="Matriz_Subsecretaria_vs_Objetos_2027.html",
             mime="text/html",
             use_container_width=True,
             type="primary"

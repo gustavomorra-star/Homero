@@ -241,11 +241,10 @@ with st.sidebar:
             "🔄 COMPARATIVO E HISTÓRICO"
         ]
     )
-
 # =====================================================================
 # SECCIÓN: REGISTRO DE RECURSOS (INGRESOS)
 # =====================================================================
-if opcion_menu == "📥 REGISTRO DE RECURSOS":
+elif opcion_menu == "📥 REGISTRO DE RECURSOS":
     st.subheader("📥 Cargar Nuevo Recurso / Ingreso Presupuestario")
 
     # Cargar recursos actuales desde Google Sheet y backup local

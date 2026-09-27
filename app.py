@@ -15,8 +15,8 @@ if "db_local_backup" not in st.session_state:
 SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
 # Rutas oficiales de consulta de datos de Google Drive (Formato nativo para romper caché)
-URL_BASE_EGRESOS = f"https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0"
-URL_BASE_DESTINOS = f"https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=1365567783"
+URL_BASE_EGRESOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0"
+URL_BASE_DESTINOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=1365567783"
 
 def leer_datos_gsheet(url_base):
     try:

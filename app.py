@@ -4,49 +4,24 @@ import streamlit as st
 import io
 import requests
 
-# 1. ORDEN STRICTA DE ANCHO COMPLETO (Debe ser la primera instrucción)
+# 1. ORDEN STRICTA DE ANCHO COMPLETO
 st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="🍩")
 
 # --- CONEXIÓN DIRECTA Y PERMANENTE A GOOGLE SHEETS MUNICIPAL ---
-# Usamos el ID limpio extraído de tu enlace original de Sunchales
 SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
-# Enlaces universales de consulta directa CSV libres de parámetros de login corporativos
+# Enlaces de conexión directa originales (Los que sí traían los datos)
 URL_READ_EGRESOS = f"https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=egresos"
 URL_READ_DESTINOS = f"https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=destinos"
 
 def leer_datos_gsheet(url_tipo):
     try:
-        # Forzamos una descarga web limpia simulando una petición estándar de internet
-        respuesta_web = requests.get(url_tipo, timeout=10)
-        if respuesta_web.status_code == 200:
-            df = pd.read_csv(io.StringIO(respuesta_web.text))
-            
-            # Si Google devuelve una estructura vacía o corrupta, aplicamos la contingencia
-            if df.empty or len(df.columns) <= 1:
-                if "sheet=destinos" in str(url_tipo):
-                    return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
-                else:
-                    df_v = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
-                    df_v["total"] = df_v["total"].astype(float)
-                    return df_v
-            
-            # Convertimos de forma segura todos los encabezados descargados a minúsculas
-            df.columns = [str(col).strip().lower() for col in df.columns]
-            return df
-            
-        # Contingencia por código de respuesta fallido (No 200)
-        if "sheet=destinos" in str(url_tipo):
-            return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
-        df_err = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
-        df_err["total"] = df_err["total"].astype(float)
-        return df_err
+        # Descarga nativa pura de Pandas que funcionaba al inicio
+        return pd.read_csv(url_tipo)
     except:
         if "sheet=destinos" in str(url_tipo):
             return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
-        df_falla = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
-        df_falla["total"] = df_falla["total"].astype(float)
-        return df_falla
+        return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
 
 def guardar_fila_gsheet(hoja, diccionario_datos):
     if "db_local_backup" not in st.session_state:

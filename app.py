@@ -42,6 +42,9 @@ def guardar_fila_gsheet(hoja, diccionario_datos):
     if "db_local_backup" not in st.session_state:
         st.session_state["db_local_backup"] = {"egresos": [], "destinos": []}
     st.session_state["db_local_backup"][hoja].append(diccionario_datos)
+st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="🍩")
+st.title("🍩 Homero - Sistema de Registro Presupuestario")
+st.write("📍 Municipalidad de Sunchales | Conexión Cooperativa a Google Sheets **2027**")
 
 # --- Plan de Cuentas Oficial Municipal ---
 MAPEO_GASTOS = {

@@ -1531,7 +1531,7 @@ elif opcion_menu == "🏢 VISTA POR SECRETARÍA Y SUBSECRETARÍA":
 
 
 # =====================================================================
-# SECCIÓN 13: REPORTE POR FINALIDAD Y FUNCIÓN (NUEVA)
+# SECCIÓN 13: REPORTE POR FINALIDAD Y FUNCIÓN (CON EXPORTACIÓN OFICIAL)
 # =====================================================================
 elif opcion_menu == "🎯 REPORTE POR FINALIDAD Y FUNCIÓN":
     st.subheader("🎯 Consolidado Presupuestario por Finalidad y Función")
@@ -1539,22 +1539,25 @@ elif opcion_menu == "🎯 REPORTE POR FINALIDAD Y FUNCIÓN":
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados para generar el reporte de finalidades.")
     else:
-        st.caption("Resumen consolidado con la suma total del presupuesto distribuido por cada **Finalidad** y su correspondiente **Función / Tipo de Financiamiento**.")
+        st.caption("Resumen consolidado con la suma total del presupuesto distribuido por **Finalidad y Función**, listo para consultar en pantalla o exportar con formato oficial.")
 
-        # Verificar qué columna representa la función (en la base se suele usar 'finalidad' o 'tipo')
+        # Identificar columnas
         col_fin = "finalidad" if "finalidad" in df_egr_completo.columns else df_egr_completo.columns[0]
         col_fun = "tipo" if "tipo" in df_egr_completo.columns else col_fin
 
-        # Agrupamiento por Finalidad y Función
-        df_fin_fun = df_egr_completo.groupby([col_fin, col_fun])["total"].sum().reset_index()
-        tot_general_ff = df_fin_fun["total"].sum()
+        tot_general_ff = df_egr_completo["total"].sum()
 
         st.metric("💰 TOTAL GENERAL PRESUPUESTO", f"${tot_general_ff:,.2f}")
 
-        st.markdown("---")
-        st.markdown("##### 📋 Resumen Acumulado por Finalidad y Función")
+        # Agrupamiento principal
+        df_fin_fun = df_egr_completo.groupby([col_fin, col_fun])["total"].sum().reset_index()
 
-        # Formatear montos para la tabla
+        # -------------------------------------------------------------
+        # VISTA EN PANTALLA (TABLA INTERACTIVA)
+        # -------------------------------------------------------------
+        st.markdown("---")
+        st.markdown("##### 📋 Resumen en Pantalla")
+
         df_tabla_ff = df_fin_fun.copy()
         df_tabla_ff["porcentaje"] = (df_tabla_ff["total"] / (tot_general_ff if tot_general_ff > 0 else 1)) * 100
         df_tabla_ff["total_fmt"] = df_tabla_ff["total"].map(lambda x: f"${x:,.2f}")
@@ -1573,23 +1576,87 @@ elif opcion_menu == "🎯 REPORTE POR FINALIDAD Y FUNCIÓN":
             hide_index=True
         )
 
+        # -------------------------------------------------------------
+        # GENERACIÓN DEL DOCUMENTO IMPRESO / PDF OFICIAL
+        # -------------------------------------------------------------
+        rows_html_ff = ""
+
+        # Recorrer por Finalidad y luego por Función
+        for fin, df_g in df_fin_fun.groupby(col_fin):
+            t_fin = df_g["total"].sum()
+            pct_fin = (t_fin / (tot_general_ff if tot_general_ff > 0 else 1)) * 100
+            
+            # Fila de Cabecera por Finalidad (Negrita)
+            rows_html_ff += f'<tr style="font-weight: bold; background-color: #f2f2f2;"><td style="text-align: left; padding-left: 8px;">{fin}</td><td style="text-align: right;">${t_fin:,.2f}</td><td style="text-align: center;">{pct_fin:.2f}%</td></tr>'
+            
+            # Filas de Función / Tipo (Sangría)
+            for _, r in df_g.iterrows():
+                pct_fun = (r["total"] / (tot_general_ff if tot_general_ff > 0 else 1)) * 100
+                rows_html_ff += f'<tr><td style="text-align: left; padding-left: 30px;">{r[col_fun]}</td><td style="text-align: right;">${r["total"]:,.2f}</td><td style="text-align: center;">{pct_fun:.2f}%</td></tr>'
+
+        # Documento HTML Completo con membrete oficial y cuadro de firmas
+        html_ff_oficial = f"""
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                @page {{ size: A4 portrait; margin: 12mm; }}
+                body {{ font-family: Arial, sans-serif; color: #000; margin: 0 auto; width: 100%; max-width: 900px; }}
+                .m-box {{ border: 1px solid #000; padding: 10px; margin-bottom: 20px; background-color: #fff; }}
+                .t-hdr {{ width: 100%; border-collapse: collapse; }}
+                .t-hdr td {{ padding: 4px; vertical-align: middle; border: none; }}
+                .b-tot {{ border: 1px solid #000; background-color: #f5f5f5; text-align: center; }}
+                .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; margin-bottom: 25px; }}
+                .tabla-datos th {{ border-bottom: 2px solid #000; padding: 6px 4px; text-align: center; font-weight: bold; background-color: #f2f2f2; }}
+                .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 6px 4px; vertical-align: middle; }}
+                .firmas-container {{ margin-top: 50px; width: 100%; page-break-inside: avoid; }}
+                .firma-box {{ width: 30%; float: left; text-align: center; border-top: 1px solid #000; padding-top: 5px; margin: 0 1.5%; font-size: 11px; font-weight: bold; }}
+                .resumen-final {{ border: 2px solid #000; padding: 12px; margin-top: 20px; background-color: #fafafa; text-align: center; font-size: 13px; page-break-inside: avoid; }}
+            </style>
+        </head>
+        <body onload="window.print();">
+            <div class="m-box">
+                <table class="t-hdr">
+                    <tr>
+                        <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Presupuesto Oficial 2027</span></td>
+                        <td style="width: 50%; text-align: center;"><b>PRESUPUESTO POR FINALIDAD Y FUNCIÓN</b><br><small>-2027-</small></td>
+                        <td style="width: 25%;" class="b-tot"><small>Total Presupuesto</small><br><b>${tot_general_ff:,.2f}</b></td>
+                    </tr>
+                </table>
+            </div>
+
+            <table class="tabla-datos">
+                <thead>
+                    <tr>
+                        <th style="text-align: left; padding-left: 8px;">FINALIDAD / FUNCIÓN</th>
+                        <th style="text-align: right;">PRESUPUESTO ($)</th>
+                        <th style="text-align: center;">% DEL TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows_html_ff}
+                </tbody>
+            </table>
+
+            <div class="resumen-final">
+                <b>TOTAL GENERAL DEL PRESUPUESTO MUNICIPAL:</b> ${tot_general_ff:,.2f}
+            </div>
+
+            <div class="firmas-container">
+                <div class="firma-box">Responsable Presupuesto</div>
+                <div class="firma-box">Contaduría General</div>
+                <div class="firma-box">Intendente / Secretario</div>
+            </div>
+        </body>
+        </html>
+        """
+
         st.markdown("---")
-        st.markdown("##### 🏛️ Totales Exclusivos por Finalidad")
-
-        # Agrupado solo por Finalidad
-        df_solo_fin = df_egr_completo.groupby(col_fin)["total"].sum().reset_index()
-        df_solo_fin["porcentaje"] = (df_solo_fin["total"] / (tot_general_ff if tot_general_ff > 0 else 1)) * 100
-        df_solo_fin["total_fmt"] = df_solo_fin["total"].map(lambda x: f"${x:,.2f}")
-        df_solo_fin["porcentaje_fmt"] = df_solo_fin["porcentaje"].map(lambda x: f"{x:.2f}%")
-
-        st.dataframe(
-            df_solo_fin[[col_fin, "total_fmt", "porcentaje_fmt"]].rename(
-                columns={
-                    col_fin: "FINALIDAD",
-                    "total_fmt": "MONTO TOTAL ($)",
-                    "porcentaje_fmt": "% DEL TOTAL"
-                }
-            ),
+        st.download_button(
+            label="🖨️ GENERAR Y DESCARGAR REPORTE DE FINALIDAD Y FUNCIÓN (PDF / FIRMAS)",
+            data=html_ff_oficial,
+            file_name=f"Reporte_Finalidad_y_Funcion_2027.html",
+            mime="text/html",
             use_container_width=True,
-            hide_index=True
+            type="primary"
         )

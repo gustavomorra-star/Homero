@@ -244,27 +244,30 @@ with tab_egresos:
     csv_global_data = df_excel_global.to_csv(index=False, sep=';').encode('utf-8-sig')
     st.download_button(label="📗 Descargar Base de Datos Completa en 11 Columnas (.xls)", data=csv_global_data, file_name="Base_De_Datos_Egresos_General.xls", mime="application/vnd.ms-excel", use_container_width=True)
 
-       # --- PANEL SUPERVISOR DE MODIFICACIONES CON BLINDAJE TOTAL ---
+      # --- PANEL SUPERVISOR DE MODIFICACIONES CON BLINDAJE TOTAL ---
     st.markdown("---")
     st.markdown("### 🛠️ Panel Supervisor de Modificaciones")
     
-    # Construimos el diccionario de opciones de forma directa y segura
+    # Construimos el diccionario de opciones forzando un índice numérico entero tradicional
     diccionario_opciones = {}
     if not df_egr_completo.empty:
-        for idx, r in df_egr_completo.iterrows():
-            # Filtramos que no sean filas vacías de control
-            if str(r['destino']).strip() != "" and str(r['cuenta_presupuestaria']).strip() != "":
-                texto_descriptivo = f"Fila {idx+1} | Destino: {r['destino']} | Partida: {r['cuenta_presupuestaria']} | Monto: ${r['total']:,.2f}"
-                diccionario_opciones[texto_descriptivo] = idx
+        # Transformamos las filas en una lista limpia para recorrerla con un contador numérico puro
+        filas_lista = df_egr_completo.to_dict('records')
+        for i in range(len(filas_lista)):
+            r = filas_lista[i]
+            # Filtramos que no sean renglones vacíos de control
+            if str(r.get('destino', '')).strip() != "" and str(r.get('cuenta_presupuestaria', '')).strip() != "":
+                texto_descriptivo = f"Fila {i+1} | Destino: {r.get('destino', '')} | Partida: {r.get('cuenta_presupuestaria', '')} | Monto: ${float(r.get('total', 0)):,.2f}"
+                diccionario_opciones[texto_descriptivo] = int(i)
 
-    # Si el diccionario está vacío porque no hay datos cargados, mostramos el aviso seguro
+    # Si el diccionario está vacío porque la hoja no tiene datos, mostramos el aviso seguro
     if not diccionario_opciones:
         st.info("💡 No hay registros contables activos para modificar en este momento. Los campos se habilitarán automáticamente cuando cargues tu primer renglón presupuestario.")
     else:
         st.caption("Seleccioná un renglón para corregir sus valores, cambiar su partida de imputación o darlo de baja.")
         linea_sel = st.selectbox("Seleccioná el registro a modificar por su número de fila:", opciones=list(diccionario_opciones.keys()), key="sel_mod_panel")
         
-        idx_real = diccionario_opciones[linea_sel]
+        idx_real = int(diccionario_opciones[linea_sel])
         fila_r = df_egr_completo.iloc[idx_real]
         
         todas_las_partidas_oficiales = []

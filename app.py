@@ -4,6 +4,26 @@ import streamlit as st
 import io
 import requests
 import time
+import json
+
+# Archivo local para persistencia de techos presupuestarios
+ARCH_TECHOS = "techos_config.json"
+
+def cargar_techos_disco():
+    if os.path.exists(ARCH_TECHOS):
+        try:
+            with open(ARCH_TECHOS, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def guardar_techos_disco(techos_dict):
+    try:
+        with open(ARCH_TECHOS, "w", encoding="utf-8") as f:
+            json.dump(techos_dict, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        st.warning(f"No se pudo guardar el archivo de techos: {e}")
 
 # Inicialización blindada que se ejecuta SIEMPRE antes que cualquier consulta
 if "db_local_backup" not in st.session_state or not isinstance(st.session_state["db_local_backup"], dict):
@@ -17,7 +37,6 @@ if "egresos" not in st.session_state["db_local_backup"] or not isinstance(st.ses
 
 # Configuración de la página
 st.set_page_config(page_title="Presupuesto Municipal 2027", layout="wide")
-
 # =====================================================================
 # 1. CONEXIÓN Y LECTURA ROBUSTA DESDE GOOGLE SHEETS
 # =====================================================================

@@ -245,7 +245,7 @@ with st.sidebar:
 # =====================================================================
 # SECCIÓN: REGISTRO DE RECURSOS (INGRESOS)
 # =====================================================================
-elif opcion_menu == "📥 REGISTRO DE RECURSOS":
+if opcion_menu == "📥 REGISTRO DE RECURSOS":
     st.subheader("📥 Cargar Nuevo Recurso / Ingreso Presupuestario")
 
     # Cargar recursos actuales desde Google Sheet y backup local
@@ -314,7 +314,6 @@ elif opcion_menu == "📥 REGISTRO DE RECURSOS":
         st.dataframe(df_v_rec, use_container_width=True, hide_index=True)
     else:
         st.info("💡 Todavía no hay recursos registrados.")
-
 # =====================================================================
 # SECCIÓN 1: FORMULARIO PRINCIPAL DE REGISTRO (Egresos)
 # =====================================================================

@@ -1968,18 +1968,29 @@ elif opcion_menu == "🛡️ CONTROL DE TECHOS PRESUPUESTARIOS":
     else:
         df_sec_techos = df_egr_completo.groupby("secretaria")["total"].sum().reset_index()
 
-        if "techos_presupuesto" not in st.session_state:
-            st.session_state.techos_presupuesto = {row["secretaria"]: float(row["total"] * 1.1) for _, row in df_sec_techos.iterrows()}
+        # Cargar techos guardados en disco para que no se borren al reiniciar
+        techos_guardados = cargar_techos_disco()
+
+        # Asegurar valores iniciales por defecto si no existen
+        for _, row in df_sec_techos.iterrows():
+            sec_n = row["secretaria"]
+            if sec_n not in techos_guardados:
+                techos_guardados[sec_n] = float(row["total"] * 1.1)
 
         st.markdown("##### ⚙️ Definir Techos Presupuestarios ($)")
-        col_t1, col_t2 = st.columns(2)
-        with col_t1:
+        
+        with st.form(key="form_techos_persistentes"):
             sec_a_editar = st.selectbox("Seleccionar Secretaría:", df_sec_techos["secretaria"].unique())
-        with col_t2:
-            nuevo_techo = st.number_input("Techo Límite ($):", value=float(st.session_state.techos_presupuesto.get(sec_a_editar, 0.0)), step=500000.0)
-            if st.button("💾 Guardar Techo"):
-                st.session_state.techos_presupuesto[sec_a_editar] = nuevo_techo
-                st.success("Techo actualizado correctamente.")
+            
+            val_actual_techo = float(techos_guardados.get(sec_a_editar, 0.0))
+            nuevo_techo = st.number_input("Techo Límite ($):", value=val_actual_techo, step=500000.0)
+            
+            btn_guardar_techo = st.form_submit_button("💾 Guardar Techo Permanente", use_container_width=True, type="primary")
+            
+            if btn_guardar_techo:
+                techos_guardados[sec_a_editar] = nuevo_techo
+                guardar_techos_disco(techos_guardados)
+                st.success(f"¡Techo guardado de forma permanente para {sec_a_editar}!")
 
         st.markdown("---")
         st.markdown("##### 📊 Estado de Cumplimiento por Secretaría")
@@ -1988,7 +1999,7 @@ elif opcion_menu == "🛡️ CONTROL DE TECHOS PRESUPUESTARIOS":
         for _, r in df_sec_techos.iterrows():
             sec_nom = r["secretaria"]
             cargado = r["total"]
-            techo = st.session_state.techos_presupuesto.get(sec_nom, cargado)
+            techo = techos_guardados.get(sec_nom, cargado)
             diferencia = techo - cargado
             estado = "✅ DENTRO DEL TECHO" if diferencia >= 0 else "🚨 EXCEDIDO"
             
@@ -1998,7 +2009,6 @@ elif opcion_menu == "🛡️ CONTROL DE TECHOS PRESUPUESTARIOS":
             })
 
         st.dataframe(pd.DataFrame(filas_techos), use_container_width=True, hide_index=True)
-
 # =====================================================================
 # SECCIÓN 19: FICHA TÉCNICA POR DESTINO
 # =====================================================================

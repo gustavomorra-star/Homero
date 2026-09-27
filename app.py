@@ -51,16 +51,19 @@ def leer_datos_gsheet(url_tipo):
         return df_falla
 
 def guardar_fila_gsheet(hoja, diccionario_datos):
+    # 1. Primero guardamos el respaldo en la memoria local por seguridad
+    if "db_local_backup" not in st.session_state:
+        st.session_state["db_local_backup"] = {"egresos": [], "destinos": []}
+    st.session_state["db_local_backup"][hoja].append(diccionario_datos)
+    
+    # 2. Después intentamos enviarlo por internet a tu Google Sheet (Cartero)
     try:
         macro_url = st.secrets["GSHEET_MACRO_URL"]
         paquete_web = {"hoja": hoja, "datos": diccionario_datos}
         requests.post(macro_url, json=paquete_web)
     except:
         pass
-    
-    if "db_local_backup" not in st.session_state:
-        st.session_state["db_local_backup"] = {"egresos": [], "destinos": []}
-    st.session_state["db_local_backup"][hoja].append(diccionario_datos)
+
 
 # Dibujamos las etiquetas de títulos superiores del sistema
 st.title("🍩 Homero - Sistema de Registro Presupuestario")

@@ -4,46 +4,76 @@ import streamlit as st
 import io
 import requests
 
-# 1. ORDEN ESTRICTA DE MÁXIMO ANCHO (Primera instrucción de la app)
+# 1. ORDEN ESTRICTA DE MÁXIMO ANCHO DE INTERFAZ MUNICIPAL
 st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="🍩")
 
-# 2. INICIALIZACIÓN INMEDIATA DE LA PERSISTENCIA COOPERATIVA
+# 2. INICIALIZACIÓN INMEDIATA DE LA MEMORIA LOCAL DE CONTINGENCIA
 if "db_local_backup" not in st.session_state:
     st.session_state["db_local_backup"] = {"egresos": [], "destinos": []}
 
-# Direcciones de consulta cruzada al Apps Script
-URL_READ_EGRESOS = "egresos"
-URL_READ_DESTINOS = "destinos"
+# --- CONEXIÓN DIRECTA Y PERMANENTE A GOOGLE SHEETS MUNICIPAL ---
+SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
-def leer_datos_gsheet(nombre_hoja):
+# Enlaces nativos directos con limpiador de caché dinámico e inalterable por ID de pestaña
+URL_BASE_EGRESOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=0"
+URL_BASE_DESTINOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=1365567783"
+
+def leer_datos_gsheet(url_base):
+    try:
+        # Agregamos un código de limpieza al final de la URL para obligar a Google a entregar los datos frescos
+        url_limpia = url_base + f"&cache_bust={os.urandom(4).hex()}"
+        df = pd.read_csv(url_limpia)
+        if not df.empty:
+            # Normalizamos los encabezados para evitar problemas de mayúsculas accidentales en el Sheet
+            df.columns = [str(col).strip().lower() for col in df.columns]
+        return df
+    except:
+        # Escudo protector de contingencia estructurado por si falla internet
+        if "gid=1365567783" in str(url_base):
+            return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
+        df_vacio = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+        df_vacio["total"] = df_vacio["total"].astype(float)
+        return df_vacio
+
+# Renombramos las variables para que el resto de las 5 solapas del código sigan funcionando sin tocar nada más
+URL_READ_EGRESOS = URL_BASE_EGRESOS
+URL_READ_DESTINOS = URL_BASE_DESTINOS
+
+def guardar_fila_gsheet(hoja, diccionario_datos):
+    st.session_state["db_local_backup"][hoja].append(diccionario_datos)
     try:
         macro_url = st.secrets["GSHEET_MACRO_URL"]
-        # Solicitamos la lectura limpia de celdas a la API del Cartero
-        respuesta = requests.post(macro_url, json={"hoja": nombre_hoja, "accion": "leer"}, timeout=10)
-        
-        if respuesta.status_code == 200:
-            datos_json = respuesta.json()
-            if datos_json.get("status") == "success" and datos_json.get("data") is not None:
-                lista_datos = datos_json["data"]
-                if len(lista_datos) == 0:
-                    if nombre_hoja == "destinos": return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
-                    return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
-                
-                df = pd.DataFrame(lista_datos)
-                df.columns = [str(col).strip().lower() for col in df.columns]
-                return df
-                
-        if nombre_hoja == "destinos": return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
-        return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+        requests.post(macro_url, json={"hoja": hoja, "datos": diccionario_datos})
     except:
-        if nombre_hoja == "destinos": return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
-        df_falla = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
-        df_falla["total"] = df_falla["total"].astype(float)
-        return df_falla
+        pass
 
-# Encabezados institucionales superiores
+# Dibujamos las etiquetas de títulos superiores del sistema
 st.title("🍩 Homero - Sistema de Registro Presupuestario")
 st.write("📍 Municipalidad de Sunchales | Conexión Cooperativa a Google Sheets **2027**")
+
+# DEFINICIÓN UNIFICADA DE LAS 5 PESTAÑAS INDEPENDIENTES
+tab_formulario, tab_agregar_destino, tab_egresos, tab_oficial, tab_modificaciones = st.tabs([
+    "📝 FORMULARIO DE REGISTRO", 
+    "➕ GESTIÓN DE DESTINOS",
+    "📉 GENERAL (Base de Datos Sheet)",
+    "🏛️ REPORTE OFICIAL POR DESTINO",
+    "🛠️ PANEL DE MODIFICACIONES"
+])
+
+# DESCARGA GLOBAL UNIFICADA DE DATOS SINCRO
+df_egr_completo_raw = leer_datos_gsheet(URL_READ_EGRESOS)
+lista_egr_mostrar = []
+if not df_egr_completo_raw.empty:
+    lista_egr_mostrar = df_egr_completo_raw.fillna({"total": 0.0}).fillna("").to_dict('records')
+for e_l in st.session_state["db_local_backup"]["egresos"]:
+    lista_egr_mostrar.append(e_l)
+
+if not lista_egr_mostrar:
+    df_egr_completo = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+    df_egr_completo["total"] = df_egr_completo["total"].astype(float)
+else:
+    df_egr_completo = pd.DataFrame(lista_egr_mostrar)
+df_egr_completo["total"] = pd.to_numeric(df_egr_completo["total"], errors='coerce').fillna(0.0)
 
 # --- Plan de Cuentas Oficial Municipal ---
 MAPEO_GASTOS = {
@@ -76,15 +106,6 @@ opciones_fuente_fin = ["Municipal", "Provincial", "Nacional"]
 opciones_clase = ["Corriente", "Capital"]
 opciones_tipo = ["Libre", "Afectado"]
 opciones_finalidad = ["Legislativa", "Salud", "Seguridad"]
-
-# DEFINICIÓN UNIFICADA DE LAS 5 PESTAÑAS INDEPENDIENTES
-tab_formulario, tab_agregar_destino, tab_egresos, tab_oficial, tab_modificaciones = st.tabs([
-    "📝 FORMULARIO DE REGISTRO", 
-    "➕ GESTIÓN DE DESTINOS",
-    "📉 GENERAL (Base de Datos Sheet)",
-    "🏛️ REPORTE OFICIAL POR DESTINO",
-    "🛠️ PANEL DE MODIFICACIONES"
-])
 
 # DESCARGA GLOBAL UNIFICADA (Abastece a todas las pestañas simultáneamente)
 df_egr_gsheet = leer_datos_gsheet(URL_READ_EGRESOS)

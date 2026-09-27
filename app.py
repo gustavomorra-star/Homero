@@ -231,7 +231,7 @@ with tab_egresos:
         df_egr_gsheet = df_egr_gsheet.fillna({"total": 0.0}).fillna("")
         lista_egr_mostrar = df_egr_gsheet.to_dict('records')
         
-    for e_l in st.session_state["db_local_backup"]["egresos"]:
+    for e_l in st.session_state.get("db_local_backup", {}).get("egresos", []):
         lista_egr_mostrar.append(e_l)
         
     if not lista_egr_mostrar:

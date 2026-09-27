@@ -9,62 +9,76 @@ import time
 st.set_page_config(page_title="Presupuesto Municipal 2027", layout="wide")
 
 # =====================================================================
-# 1. FUNCIÓN DE LECTURA DESDE GOOGLE SHEETS (SIN CACHÉ Y SIN NaN)
+# 1. CONEXIÓN Y LECTURA ROBUSTA DESDE GOOGLE SHEETS
 # =====================================================================
 
 SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
-def obtener_url_fresca(gid):
-    # Agrega una marca de tiempo para evitar la caché de Streamlit y leer en tiempo real
-    return f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={gid}&_time={int(time.time())}"
+# Definimos las variables para no romper llamadas viejas del código
+URL_READ_EGRESOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=0"
+URL_READ_DESTINOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1365567783"
 
-def leer_datos_gsheet(gid):
+def construir_url_csv(param):
+    param_str = str(param).strip()
+    # Si pasa un GID suelto ("0" o "1365567783")
+    if param_str.isdigit():
+        return f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={param_str}&_t={int(time.time())}"
+    # Si ya es una URL completa
+    if "docs.google.com" in param_str:
+        if "export?format=csv" not in param_str:
+            # Extraer GID de la URL si viene en formato normal
+            gid = "0"
+            if "gid=" in param_str:
+                gid = param_str.split("gid=")[1].split("&")[0].split("#")[0]
+            return f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={gid}&_t={int(time.time())}"
+        return f"{param_str}&_t={int(time.time())}"
+    return param_str
+
+def leer_datos_gsheet(param_url_o_gid):
+    url = construir_url_csv(param_url_o_gid)
     try:
-        url = obtener_url_fresca(gid)
-        df = pd.read_csv(url)
-        
-        if not df.empty:
-            # 1. Normalizar nombres de columnas (quita espacios sobrantes y pasa a minúsculas)
-            df.columns = [str(col).strip().lower() for col in df.columns]
+        # Petición HTTP con Timeout para evitar congelamientos
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            df = pd.read_csv(io.StringIO(resp.text))
             
-            # 2. Reemplazar celdas vacías (NaN) por texto vacío para evitar la palabra 'nan'
-            df = df.fillna("")
-            
-            # 3. Limpiar espacios sobrantes en todas las cadenas de texto
-            for col in df.select_dtypes(include=['object', 'string']).columns:
-                df[col] = df[col].astype(str).str.strip()
+            if not df.empty:
+                # 1. Limpiar nombres de columnas
+                df.columns = [str(col).strip().lower() for col in df.columns]
                 
-            # 4. Asegurar que la columna 'total' sea un valor numérico limpio
-            if "total" in df.columns:
-                df["total"] = pd.to_numeric(
-                    df["total"].astype(str).str.replace("$", "", regex=False).str.replace(",", "", regex=False), 
-                    errors='coerce'
-                ).fillna(0.0)
+                # 2. Reemplazar valores NaN por texto vacío ""
+                df = df.fillna("")
                 
-        return df
-    except Exception:
-        # Retorno de seguridad si falla la lectura
-        if str(gid) == "1365567783":
-            return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
-        df_vacio = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
-        df_vacio["total"] = df_vacio["total"].astype(float)
-        return df_vacio
+                # 3. Limpiar espacios extra en textos
+                for col in df.select_dtypes(include=['object', 'string']).columns:
+                    df[col] = df[col].astype(str).str.strip()
+                    
+                # 4. Convertir 'total' a numérico
+                if "total" in df.columns:
+                    df["total"] = pd.to_numeric(
+                        df["total"].astype(str).str.replace("$", "", regex=False).str.replace(",", "", regex=False), 
+                        errors='coerce'
+                    ).fillna(0.0)
+            return df
+        else:
+            st.error(f"⚠️ No se pudo acceder al Sheet (Código HTTP: {resp.status_code}). Comprobá que el enlace esté en 'Cualquier persona con el enlace puede ver'.")
+    except Exception as e:
+        st.warning(f"Error de conexión con Google Sheets: {e}")
 
-# Inicialización de respaldo local
-if "db_local_backup" not in st.session_state:
-    st.session_state["db_local_backup"] = {"destinos": [], "egresos": []}
+    # Retorno de DataFrame vacío estructurado en caso de fallo
+    if "1365567783" in str(param_url_o_gid):
+        return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
+    
+    df_vacio = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+    df_vacio["total"] = df_vacio["total"].astype(float)
+    return df_vacio
 
 # =====================================================================
-# 2. CARGA DE DATOS PRINCIPALES EN EL SCRIPT
+# 2. CARGA PRINCIPAL
 # =====================================================================
 
-df_egr_completo = leer_datos_gsheet("0")           # Hoja de Egresos
-df_destinos_gsheet = leer_datos_gsheet("1365567783") # Hoja de Destinos
-
-# =====================================================================
-# >>> AQUÍ DEJÁS TU DICCIONARIO MAPEO_ESTRUCTURA ORIGINAL <<<
-# =====================================================================
-
+df_egr_completo = leer_datos_gsheet(URL_READ_EGRESOS)
+df_destinos_gsheet = leer_datos_gsheet(URL_READ_DESTINOS)
 # Dibujamos las etiquetas de títulos superiores del sistema
 st.title("🍩 Homero - Sistema de Registro Presupuestario")
 st.write("📍 Municipalidad de Sunchales | Conexión Cooperativa a Google Sheets **2027**")

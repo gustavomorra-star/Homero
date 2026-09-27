@@ -4,8 +4,12 @@ import streamlit as st
 import io
 import requests
 
-# 1. ORDEN STRICTA DE ANCHO COMPLETO
+# 1. ORDEN STRICTA DE ANCHO COMPLETO (Debe ser la primera instrucción)
 st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="🍩")
+
+# 2. INICIALIZACIÓN INMEDIATA DE MEMORIA (Para evitar caídas de lectura en red)
+if "db_local_backup" not in st.session_state:
+    st.session_state["db_local_backup"] = {"egresos": [], "destinos": []}
 
 # --- CONEXIÓN DIRECTA Y PERMANENTE A GOOGLE SHEETS MUNICIPAL ---
 SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
@@ -17,17 +21,20 @@ URL_READ_DESTINOS = f"https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&she
 def leer_datos_gsheet(url_tipo):
     try:
         # Descarga nativa pura de Pandas que funcionaba al inicio
-        return pd.read_csv(url_tipo)
+        df = pd.read_csv(url_tipo)
+        if not df.empty:
+            # Normalizamos los encabezados para evitar problemas de mayúsculas accidentales
+            df.columns = [str(col).strip().lower() for col in df.columns]
+        return df
     except:
         if "sheet=destinos" in str(url_tipo):
             return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
-        return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+        df_vacio = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+        df_vacio["total"] = df_vacio["total"].astype(float)
+        return df_vacio
 
 def guardar_fila_gsheet(hoja, diccionario_datos):
-    if "db_local_backup" not in st.session_state:
-        st.session_state["db_local_backup"] = {"egresos": [], "destinos": []}
     st.session_state["db_local_backup"][hoja].append(diccionario_datos)
-    
     try:
         macro_url = st.secrets["GSHEET_MACRO_URL"]
         paquete_web = {"hoja": hoja, "datos": diccionario_datos}
@@ -39,6 +46,14 @@ def guardar_fila_gsheet(hoja, diccionario_datos):
 st.title("🍩 Homero - Sistema de Registro Presupuestario")
 st.write("📍 Municipalidad de Sunchales | Conexión Cooperativa a Google Sheets **2027**")
 
+# Definición del ramillete de las 5 solapas independientes en la interfaz superior
+tab_formulario, tab_agregar_destino, tab_egresos, tab_oficial, tab_modificaciones = st.tabs([
+    "📝 FORMULARIO DE REGISTRO", 
+    "➕ GESTIÓN DE DESTINOS",
+    "📉 GENERAL (Base de Datos Sheet)",
+    "🏛️ REPORTE OFICIAL POR DESTINO",
+    "🛠️ PANEL DE MODIFICACIONES"
+])
 
 # --- Plan de Cuentas Oficial Municipal ---
 MAPEO_GASTOS = {
@@ -435,12 +450,4 @@ with tab_oficial:
             st.download_button(label="🖨️ GENERAR Y ABRIR REPORTE IMPRIMIBLE A PDF", data=html_imp, file_name=f"Reporte_{str(dest_s).replace(' ', '_')}.html", mime="text/html", use_container_width=True)
             st.info("💡 Al hacer clic, se abrirá la ventana de impresión automática en horizontal con el membrete 2027.")
 
-st.sidebar.header("⚙️ Herramientas de Red")
-st.sidebar.info("Persistencia conectada cooperativamente al repositorio central de datos. Los registros se sincronizan con la hoja de cálculo municipal.")
-tab_formulario, tab_agregar_destino, tab_egresos, tab_oficial, tab_modificaciones = st.tabs([
-    "📝 FORMULARIO DE REGISTRO", 
-    "➕ GESTIÓN DE DESTINOS",
-    "📉 GENERAL (Base de Datos Sheet)",
-    "🏛️ REPORTE OFICIAL POR DESTINO",
-    "🛠️ PANEL DE MODIFICACIONES"
-])
+

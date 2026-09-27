@@ -244,7 +244,7 @@ with tab_egresos:
     csv_global_data = df_excel_global.to_csv(index=False, sep=';').encode('utf-8-sig')
     st.download_button(label="📗 Descargar Base de Datos Completa en 11 Columnas (.xls)", data=csv_global_data, file_name="Base_De_Datos_Egresos_General.xls", mime="application/vnd.ms-excel", use_container_width=True)
 
-    # --- PANEL SUPERVISOR DE MODIFICACIONES TRIPLE BLINDAJE ---
+    # --- PANEL SUPERVISOR DE MODIFICACIONES CON BLINDAJE TRIPLE CORREGIDO ---
     st.markdown("---")
     st.markdown("### 🛠️ Panel Supervisor de Modificaciones")
     
@@ -256,27 +256,22 @@ with tab_egresos:
             destino_txt = str(r.get('destino', '')).strip().upper()
             partida_txt = str(r.get('cuenta_presupuestaria', '')).strip()
             
-            # Verificamos de forma estricta que contengan texto real y no campos vacíos
-            if destino_txt != "" and partida_txt != "" and "---" not in destino_txt:
+            if destino_txt != "" or partida_txt != "":
                 monto_raw = str(r.get('total', '0')).replace('$', '').replace('.', '').replace(',', '.')
                 try:
                     monto_val = float(monto_raw)
                 except:
                     monto_val = 0.0
                 texto_descriptivo = f"Fila {i+1} | Destino: {destino_txt} | Partida: {partida_txt[:30]} | Monto: ${monto_val:,.2f}"
-                # Evitamos duplicados exactos de texto para que selectbox no rompa la app
                 if texto_descriptivo not in diccionario_opciones:
                     diccionario_opciones[texto_descriptivo] = int(i)
 
     lista_claves_validas = list(diccionario_opciones.keys())
     
-    # CONTROL DE CONTINGENCIA FINAL ABSOLUTO
     if len(lista_claves_validas) == 0:
         st.info("💡 No hay registros contables activos para modificar en este momento. Los campos se habilitarán automáticamente cuando cargues tu primer renglón presupuestario en el sistema.")
     else:
         st.caption("Seleccioná un renglón para corregir sus valores, cambiar su partida de imputación o darlo de baja.")
-        
-        # Protegemos el componente con una estructura try de aislamiento total
         try:
             linea_sel = st.selectbox("Seleccioná el registro a modificar por su número de fila:", opciones=lista_claves_validas, key="sel_mod_panel")
             idx_real = int(diccionario_opciones[linea_sel])
@@ -345,8 +340,8 @@ with tab_oficial:
     
     lista_of_mostrar = []
     df_of_gsheet = leer_datos_gsheet(URL_READ_EGRESOS)
-    if not df_of_gsheet.empty and "total" in df_of_gsheet.columns:
-        lista_of_mostrar = df_of_gsheet.dropna(subset=["total"]).to_dict('records')
+    if not df_of_gsheet.empty:
+        lista_of_mostrar = df_of_gsheet.to_dict('records')
     for e_l in st.session_state["db_local_backup"]["egresos"]:
         lista_of_mostrar.append(e_l)
         
@@ -372,7 +367,12 @@ with tab_oficial:
             else: dest_s = st.selectbox("3. SELECCIONÁ DESTINO:", options=[""], key="of_dest")
 
         if sec_s != "" and sub_s != "" and dest_s != "":
+            # Filtramos en minúsculas nativas de forma exacta
             df_f_of = df_o_base[(df_o_base["secretaria"] == sec_s) & (df_o_base["subsecretaria"] == sub_s) & (df_o_base["destino"] == dest_s)].copy()
+            
+            # Forzamos conversión numérica por si viene como texto desde Google Sheet
+            if not df_f_of.empty and "total" in df_f_of.columns:
+                df_f_of["total"] = pd.to_numeric(df_f_of["total"], errors='coerce').fillna(0.0)
             tot_dest = df_f_of["total"].sum() if not df_f_of.empty else 0.0
 
             st.markdown(f"""
@@ -391,7 +391,7 @@ with tab_oficial:
             """, unsafe_allow_html=True)
 
             f_plan, html_rows = [], ""
-            if not df_f_of.empty:
+            if not df_f_of.empty and "objeto_gasto" in df_f_of.columns:
                 for obj, df_obj in df_f_of.groupby("objeto_gasto"):
                     t_o = df_obj["total"].sum()
                     f_plan.append({"OBJETO DEL GASTO": f"<b>{obj}</b>", "PRESUPUESTO": f"<b>${t_o:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
@@ -406,10 +406,7 @@ with tab_oficial:
 
             if f_plan: st.write(pd.DataFrame(f_plan).to_html(escape=False, index=False), unsafe_allow_html=True)
 
-# =====================================================================
-            # =====================================================================
-            # MOTOR DE IMPRESIÓN AUTOMÁTICO HORIZONTAL (LANDSCAPE)
-            # =====================================================================
+            # --- MOTOR DE IMPRESIÓN AUTOMÁTICO HORIZONTAL ---
             st.markdown("---")
             html_imp = f"""
             <html>
@@ -451,6 +448,5 @@ with tab_oficial:
             st.download_button(label="🖨️ GENERAR Y ABRIR REPORTE IMPRIMIBLE A PDF", data=html_imp, file_name=f"Reporte_{str(dest_s).replace(' ', '_')}.html", mime="text/html", use_container_width=True)
             st.info("💡 Al hacer clic, se abrirá la ventana de impresión automática en horizontal con el membrete 2027.")
 
-# Barra lateral informativa de control permanente
 st.sidebar.header("⚙️ Herramientas de Red")
 st.sidebar.info("Persistencia conectada cooperativamente al repositorio central de datos. Los registros se sincronizan con la hoja de cálculo municipal.")

@@ -770,7 +770,6 @@ with st.sidebar:
     opcion_menu = st.radio(
         "Navegación del Sistema:",
         [
-            # --- PESTAÑAS EXISTENTES ---
             "📝 FORMULARIO DE REGISTRO", 
             "➕ GESTIÓN DE DESTINOS",
             "📉 GENERAL (Base de Datos Sheet)",
@@ -784,9 +783,14 @@ with st.sidebar:
             "🧹 AUDITORÍA Y CONTROL DE CALIDAD",
             "🏢 VISTA POR SECRETARÍA Y SUBSECRETARÍA",
             "🎯 REPORTE POR FINALIDAD Y FUNCIÓN",
-            # --- NUEVAS PESTAÑAS (2) ---
             "📦 TOTALES POR OBJETO DEL GASTO",
-            "📊 MATRIZ SUBSECRETARÍA VS OBJETOS"
+            "📊 MATRIZ SUBSECRETARÍA VS OBJETOS",
+            # --- NUEVAS 5 SECCIONES ---
+            "📈 PROYECCIÓN Y ESTRUCTURA TEMPORAL",
+            "🏛️ CLASIFICACIÓN ECONÓMICA DEL GASTO",
+            "🛡️ CONTROL DE TECHOS PRESUPUESTARIOS",
+            "📋 FICHA TÉCNICA POR DESTINO",
+            "🔄 COMPARATIVO E HISTÓRICO"
         ]
     )
 # =====================================================================
@@ -1997,4 +2001,278 @@ elif opcion_menu == "📊 MATRIZ SUBSECRETARÍA VS OBJETOS":
             mime="text/html",
             use_container_width=True,
             type="primary"
+        )
+# =====================================================================
+# SECCIÓN 16: PROYECCIÓN Y ESTRUCTURA TEMPORAL (TRIMESTRAL / SEMESTRAL)
+# =====================================================================
+elif opcion_menu == "📈 PROYECCIÓN Y ESTRUCTURA TEMPORAL":
+    st.subheader("📈 Proyección y Programación de Ejecución Temporal")
+
+    if df_egr_completo.empty:
+        st.info("💡 No hay registros contables cargados.")
+    else:
+        st.caption("Estimación del flujo de fondos presupuestarios divididos por Trimestres (Q1 a Q4) o Semestres para la planificación financiera.")
+
+        tot_anual = df_egr_completo["total"].sum()
+        
+        st.markdown("##### 🗓️ Distribución Trimestral Estimada")
+        
+        col_q1, col_q2, col_q3, col_q4 = st.columns(4)
+        col_q1.metric("1° Trimestre (Q1 - 25%)", f"${(tot_anual * 0.25):,.2f}")
+        col_q2.metric("2° Trimestre (Q2 - 25%)", f"${(tot_anual * 0.25):,.2f}")
+        col_q3.metric("3° Trimestre (Q3 - 25%)", f"${(tot_anual * 0.25):,.2f}")
+        col_q4.metric("4° Trimestre (Q4 - 25%)", f"${(tot_anual * 0.25):,.2f}")
+
+        st.markdown("---")
+        st.markdown("##### 🏛️ Programación de Caja por Secretaría (Estimación Trimestral)")
+        
+        df_sec_prog = df_egr_completo.groupby("secretaria")["total"].sum().reset_index()
+        df_sec_prog["Q1 (25%)"] = df_sec_prog["total"] * 0.25
+        df_sec_prog["Q2 (25%)"] = df_sec_prog["total"] * 0.25
+        df_sec_prog["Q3 (25%)"] = df_sec_prog["total"] * 0.25
+        df_sec_prog["Q4 (25%)"] = df_sec_prog["total"] * 0.25
+        
+        st.dataframe(
+            df_sec_prog.style.format({
+                "total": "${:,.2f}",
+                "Q1 (25%)": "${:,.2f}",
+                "Q2 (25%)": "${:,.2f}",
+                "Q3 (25%)": "${:,.2f}",
+                "Q4 (25%)": "${:,.2f}"
+            }),
+            use_container_width=True
+        )
+
+
+# =====================================================================
+# SECCIÓN 17: CLASIFICACIÓN ECONÓMICA DEL GASTO
+# =====================================================================
+elif opcion_menu == "🏛️ CLASIFICACIÓN ECONÓMICA DEL GASTO":
+    st.subheader("🏛️ Clasificación Económica: Gastos Corrientes vs Capital")
+
+    if df_egr_completo.empty:
+        st.info("💡 No hay registros contables cargados.")
+    else:
+        st.caption("Agrupación presupuestaria requerida por el Tribunal de Cuentas (Gastos Corrientes vs. Gastos de Capital e Inversión).")
+
+        df_econ = df_egr_completo.groupby("clase")["total"].sum().reset_index()
+        tot_general_econ = df_econ["total"].sum()
+        df_econ["porcentaje"] = (df_econ["total"] / (tot_general_econ if tot_general_econ > 0 else 1)) * 100
+
+        col_ec1, col_ec2 = st.columns(2)
+        
+        for idx, row in df_econ.iterrows():
+            if "corriente" in str(row["clase"]).lower():
+                col_ec1.metric(f"🔄 {row['clase']}", f"${row['total']:,.2f}", f"{row['porcentaje']:.2f}% del total")
+            else:
+                col_ec2.metric(f"🏗️ {row['clase']}", f"${row['total']:,.2f}", f"{row['porcentaje']:.2f}% del total")
+
+        st.markdown("---")
+        st.markdown("##### 📋 Detalle por Secretaría y Clasificación Económica")
+        
+        pivot_econ = pd.pivot_table(
+            df_egr_completo,
+            values="total",
+            index="secretaria",
+            columns="clase",
+            aggfunc="sum",
+            fill_value=0.0
+        )
+        pivot_econ["TOTAL"] = pivot_econ.sum(axis=1)
+        
+        st.dataframe(pivot_econ.style.format("${:,.2f}"), use_container_width=True)
+
+
+# =====================================================================
+# SECCIÓN 18: CONTROL DE TECHOS PRESUPUESTARIOS
+# =====================================================================
+elif opcion_menu == "🛡️ CONTROL DE TECHOS PRESUPUESTARIOS":
+    st.subheader("🛡️ Panel de Control y Techos Presupuestarios por Secretaría")
+
+    if df_egr_completo.empty:
+        st.info("💡 No hay registros contables cargados.")
+    else:
+        st.caption("Define el límite o techo presupuestario asignado a cada Secretaría para controlar desvíos en tiempo real.")
+
+        df_sec_techos = df_egr_completo.groupby("secretaria")["total"].sum().reset_index()
+
+        # Inicializar techos en session_state si no existen
+        if "techos_presupuesto" not in st.session_state:
+            st.session_state.techos_presupuesto = {row["secretaria"]: float(row["total"] * 1.1) for _, row in df_sec_techos.iterrows()}
+
+        st.markdown("##### ⚙️ Definir Techos Presupuestarios ($)")
+        
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            sec_a_editar = st.selectbox("Seleccionar Secretaría:", df_sec_techos["secretaria"].unique())
+        with col_t2:
+            nuevo_techo = st.number_input(
+                "Techo Límite ($):",
+                value=float(st.session_state.techos_presupuesto.get(sec_a_editar, 0.0)),
+                step=500000.0
+            )
+            if st.button("💾 Guardar Techo"):
+                st.session_state.techos_presupuesto[sec_a_editar] = nuevo_techo
+                st.success("Techo actualizado correctamente.")
+
+        st.markdown("---")
+        st.markdown("##### 📊 Estado de Cumplimiento por Secretaría")
+
+        filas_techos = []
+        for _, r in df_sec_techos.iterrows():
+            sec_nom = r["secretaria"]
+            cargado = r["total"]
+            techo = st.session_state.techos_presupuesto.get(sec_nom, cargado)
+            diferencia = techo - cargado
+            estado = "✅ DENTRO DEL TECHO" if diferencia >= 0 else "🚨 EXCEDIDO"
+            
+            filas_techos.append({
+                "SECRETARÍA": sec_nom,
+                "PRESUPUESTO CARGADO ($)": f"${cargado:,.2f}",
+                "TECHO PERMITIDO ($)": f"${techo:,.2f}",
+                "DISPONIBLE / DESVÍO ($)": f"${diferencia:,.2f}",
+                "ESTADO": estado
+            })
+
+        st.dataframe(pd.DataFrame(filas_techos), use_container_width=True, hide_index=True)
+
+
+# =====================================================================
+# SECCIÓN 19: FICHA TÉCNICA POR DESTINO (FICHA INDIVIDUAL)
+# =====================================================================
+elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
+    st.subheader("📋 Ficha Técnica Ejecutiva por Destino")
+
+    if df_egr_completo.empty:
+        st.info("💡 No hay registros contables cargados.")
+    else:
+        st.caption("Generación de Ficha Ejecutiva resumida de una sola página por Destino, ideal para la firma del responsable del área.")
+
+        destinos_lista = sorted([d for d in df_egr_completo["destino"].unique() if str(d).strip() != ""])
+        destino_f_elegido = st.selectbox("Seleccionar Destino:", destinos_lista)
+
+        df_f_destino = df_egr_completo[df_egr_completo["destino"] == destino_f_elegido]
+        tot_f_destino = df_f_destino["total"].sum()
+
+        st.markdown("---")
+        st.markdown(f"### 📌 Destino: **{str(destino_f_elegido).upper()}**")
+        st.metric("💰 Presupuesto Asignado", f"${tot_f_destino:,.2f}")
+
+        # HTML Individual A4
+        rows_f_html = ""
+        for _, r in df_f_destino.iterrows():
+            rows_f_html += f"""
+            <tr>
+                <td style="text-align: left;">{r['objeto_gasto']}</td>
+                <td style="text-align: left;">{r['cuenta_presupuestaria']}</td>
+                <td style="text-align: right;">${r['total']:,.2f}</td>
+                <td style="text-align: center;">{r['fuente_fin']}</td>
+            </tr>
+            """
+
+        html_ficha_oficial = f"""
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                @page {{ size: A4 portrait; margin: 15mm; }}
+                body {{ font-family: Arial, sans-serif; color: #000; margin: 0 auto; width: 100%; max-width: 800px; }}
+                .box-hdr {{ border: 2px solid #000; padding: 12px; text-align: center; margin-bottom: 20px; }}
+                .tabla-datos {{ width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 15px; }}
+                .tabla-datos th {{ border-bottom: 2px solid #000; padding: 6px; text-align: left; background-color: #f2f2f2; }}
+                .tabla-datos td {{ border-bottom: 1px solid #ddd; padding: 6px; }}
+                .tot-box {{ border: 1px solid #000; padding: 10px; margin-top: 20px; text-align: right; font-size: 14px; background-color: #fafafa; }}
+                .firmas {{ margin-top: 60px; width: 100%; }}
+                .firma {{ width: 45%; float: left; text-align: center; border-top: 1px solid #000; padding-top: 5px; font-weight: bold; font-size: 11px; margin: 0 2.5%; }}
+            </style>
+        </head>
+        <body onload="window.print();">
+            <div class="box-hdr">
+                <h3 style="margin:0;">MUNICIPALIDAD DE SUNCHALES</h3>
+                <h4 style="margin:5px 0;">FICHA TÉCNICA PRESUPUESTARIA 2027</h4>
+                <p style="margin:0; font-size:12px;"><b>DESTINO:</b> {str(destino_f_elegido).upper()}</p>
+            </div>
+
+            <table class="tabla-datos">
+                <thead>
+                    <tr>
+                        <th>OBJETO DEL GASTO</th>
+                        <th>PARTIDA PRESUPUESTARIA</th>
+                        <th style="text-align: right;">MONTO ($)</th>
+                        <th style="text-align: center;">FUENTE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows_f_html}
+                </tbody>
+            </table>
+
+            <div class="tot-box">
+                <b>TOTAL ASIGNADO AL DESTINO: ${tot_f_destino:,.2f}</b>
+            </div>
+
+            <div class="firmas">
+                <div class="firma">Responsable del Area ({destino_f_elegido})</div>
+                <div class="firma">Secretaría de Hacienda</div>
+            </div>
+        </body>
+        </html>
+        """
+
+        st.download_button(
+            label="🖨️ IMPRIMIR FICHA TÉCNICA DEL DESTINO (PDF A4)",
+            data=html_ficha_oficial,
+            file_name=f"Ficha_{destino_f_elegido.replace(' ', '_')}_2027.html",
+            mime="text/html",
+            use_container_width=True,
+            type="primary"
+        )
+
+
+# =====================================================================
+# SECCIÓN 20: COMPARATIVO E HISTÓRICO DE MODIFICACIONES
+# =====================================================================
+elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
+    st.subheader("🔄 Comparativo e Histórico Presupuestario")
+
+    if df_egr_completo.empty:
+        st.info("💡 No hay registros contables cargados.")
+    else:
+        st.caption("Herramienta para comparar el Presupuesto Proyecto 2027 con valores de referencia anteriores (ej: Presupuesto 2026).")
+
+        tot_2027 = df_egr_completo["total"].sum()
+
+        col_h1, col_h2 = st.columns(2)
+        with col_h1:
+            monto_2026_ref = st.number_input("Ingresar Presupuesto Ejecutado 2026 ($):", value=tot_2027 * 0.7, step=1000000.0)
+
+        incremento = tot_2027 - monto_2026_ref
+        porc_incremento = (incremento / monto_2026_ref) * 100 if monto_2026_ref > 0 else 0
+
+        st.markdown("---")
+        st.markdown("##### 📊 Variación Interanual Estimada")
+
+        m_h1, m_h2, m_h3 = st.columns(3)
+        m_h1.metric("Ejecutado / Base 2026", f"${monto_2026_ref:,.2f}")
+        m_h2.metric("Proyecto 2027", f"${tot_2027:,.2f}")
+        m_h3.metric("Variación Nominal", f"${incremento:,.2f}", f"{porc_incremento:+.2f}%")
+
+        st.markdown("---")
+        st.markdown("##### 🏛️ Comparativo por Secretaría")
+
+        df_sec_comp = df_egr_completo.groupby("secretaria")["total"].sum().reset_index()
+        df_sec_comp.columns = ["SECRETARÍA", "PROYECTO 2027 ($)"]
+        df_sec_comp["ESTIMADO 2026 ($)"] = df_sec_comp["PROYECTO 2027 ($)"] * 0.7
+        df_sec_comp["VARIACIÓN ($)"] = df_sec_comp["PROYECTO 2027 ($)"] - df_sec_comp["ESTIMADO 2026 ($)"]
+        df_sec_comp["% CRECIMIENTO"] = (df_sec_comp["VARIACIÓN ($)"] / df_sec_comp["ESTIMADO 2026 ($)"]) * 100
+
+        st.dataframe(
+            df_sec_comp.style.format({
+                "PROYECTO 2027 ($)": "${:,.2f}",
+                "ESTIMADO 2026 ($)": "${:,.2f}",
+                "VARIACIÓN ($)": "${:,.2f}",
+                "% CRECIMIENTO": "{:+.2f}%"
+            }),
+            use_container_width=True,
+            hide_index=True
         )

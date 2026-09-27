@@ -1450,7 +1450,7 @@ elif opcion_menu == "🧹 AUDITORÍA Y CONTROL DE CALIDAD":
         else:
             st.success("✅ ¡Excelente! Todos los renglones tienen su ubicación e imputación completa.")
 # =====================================================================
-# SECCIÓN 12: VISTA POR SECRETARÍA Y SUBSECRETARÍA (NUEVA)
+# SECCIÓN 12: VISTA POR SECRETARÍA Y SUBSECRETARÍA (CON EXPORTACIÓN HORIZONTAL)
 # =====================================================================
 elif opcion_menu == "🏢 VISTA POR SECRETARÍA Y SUBSECRETARÍA":
     st.subheader("🏢 Vista Jerárquica por Secretaría y Subsecretaría")
@@ -1458,7 +1458,7 @@ elif opcion_menu == "🏢 VISTA POR SECRETARÍA Y SUBSECRETARÍA":
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados para mostrar.")
     else:
-        st.caption("Seleccioná la Secretaría y la Subsecretaría para consultar los Destinos y sus partidas presupuestarias asignadas.")
+        st.caption("Seleccioná la Secretaría y la Subsecretaría para consultar los Destinos y sus partidas presupuestarias asignadas, o exportar la planilla oficial firmable.")
 
         # Obtener lista de secretarías únicas
         lista_secretarias = sorted([s for s in df_egr_completo["secretaria"].unique() if str(s).strip() != ""])
@@ -1529,7 +1529,106 @@ elif opcion_menu == "🏢 VISTA POR SECRETARÍA Y SUBSECRETARÍA":
                         hide_index=True
                     )
 
+            # -------------------------------------------------------------
+            # GENERACIÓN DEL DOCUMENTO HORIZONTAL (PDF / FIRMAS)
+            # -------------------------------------------------------------
+            bloques_html_sec = ""
 
+            for dest_sec, df_d_sec in df_area.groupby("destino"):
+                tot_d_sec = df_d_sec["total"].sum()
+                rows_d_sec = ""
+
+                for obj, df_obj in df_d_sec.groupby("objeto_gasto"):
+                    t_o = df_obj["total"].sum()
+                    rows_d_sec += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${t_o:,.2f}</td><td></td><td></td><td></td><td></td></tr>'
+
+                    for pad, df_pad in df_obj.groupby("cuenta_padre"):
+                        t_p = df_pad["total"].sum()
+                        rows_d_sec += f'<tr style="font-weight: bold;"><td style="text-align: left; padding-left: 20px;">{pad}</td><td style="text-align: right;">${t_p:,.2f}</td><td></td><td></td><td></td><td></td></tr>'
+
+                        for _, r in df_pad.iterrows():
+                            rows_d_sec += f'<tr><td style="text-align: left; padding-left: 40px;">{r["cuenta_presupuestaria"]}</td><td style="text-align: right;">${r["total"]:,.2f}</td><td style="text-align: center;">{r["fuente_fin"]}</td><td style="text-align: center;">{r["clase"]}</td><td style="text-align: center;">{r["tipo"]}</td><td style="text-align: center;">{r["finalidad"]}</td></tr>'
+
+                bloques_html_sec += f"""
+                <div class="bloque-destino">
+                    <div class="m-box">
+                        <table class="t-hdr">
+                            <tr>
+                                <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Presupuesto Oficial 2027</span></td>
+                                <td style="width: 50%; text-align: center;"><b>PRESUPUESTO DE GASTO POR SUBSECRETARÍA</b><br><small>-2027-</small></td>
+                                <td style="width: 25%;" class="b-tot"><small>Total Destino</small><br><b>${tot_d_sec:,.2f}</b></td>
+                            </tr>
+                        </table>
+                        <div style="border-top: 1px solid #000; font-size: 11px; padding-top: 6px; margin-top: 6px;">
+                            <b>SECRETARÍA:</b> {sec_seleccionada} | <b>SUBSECRETARÍA:</b> {sub_seleccionada} | <span style="float: right;"><b>DESTINO:</b> {str(dest_sec).upper()}</span>
+                        </div>
+                    </div>
+
+                    <table class="tabla-datos">
+                        <thead>
+                            <tr>
+                                <th>OBJETO DEL GASTO</th>
+                                <th style="text-align: right;">PRESUPUESTO</th>
+                                <th>F.FIN</th>
+                                <th>CLASE</th>
+                                <th>TIPO</th>
+                                <th>FINANCIAMIENTO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows_d_sec}
+                        </tbody>
+                    </table>
+                    <div class="salto-pagina"></div>
+                </div>
+                """
+
+            html_sec_oficial = f"""
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    @page {{ size: A4 landscape; margin: 12mm; }}
+                    body {{ font-family: Arial, sans-serif; color: #000; margin: 0 auto; width: 100%; max-width: 1050px; }}
+                    .m-box {{ border: 1px solid #000; padding: 10px; margin-bottom: 15px; background-color: #fff; }}
+                    .t-hdr {{ width: 100%; border-collapse: collapse; }}
+                    .t-hdr td {{ padding: 4px; vertical-align: middle; border: none; }}
+                    .b-tot {{ border: 1px solid #000; background-color: #f5f5f5; text-align: center; }}
+                    .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; margin-bottom: 25px; }}
+                    .tabla-datos th {{ border-bottom: 2px solid #000; padding: 6px 4px; text-align: center; font-weight: bold; background-color: #f2f2f2; }}
+                    .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 6px 4px; vertical-align: middle; text-align: center; }}
+                    .tabla-datos th:first-child, .tabla-datos td:first-child {{ text-align: left !important; padding-left: 8px; }}
+                    .salto-pagina {{ page-break-after: always; }}
+                    .firmas-container {{ margin-top: 50px; width: 100%; page-break-inside: avoid; }}
+                    .firma-box {{ width: 30%; float: left; text-align: center; border-top: 1px solid #000; padding-top: 5px; margin: 0 1.5%; font-size: 11px; font-weight: bold; }}
+                    .resumen-final {{ border: 2px solid #000; padding: 15px; margin-top: 20px; background-color: #fafafa; text-align: center; font-size: 14px; page-break-inside: avoid; }}
+                </style>
+            </head>
+            <body onload="window.print();">
+                {bloques_html_sec}
+
+                <div class="resumen-final">
+                    <b>TOTAL PRESUPUESTO - {sub_seleccionada}:</b> ${tot_area:,.2f}
+                </div>
+
+                <div class="firmas-container">
+                    <div class="firma-box">Responsable Presupuesto</div>
+                    <div class="firma-box">Contaduría General</div>
+                    <div class="firma-box">Intendente / Secretario</div>
+                </div>
+            </body>
+            </html>
+            """
+
+            st.markdown("---")
+            st.download_button(
+                label="🖨️ GENERAR Y DESCARGAR REPORTE DE ESTA SUBSECRETARÍA (PDF HORIZONTAL / FIRMAS)",
+                data=html_sec_oficial,
+                file_name=f"Reporte_{sub_seleccionada.replace(' ', '_')}_2027.html",
+                mime="text/html",
+                use_container_width=True,
+                type="primary"
+            )
 # =====================================================================
 # SECCIÓN 13: REPORTE POR FINALIDAD Y FUNCIÓN (CON EXPORTACIÓN OFICIAL)
 # =====================================================================

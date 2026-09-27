@@ -7,10 +7,9 @@ import requests
 # --- CONEXIÓN DIRECTA Y PERMANENTE A GOOGLE SHEETS MUNICIPAL ---
 SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
-# Enlaces de conexión directa blindados apuntando al GID numérico exacto de tus pestañas reales de Drive
-URL_READ_EGRESOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=0"
+# Enlaces de conexión corregidos apuntando al GID real de tus pestañas de Drive
+URL_READ_EGRESOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=447735398"
 URL_READ_DESTINOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=1365567783"
-
 
 def leer_datos_gsheet(url_tipo):
     try:
@@ -25,9 +24,8 @@ def leer_datos_gsheet(url_tipo):
                 df_vacio["total"] = df_vacio["total"].astype(float)
                 return df_vacio
                 
-        # --- BLINDAJE DE MAYÚSCULAS/MINÚSCULAS ---
-        # Convertimos automáticamente todos los títulos de tu Google Sheet a minúsculas y sin espacios
-        df.columns = [str(col).strip().toLowerCase() for col in df.columns]
+        # Convertimos todos los títulos a minúsculas usando sintaxis pura de Python (.lower)
+        df.columns = [str(col).strip().lower() for col in df.columns]
         return df
     except:
         if "gid=1365567783" in str(url_tipo):
@@ -38,20 +36,15 @@ def leer_datos_gsheet(url_tipo):
 
 def guardar_fila_gsheet(hoja, diccionario_datos):
     try:
-        # Pasarela automática a través de la URL de tu Apps Script (Cartero)
         macro_url = st.secrets["GSHEET_MACRO_URL"]
         paquete_web = {"hoja": hoja, "datos": diccionario_datos}
         requests.post(macro_url, json=paquete_web)
     except:
         pass
     
-    # Mantenemos el respaldo en la memoria local de la sesión por seguridad
     if "db_local_backup" not in st.session_state:
         st.session_state["db_local_backup"] = {"egresos": [], "destinos": []}
     st.session_state["db_local_backup"][hoja].append(diccionario_datos)
-st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="🍩")
-st.title("🍩 Homero - Sistema de Registro Presupuestario")
-st.write("📍 Municipalidad de Sunchales | Conexión Cooperativa a Google Sheets **2027**")
 
 # --- Plan de Cuentas Oficial Municipal ---
 MAPEO_GASTOS = {

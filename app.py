@@ -300,11 +300,14 @@ with tab_oficial:
                     lista_dest_oficial = [str(d).strip().upper() for d in df_fil["destino"].dropna().tolist() if str(d).strip() != ""]
                 
                 # Cargar destinos locales normalizados
-                for d_l in st.session_state["db_local_backup"]["destinos"]:
-                    if str(d_l.get("secretaria","")).strip() == sec_s.strip() and str(d_l.get("subsecretaria","")).strip() == sub_s.strip():
-                        d_nom = str(d_l.get("destino","")).strip().upper()
-                        if d_nom and d_nom not in lista_dest_oficial:
-                            lista_dest_oficial.append(d_nom)
+# CÓDIGO NUEVO CORREGIDO:
+backup_destinos = st.session_state.get("db_local_backup", {})
+if isinstance(backup_destinos, dict):
+    for d_l in backup_destinos.get("destinos", []):
+        if str(d_l.get("secretaria","")).strip().upper() == sec_s.strip().upper() and str(d_l.get("subsecretaria","")).strip().upper() == sub_s.strip().upper():
+            d_nom = str(d_l.get("destino","")).strip().upper()
+            if d_nom and d_nom not in lista_dest_oficial:
+                lista_dest_oficial.append(d_nom)
                             
                 dest_s = st.selectbox("3. SELECCIONÁ DESTINO:", options=[""] + sorted(list(set(lista_dest_oficial))), format_func=lambda x: "--- Seleccioná ---" if x == "" else str(x).upper(), key="of_dest")
             else: 

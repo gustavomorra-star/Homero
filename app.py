@@ -7,9 +7,10 @@ import requests
 # --- CONEXIÓN DIRECTA Y PERMANENTE A GOOGLE SHEETS MUNICIPAL ---
 SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
-# Enlaces de conexión corregidos con formato de exportación forzada por nombre de pestaña
-URL_READ_EGRESOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&sheet=egresos"
-URL_READ_DESTINOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&sheet=destinos"
+# Enlaces de conexión directa blindados apuntando al GID numérico exacto de tus pestañas reales de Drive
+URL_READ_EGRESOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=0"
+URL_READ_DESTINOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=1365567783"
+
 
 def leer_datos_gsheet(url_tipo):
     try:

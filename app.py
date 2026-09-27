@@ -2230,7 +2230,7 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
 
 
 # =====================================================================
-# SECCIÓN 20: COMPARATIVO E HISTÓRICO DE MODIFICACIONES (CONEXIÓN DIRECTA)
+# SECCIÓN 20: COMPARATIVO E HISTÓRICO DE MODIFICACIONES (PARSEO FORMATEADO)
 # =====================================================================
 elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     st.subheader("🔄 Comparativo e Histórico Presupuestario (2026 vs 2027)")
@@ -2240,51 +2240,48 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     else:
         st.caption("Cruce en tiempo real con la base de **Evaluación de Ejecución Presupuestaria 2026**.")
 
-        # -------------------------------------------------------------
-        # ENLACE DE EXPORTACIÓN DIRECTA (CSV PUBLICO)
-        # -------------------------------------------------------------
-        # URL optimizada apuntando directamente a la hoja gid=966286745
         CSV_URL_2026 = "https://docs.google.com/spreadsheets/d/1rDFoL0KPCiqmo1pBobrRuibAwtT9anRPZPLgjrPCBWo/export?format=csv&gid=966286745"
 
         try:
-            # Lectura directa mediante pandas
+            # Lectura del CSV desde Google Sheets
             df_2026_raw = pd.read_csv(CSV_URL_2026)
             df_2026 = pd.DataFrame(df_2026_raw)
 
-            # Normalizar nombres de columnas
-            df_2026.columns = [str(c).strip().lower() for c in df_2026.columns]
+            # Limpieza de nombres de columnas (quitar espacios extras y pasar a mayúsculas)
+            df_2026.columns = [str(c).strip().upper() for c in df_2026.columns]
 
-            # Detectar columna de montos
+            # Buscar la columna de montos según la estructura del reporte (EJECUTADO, DEVENGADO o SALDO INICIAL)
             col_monto_2026 = None
-            for c in ["ejecutado", "devengado", "saldo inicial", "total"]:
-                if c in df_2026.columns:
-                    col_monto_2026 = c
+            for col_candidata in ["EJECUTADO", "DEVENGADO", "SALDO INICIAL", "TOTAL"]:
+                if col_candidata in df_2026.columns:
+                    col_monto_2026 = col_candidata
                     break
 
             if col_monto_2026:
-                # Limpiar signos $ y puntos de miles si vinieran como texto
-                df_2026["total_2026"] = (
-                    df_2026[col_monto_2026]
-                    .astype(str)
-                    .str.replace("$", "", regex=False)
-                    .str.replace(".", "", regex=False)
-                    .str.replace(",", ".", regex=False)
-                )
-                df_2026["total_2026"] = pd.to_numeric(df_2026["total_2026"], errors="coerce").fillna(0.0)
+                # FUNCIÓN DE LIMPIEZA DE FORMATO NUMÉRICO ARGENTINO (ej: "7.228.087,50" -> 7228087.50)
+                def limpiar_monto_arg(val):
+                    if pd.isna(val):
+                        return 0.0
+                    val_str = str(val).strip().replace("$", "").replace(" ", "")
+                    # Si tiene formato con puntos de miles y coma decimal
+                    if "," in val_str:
+                        val_str = val_str.replace(".", "").replace(",", ".")
+                    return pd.to_numeric(val_str, errors="coerce")
+
+                df_2026["TOTAL_2026_CLEAN"] = df_2026[col_monto_2026].apply(limpiar_monto_arg).fillna(0.0)
             else:
-                df_2026["total_2026"] = 0.0
+                df_2026["TOTAL_2026_CLEAN"] = 0.0
 
             hay_datos_2026 = True
         except Exception as e:
             hay_datos_2026 = False
-            st.error("⚠️ No se pudo cargar automáticamente la planilla de 2026.")
-            st.info("💡 **Asegurate de que en Google Sheets la opción esté en:**\n*Compartir -> Cualquier persona con el enlace -> Lector/Editor*.")
+            st.error("⚠️ No se pudo procesar la planilla de 2026.")
 
         # -------------------------------------------------------------
-        # DESPLEGAR COMPARATIVO
+        # PROCESAMIENTO COMPARATIVO 2026 vs 2027
         # -------------------------------------------------------------
         if hay_datos_2026 and not df_2026.empty:
-            tot_2026 = df_2026["total_2026"].sum()
+            tot_2026 = df_2026["TOTAL_2026_CLEAN"].sum()
             tot_2027 = df_egr_completo["total"].sum()
 
             incremento = tot_2027 - tot_2026
@@ -2302,10 +2299,12 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             # Agrupamiento 2027
             sec_2027 = df_egr_completo.groupby("secretaria")["total"].sum().reset_index()
             sec_2027.columns = ["SECRETARÍA", "PROYECTO 2027 ($)"]
+            sec_2027["SECRETARÍA"] = sec_2027["SECRETARÍA"].astype(str).str.strip().str.upper()
 
             # Agrupamiento 2026
-            if "secretaria" in df_2026.columns:
-                sec_2026 = df_2026.groupby("secretaria")["total_2026"].sum().reset_index()
+            if "SECRETARÍA" in df_2026.columns:
+                df_2026["SECRETARÍA"] = df_2026["SECRETARÍA"].astype(str).str.strip().str.upper()
+                sec_2026 = df_2026.groupby("SECRETARÍA")["TOTAL_2026_CLEAN"].sum().reset_index()
                 sec_2026.columns = ["SECRETARÍA", "EJECUTADO 2026 ($)"]
             else:
                 sec_2026 = pd.DataFrame(columns=["SECRETARÍA", "EJECUTADO 2026 ($)"])
@@ -2313,6 +2312,9 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             # Merge / Cruzamiento por Secretaría
             df_comp_sec = pd.merge(sec_2027, sec_2026, on="SECRETARÍA", how="outer").fillna(0.0)
             
+            # Descartar filas vacías de Secretaría
+            df_comp_sec = df_comp_sec[df_comp_sec["SECRETARÍA"] != "NAN"]
+
             df_comp_sec["VARIACIÓN ($)"] = df_comp_sec["PROYECTO 2027 ($)"] - df_comp_sec["EJECUTADO 2026 ($)"]
             df_comp_sec["% VARIACIÓN"] = df_comp_sec.apply(
                 lambda r: ((r["VARIACIÓN ($)"] / r["EJECUTADO 2026 ($)"]) * 100) if r["EJECUTADO 2026 ($)"] > 0 else 0.0, 

@@ -2230,7 +2230,7 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
 
 
 # =====================================================================
-# SECCIÓN 20: COMPARATIVO E HISTÓRICO DE MODIFICACIONES (CONEXIÓN SHEET 2026)
+# SECCIÓN 20: COMPARATIVO E HISTÓRICO DE MODIFICACIONES (CONEXIÓN DIRECTA)
 # =====================================================================
 elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     st.subheader("🔄 Comparativo e Histórico Presupuestario (2026 vs 2027)")
@@ -2241,19 +2241,20 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
         st.caption("Cruce en tiempo real con la base de **Evaluación de Ejecución Presupuestaria 2026**.")
 
         # -------------------------------------------------------------
-        # CONEXIÓN AL SHEET DE EJECUCIÓN 2026
+        # ENLACE DE EXPORTACIÓN DIRECTA (CSV PUBLICO)
         # -------------------------------------------------------------
-        URL_SHEET_2026 = "https://docs.google.com/spreadsheets/d/1rDFoL0KPCiqmo1pBobrRuibAwtT9anRPZPLgjrPCBWo/edit#gid=966286745"
+        # URL optimizada apuntando directamente a la hoja gid=966286745
+        CSV_URL_2026 = "https://docs.google.com/spreadsheets/d/1rDFoL0KPCiqmo1pBobrRuibAwtT9anRPZPLgjrPCBWo/export?format=csv&gid=966286745"
 
         try:
-            # Lectura del libro 2026
-            df_2026_raw = conn.read(spreadsheet=URL_SHEET_2026, ttl="0")
+            # Lectura directa mediante pandas
+            df_2026_raw = pd.read_csv(CSV_URL_2026)
             df_2026 = pd.DataFrame(df_2026_raw)
 
-            # Normalizar nombres de columnas a minúsculas y sin espacios extras
+            # Normalizar nombres de columnas
             df_2026.columns = [str(c).strip().lower() for c in df_2026.columns]
 
-            # Buscar la columna que contenga el monto ejecutado o devengado
+            # Detectar columna de montos
             col_monto_2026 = None
             for c in ["ejecutado", "devengado", "saldo inicial", "total"]:
                 if c in df_2026.columns:
@@ -2261,18 +2262,26 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                     break
 
             if col_monto_2026:
-                df_2026["total_2026"] = pd.to_numeric(df_2026[col_monto_2026], errors="coerce").fillna(0.0)
+                # Limpiar signos $ y puntos de miles si vinieran como texto
+                df_2026["total_2026"] = (
+                    df_2026[col_monto_2026]
+                    .astype(str)
+                    .str.replace("$", "", regex=False)
+                    .str.replace(".", "", regex=False)
+                    .str.replace(",", ".", regex=False)
+                )
+                df_2026["total_2026"] = pd.to_numeric(df_2026["total_2026"], errors="coerce").fillna(0.0)
             else:
                 df_2026["total_2026"] = 0.0
 
             hay_datos_2026 = True
         except Exception as e:
             hay_datos_2026 = False
-            st.error("⚠️ No se pudo conectar con la hoja de Ejecución Presupuestaria 2026.")
-            st.info("💡 Recordá compartir el archivo de Google Sheets de 2026 con la cuenta de servicio de Streamlit (`client_email`).")
+            st.error("⚠️ No se pudo cargar automáticamente la planilla de 2026.")
+            st.info("💡 **Asegurate de que en Google Sheets la opción esté en:**\n*Compartir -> Cualquier persona con el enlace -> Lector/Editor*.")
 
         # -------------------------------------------------------------
-        # PROCESAMIENTO COMPARATIVO 2026 vs 2027
+        # DESPLEGAR COMPARATIVO
         # -------------------------------------------------------------
         if hay_datos_2026 and not df_2026.empty:
             tot_2026 = df_2026["total_2026"].sum()

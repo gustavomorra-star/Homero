@@ -493,11 +493,6 @@ if opcion_menu == "📥 REGISTRO DE RECURSOS":
 # SECCIÓN 1: FORMULARIO PRINCIPAL DE REGISTRO (Egresos)
 # =====================================================================
 elif opcion_menu == "📝 FORMULARIO DE REGISTRO":
-    # ... resto de tus opciones con elif ...
-# =====================================================================
-# SECCIÓN 1: FORMULARIO PRINCIPAL DE REGISTRO (Egresos)
-# =====================================================================
-elif opcion_menu == "📝 FORMULARIO DE REGISTRO":
     st.subheader("📥 Cargar Nuevo Renglón Presupuestario")
     col1, col2 = st.columns(2)
     with col1:

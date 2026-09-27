@@ -55,6 +55,7 @@ SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
 URL_READ_EGRESOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=0"
 URL_READ_DESTINOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1365567783"
+URL_READ_RECURSOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=TU_GID_AQUI"
 
 def construir_url_csv(param):
     param_str = str(param).strip()
@@ -242,54 +243,76 @@ with st.sidebar:
 # =====================================================================
 # SECCIÓN: REGISTRO DE RECURSOS (INGRESOS)
 # =====================================================================
-if opcion_menu == "📥 REGISTRO DE RECURSOS":
+elif opcion_menu == "📥 REGISTRO DE RECURSOS":
     st.subheader("📥 Cargar Nuevo Recurso / Ingreso Presupuestario")
+
+    # Cargar recursos actuales desde Google Sheet y backup local
+    df_rec_gsheet = leer_datos_gsheet(URL_READ_RECURSOS)
+    lista_rec_mostrar = []
+    if not df_rec_gsheet.empty:
+        df_rec_gsheet = df_rec_gsheet.fillna({"valor": 0.0, "totales": 0.0}).fillna("")
+        lista_rec_mostrar = df_rec_gsheet.to_dict('records')
+
+    for r_l in st.session_state.get("db_local_backup", {}).get("recursos", []):
+        lista_rec_mostrar.append(r_l)
+
+    df_rec_completo = pd.DataFrame(lista_rec_mostrar) if lista_rec_mostrar else pd.DataFrame(columns=["concepto", "valor", "totales", "destino", "tipo", "origen"])
+    
+    # Asegurar columnas numéricas
+    for col_n in ["valor", "totales"]:
+        if col_n in df_rec_completo.columns:
+            df_rec_completo[col_n] = pd.to_numeric(df_rec_completo[col_n], errors='coerce').fillna(0.0)
+        else:
+            df_rec_completo[col_n] = 0.0
 
     col_r1, col_r2 = st.columns(2)
     with col_r1:
-        st.markdown("**📍 1. Clasificación del Ingreso**")
-        r_origen = st.selectbox("ORIGEN DEL RECURSO:", options=[""] + opciones_origen_recurso, format_func=lambda x: "--- Seleccioná ---" if x == "" else x, key="reg_rec_origen")
-        r_jur = st.selectbox("JURISDICCIÓN / FUENTE:", options=[""] + opciones_jurisdiccion, format_func=lambda x: "--- Seleccioná ---" if x == "" else x, key="reg_rec_jur")
+        r_concepto = st.text_input("Concepto:", placeholder="Ej: Tasa General de Inmuebles...", key="rec_concepto")
+        r_valor = st.number_input("VALOR ($):", min_value=0.0, step=100.0, key="rec_valor")
+        r_totales = st.number_input("TOTALES ($):", min_value=0.0, step=100.0, key="rec_totales")
     
     with col_r2:
-        st.markdown("**📊 2. Detalle y Concepto**")
-        r_concepto = st.text_input("CONCEPTO / PARTIDA DE RECURSO:", placeholder="Ej: Tasa General de Inmuebles, Coparticipación...", key="reg_rec_concepto")
-        r_monto = st.number_input("MONTO ESTIMADO / PRESUPUESTADO ($):", min_value=0.0, step=100.0, key="reg_rec_monto")
+        r_destino = st.text_input("Destino:", placeholder="Ej: Rentas Generales...", key="rec_destino")
+        r_tipo = st.selectbox("Tipo:", options=["", "Corriente", "Capital"], key="rec_tipo")
+        r_origen = st.selectbox("Origen:", options=["", "Tributario", "No Tributario", "Coparticipación", "Transferencia"], key="rec_origen")
 
     st.markdown("---")
     
-    recurso_completo = (r_origen != "") and (r_jur != "") and (r_concepto.strip() != "") and (r_monto > 0)
+    recurso_completo = (r_concepto.strip() != "") and (r_valor > 0) and (r_destino.strip() != "") and (r_tipo != "") and (r_origen != "")
 
-    if st.button("💾 GUARDAR RECURSO INMEDIATO", type="primary", use_container_width=True, disabled=not recurso_completo):
+    if st.button("💾 GUARDAR RECURSO EN GOOGLE SHEETS", type="primary", use_container_width=True, disabled=not recurso_completo):
         nuevo_recurso = {
-            "origen": r_origen,
-            "jurisdiccion": r_jur,
             "concepto": r_concepto.strip().upper(),
-            "total": r_monto
+            "valor": r_valor,
+            "totales": r_totales,
+            "destino": r_destino.strip().upper(),
+            "tipo": r_tipo,
+            "origen": r_origen
         }
-        
-        if "recursos" not in st.session_state["db_local_backup"]:
-            st.session_state["db_local_backup"]["recursos"] = []
-            
-        st.session_state["db_local_backup"]["recursos"].append(nuevo_recurso)
-        st.success("✅ ¡Recurso presupuestario guardado correctamente!")
+        guardar_fila_gsheet("recursos", nuevo_recurso)
+        st.success("✅ ¡Recurso guardado correctamente en la base de datos!")
         st.balloons()
         st.rerun()
 
     st.markdown("---")
-    st.markdown("### 📋 Listado de Recursos Cargados en la Sesión")
+    st.markdown("### 📋 Listado Consolidado de Recursos")
     
-    lista_rec_guardados = st.session_state.get("db_local_backup", {}).get("recursos", [])
-    if lista_rec_guardados:
-        df_rec_vista = pd.DataFrame(lista_rec_guardados)
-        df_rec_vista["total"] = df_rec_vista["total"].map(lambda x: f"${x:,.2f}")
-        df_rec_vista.columns = ["ORIGEN", "JURISDICCIÓN", "CONCEPTO", "TOTAL ESTIMADO ($)"]
-        st.dataframe(df_rec_vista, use_container_width=True, hide_index=True)
+    if not df_rec_completo.empty:
+        tot_val_gral = df_rec_completo["valor"].sum()
+        tot_tot_gral = df_rec_completo["totales"].sum()
+
+        m1, m2 = st.columns(2)
+        m1.metric(label="💰 TOTAL VALOR", value=f"${tot_val_gral:,.2f}")
+        m2.metric(label="📊 TOTAL GENERAL ACUMULADO", value=f"${tot_tot_gral:,.2f}")
+
+        df_v_rec = df_rec_completo.copy()
+        df_v_rec["valor"] = df_v_rec["valor"].map(lambda x: f"${x:,.2f}")
+        df_v_rec["totales"] = df_v_rec["totales"].map(lambda x: f"${x:,.2f}")
+        df_v_rec.columns = ["CONCEPTO", "VALOR", "TOTALES", "DESTINO", "TIPO", "ORIGEN"]
         
-        tot_recursos_gral = sum([r["total"] for r in lista_rec_guardados])
-        st.metric(label="💰 TOTAL GENERAL DE RECURSOS ESTIMADOS", value=f"${tot_recursos_gral:,.2f}")
+        st.dataframe(df_v_rec, use_container_width=True, hide_index=True)
     else:
-        st.info("💡 Todavía no se cargaron recursos en esta sesión.")
+        st.info("💡 Todavía no hay recursos registrados.")
 
 # =====================================================================
 # SECCIÓN 1: FORMULARIO PRINCIPAL DE REGISTRO

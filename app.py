@@ -208,7 +208,9 @@ opciones_clase = ["Corriente", "Capital"]
 opciones_tipo = ["Libre", "Afectado"]
 opciones_finalidad = ["Administración Central", "Promoción y asistencia social","Educación","Cultura","Ciencia y técnica","Servicios urbanos","Vivienda y urbanismo","Deuda Pública","Ecología y medio ambiente","Deporte y recreación","Obra pública","Apoyo a Instituciones","Desarrollo de Gestión","Legislativa", "Salud", "Seguridad","Promoción industrial y Laboral"]
 
+# =====================================================================
 # MENÚ LATERAL A LA IZQUIERDA (SIDEBAR)
+# =====================================================================
 with st.sidebar:
     st.title("🍩 Homero")
     st.caption("Municipalidad de Sunchales - 2027")
@@ -218,7 +220,7 @@ with st.sidebar:
         [
             "📝 FORMULARIO DE REGISTRO", 
             "➕ GESTIÓN DE DESTINOS",
-            "📥 REGISTRO DE RECURSOS",  # <--- ¡Sección nueva añadida aquí!
+            "📥 REGISTRO DE RECURSOS",  # <--- Asegurate que esté aquí en el menú
             "📉 GENERAL (Base de Datos Sheet)",
             "🏛️ REPORTE OFICIAL POR DESTINO",
             "🛠️ PANEL DE MODIFICACIONES",
@@ -240,6 +242,84 @@ with st.sidebar:
         ]
     )
 
+# =====================================================================
+# SECCIÓN: REGISTRO DE RECURSOS (INGRESOS)
+# =====================================================================
+elif opcion_menu == "📥 REGISTRO DE RECURSOS":
+    st.subheader("📥 Cargar Nuevo Recurso / Ingreso Presupuestario")
+
+    # Cargar recursos actuales desde Google Sheet y backup local
+    df_rec_gsheet = leer_datos_gsheet(URL_READ_RECURSOS)
+    lista_rec_mostrar = []
+    if not df_rec_gsheet.empty:
+        df_rec_gsheet = df_rec_gsheet.fillna({"valor": 0.0, "totales": 0.0}).fillna("")
+        lista_rec_mostrar = df_rec_gsheet.to_dict('records')
+
+    for r_l in st.session_state.get("db_local_backup", {}).get("recursos", []):
+        lista_rec_mostrar.append(r_l)
+
+    df_rec_completo = pd.DataFrame(lista_rec_mostrar) if lista_rec_mostrar else pd.DataFrame(columns=["concepto", "valor", "totales", "destino", "tipo", "origen"])
+    
+    for col_n in ["valor", "totales"]:
+        if col_n in df_rec_completo.columns:
+            df_rec_completo[col_n] = pd.to_numeric(df_rec_completo[col_n], errors='coerce').fillna(0.0)
+        else:
+            df_rec_completo[col_n] = 0.0
+
+    col_r1, col_r2 = st.columns(2)
+    with col_r1:
+        r_concepto = st.text_input("Concepto:", placeholder="Ej: Tasa General de Inmuebles...", key="rec_concepto")
+        r_valor = st.number_input("VALOR ($):", min_value=0.0, step=100.0, key="rec_valor")
+        r_totales = st.number_input("TOTALES ($):", min_value=0.0, step=100.0, key="rec_totales")
+    
+    with col_r2:
+        r_destino = st.text_input("Destino:", placeholder="Ej: Rentas Generales...", key="rec_destino")
+        r_tipo = st.selectbox("Tipo:", options=["", "Corriente", "Capital"], key="rec_tipo")
+        r_origen = st.selectbox("Origen:", options=["", "Tributario", "No Tributario", "Coparticipación", "Transferencia"], key="rec_origen")
+
+    st.markdown("---")
+    
+    recurso_completo = (r_concepto.strip() != "") and (r_valor > 0) and (r_destino.strip() != "") and (r_tipo != "") and (r_origen != "")
+
+    if st.button("💾 GUARDAR RECURSO EN GOOGLE SHEETS", type="primary", use_container_width=True, disabled=not recurso_completo):
+        nuevo_recurso = {
+            "concepto": r_concepto.strip().upper(),
+            "valor": r_valor,
+            "totales": r_totales,
+            "destino": r_destino.strip().upper(),
+            "tipo": r_tipo,
+            "origen": r_origen
+        }
+        guardar_fila_gsheet("recursos", nuevo_recurso)
+        st.success("✅ ¡Recurso guardado correctamente en la base de datos!")
+        st.balloons()
+        st.rerun()
+
+    st.markdown("---")
+    st.markdown("### 📋 Listado Consolidado de Recursos")
+    
+    if not df_rec_completo.empty:
+        tot_val_gral = df_rec_completo["valor"].sum()
+        tot_tot_gral = df_rec_completo["totales"].sum()
+
+        m1, m2 = st.columns(2)
+        m1.metric(label="💰 TOTAL VALOR", value=f"${tot_val_gral:,.2f}")
+        m2.metric(label="📊 TOTAL GENERAL ACUMULADO", value=f"${tot_tot_gral:,.2f}")
+
+        df_v_rec = df_rec_completo.copy()
+        df_v_rec["valor"] = df_v_rec["valor"].map(lambda x: f"${x:,.2f}")
+        df_v_rec["totales"] = df_v_rec["totales"].map(lambda x: f"${x:,.2f}")
+        df_v_rec.columns = ["CONCEPTO", "VALOR", "TOTALES", "DESTINO", "TIPO", "ORIGEN"]
+        
+        st.dataframe(df_v_rec, use_container_width=True, hide_index=True)
+    else:
+        st.info("💡 Todavía no hay recursos registrados.")
+
+# =====================================================================
+# SECCIÓN 1: FORMULARIO PRINCIPAL DE REGISTRO (Egresos)
+# =====================================================================
+elif opcion_menu == "📝 FORMULARIO DE REGISTRO":
+    # ... acá continúa el resto de tu código original ...
 # =====================================================================
 # SECCIÓN: REGISTRO DE RECURSOS (INGRESOS)
 # =====================================================================

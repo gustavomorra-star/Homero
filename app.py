@@ -1243,76 +1243,121 @@ elif opcion_menu == "🔍 BUSCADOR AVANZADO":
 
 
 # =====================================================================
-# SECCIÓN 8: EXPORTACIÓN Y FIRMAS (NUEVA)
+# SECCIÓN 8: EXPORTACIÓN Y FIRMAS (REPORTE OFICIAL COMPLETO CON FIRMAS)
 # =====================================================================
 elif opcion_menu == "📄 EXPORTACIÓN Y FIRMAS":
-    st.subheader("📄 Generador de Planilla Consolidada con Cuadro de Firmas")
+    st.subheader("📄 Exportación General Oficial por Destino (con Cuadro de Firmas)")
 
     if df_egr_completo.empty:
-        st.info("💡 No hay registros para exportar.")
+        st.info("💡 No hay registros contables cargados en el sistema para exportar.")
     else:
-        st.caption("Generá un documento oficial en formato HTML listo para imprimir a PDF con espacio de firmas para el Gabinete y Contaduría.")
+        st.caption("Generá un documento oficial en formato HTML para imprimir o guardar en PDF que agrupa automáticamente **TODOS los Destinos** con el formato oficial municipal e incluye el panel de firmas al pie.")
 
-        tot_impresion = df_egr_completo["total"].sum()
-        
-        rows_firmas = ""
-        for idx, r in df_egr_completo.iterrows():
-            rows_firmas += f"""
-            <tr>
-                <td>{r.get('secretaria', '')}</td>
-                <td>{r.get('destino', '')}</td>
-                <td>{r.get('cuenta_presupuestaria', '')}</td>
-                <td>${float(r.get('total', 0.0)):,.2f}</td>
-                <td>{r.get('fuente_fin', '')}</td>
-            </tr>
+        tot_general_exp = df_egr_completo["total"].sum()
+        st.metric(label="📋 TOTAL GENERAL A EXPORTAR", value=f"${tot_general_exp:,.2f}")
+
+        bloques_html_destinos = ""
+
+        # Agrupar todos los registros cargados por Secretaría, Subsecretaría y Destino
+        for (sec_exp, sub_exp, dest_exp), df_dest_exp in df_egr_completo.groupby(["secretaria", "subsecretaria", "destino"]):
+            tot_dest_exp = df_dest_exp["total"].sum()
+            
+            rows_dest_exp = ""
+            # Agrupar por Objeto del Gasto
+            for obj, df_obj in df_dest_exp.groupby("objeto_gasto"):
+                t_o = df_obj["total"].sum()
+                rows_dest_exp += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${t_o:,.2f}</td><td></td><td></td><td></td><td></td></tr>'
+                
+                # Agrupar por Cuenta Padre
+                for pad, df_pad in df_obj.groupby("cuenta_padre"):
+                    t_p = df_pad["total"].sum()
+                    rows_dest_exp += f'<tr style="font-weight: bold;"><td style="text-align: left; padding-left: 20px;">{pad}</td><td style="text-align: right;">${t_p:,.2f}</td><td></td><td></td><td></td><td></td></tr>'
+                    
+                    # Imprimir Cuentas de Imputación
+                    for _, r in df_pad.iterrows():
+                        rows_dest_exp += f'<tr><td style="text-align: left; padding-left: 40px;">{r["cuenta_presupuestaria"]}</td><td style="text-align: right;">${r["total"]:,.2f}</td><td style="text-align: center;">{r["fuente_fin"]}</td><td style="text-align: center;">{r["clase"]}</td><td style="text-align: center;">{r["tipo"]}</td><td style="text-align: center;">{r["finalidad"]}</td></tr>'
+
+            # Armar bloque gráfico oficial por Destino
+            bloques_html_destinos += f"""
+            <div class="bloque-destino">
+                <div class="m-box">
+                    <table class="t-hdr">
+                        <tr>
+                            <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Presupuesto Oficial 2027</span></td>
+                            <td style="width: 50%; text-align: center;"><b>PRESUPUESTO DE GASTO POR DESTINO</b><br><small>-2027-</small></td>
+                            <td style="width: 25%;" class="b-tot"><small>Total Destino</small><br><b>${tot_dest_exp:,.2f}</b></td>
+                        </tr>
+                    </table>
+                    <div style="border-top: 1px solid #000; font-size: 11px; padding-top: 6px; margin-top: 6px;">
+                        <b>SECRETARÍA:</b> {sec_exp} | <b>SUBSECRETARÍA:</b> {sub_exp} | <span style="float: right;"><b>DESTINO:</b> {str(dest_exp).upper()}</span>
+                    </div>
+                </div>
+
+                <table class="tabla-datos">
+                    <thead>
+                        <tr>
+                            <th>OBJETO DEL GASTO</th>
+                            <th style="text-align: right;">PRESUPUESTO</th>
+                            <th>F.FIN</th>
+                            <th>CLASE</th>
+                            <th>TIPO</th>
+                            <th>FINANCIAMIENTO</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows_dest_exp}
+                    </tbody>
+                </table>
+                <div class="salto-pagina"></div>
+            </div>
             """
 
-        html_firmas = f"""
+        # HTML General Completo con Estilos y Cuadro de Firmas Final
+        html_completo_oficial = f"""
         <html>
         <head>
             <meta charset="utf-8">
             <style>
-                @page {{ size: A4 landscape; margin: 15mm; }}
-                body {{ font-family: Arial, sans-serif; font-size: 11px; color: #000; }}
-                h2 {{ text-align: center; margin-bottom: 5px; }}
-                h4 {{ text-align: center; margin-top: 0; color: #555; }}
-                table {{ width: 100%; border-collapse: collapse; margin-top: 15px; }}
-                th {{ border-bottom: 2px solid #000; padding: 6px; text-align: left; background-color: #f2f2f2; }}
-                td {{ border-bottom: 1px solid #ddd; padding: 6px; text-align: left; }}
-                .firmas-container {{ margin-top: 60px; width: 100%; }}
-                .firma-box {{ width: 30%; float: left; text-align: center; border-top: 1px solid #000; padding-top: 5px; margin: 0 1.5%; }}
+                @page {{ size: A4 landscape; margin: 12mm; }}
+                body {{ font-family: Arial, sans-serif; color: #000; margin: 0 auto; width: 100%; max-width: 1050px; }}
+                .m-box {{ border: 1px solid #000; padding: 10px; margin-bottom: 15px; background-color: #fff; }}
+                .t-hdr {{ width: 100%; border-collapse: collapse; }}
+                .t-hdr td {{ padding: 4px; vertical-align: middle; border: none; }}
+                .b-tot {{ border: 1px solid #000; background-color: #f5f5f5; text-align: center; }}
+                .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; margin-bottom: 25px; }}
+                .tabla-datos th {{ border-bottom: 2px solid #000; padding: 6px 4px; text-align: center; font-weight: bold; background-color: #f2f2f2; }}
+                .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 6px 4px; vertical-align: middle; text-align: center; }}
+                .tabla-datos th:first-child, .tabla-datos td:first-child {{ text-align: left !important; padding-left: 8px; }}
+                .salto-pagina {{ page-break-after: always; }}
+                .firmas-container {{ margin-top: 50px; width: 100%; page-break-inside: avoid; }}
+                .firma-box {{ width: 30%; float: left; text-align: center; border-top: 1px solid #000; padding-top: 5px; margin: 0 1.5%; font-size: 11px; font-weight: bold; }}
+                .resumen-final {{ border: 2px solid #000; padding: 15px; margin-top: 20px; background-color: #fafafa; text-align: center; font-size: 14px; page-break-inside: avoid; }}
             </style>
         </head>
         <body onload="window.print();">
-            <h2>MUNICIPALIDAD DE SUNCHALES</h2>
-            <h4>RESUMEN PRESUPUESTARIO CONSOLIDADO 2027</h4>
-            <p><b>Total Acumulado:</b> ${tot_impresion:,.2f} | <b>Fecha de emisión:</b> {time.strftime('%d/%m/%Y')}</p>
-            <table>
-                <thead>
-                    <tr><th>SECRETARÍA</th><th>DESTINO</th><th>PARTIDA</th><th>PRESUPUESTO</th><th>F.FIN</th></tr>
-                </thead>
-                <tbody>
-                    {rows_firmas}
-                </tbody>
-            </table>
+            {bloques_html_destinos}
+
+            <div class="resumen-final">
+                <b>TOTAL GENERAL PRESUPUESTO MUNICIPAL 2027:</b> ${tot_general_exp:,.2f}
+            </div>
+
             <div class="firmas-container">
-                <div class="firma-box">Responsable del Registro</div>
+                <div class="firma-box">Responsable Presupuesto</div>
                 <div class="firma-box">Contaduría General</div>
-                <div class="firma-box">Intendencia / Secretaria</div>
+                <div class="firma-box">Intendente / Secretario</div>
             </div>
         </body>
         </html>
         """
 
         st.download_button(
-            label="🖨️ IMPRIMIR PLANILLA DE PLANIFICACIÓN Y FIRMAS (PDF)",
-            data=html_firmas,
-            file_name=f"Presupuesto_Sunchales_Firmas_{time.strftime('%Y%m%d')}.html",
+            label="🖨️ GENERAR Y DESCARGAR REPORTE CONSOLIDADO COMPLETO (PDF/PRINT)",
+            data=html_completo_oficial,
+            file_name=f"Presupuesto_Oficial_Consolidado_{time.strftime('%Y%m%d')}.html",
             mime="text/html",
-            use_container_width=True
+            use_container_width=True,
+            type="primary"
         )
-
-
 # =====================================================================
 # SECCIÓN 9: RANKING Y MAYORES EROGACIONES (NUEVA)
 # =====================================================================

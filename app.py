@@ -2230,49 +2230,93 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
 
 
 # =====================================================================
-# SECCIÓN 20: COMPARATIVO E HISTÓRICO DE MODIFICACIONES
+# SECCIÓN 20: COMPARATIVO E HISTÓRICO DE MODIFICACIONES (CONEXIÓN SHEET 2026)
 # =====================================================================
 elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
-    st.subheader("🔄 Comparativo e Histórico Presupuestario")
+    st.subheader("🔄 Comparativo e Histórico Presupuestario (2026 vs 2027)")
 
     if df_egr_completo.empty:
-        st.info("💡 No hay registros contables cargados.")
+        st.info("💡 No hay registros contables cargados para el proyecto 2027.")
     else:
-        st.caption("Herramienta para comparar el Presupuesto Proyecto 2027 con valores de referencia anteriores (ej: Presupuesto 2026).")
+        st.caption("Cruce en tiempo real con la base de **Evaluación de Ejecución Presupuestaria 2026**.")
 
-        tot_2027 = df_egr_completo["total"].sum()
+        # -------------------------------------------------------------
+        # CONEXIÓN AL SHEET DE EJECUCIÓN 2026
+        # -------------------------------------------------------------
+        URL_SHEET_2026 = "https://docs.google.com/spreadsheets/d/1rDFoL0KPCiqmo1pBobrRuibAwtT9anRPZPLgjrPCBWo/edit#gid=966286745"
 
-        col_h1, col_h2 = st.columns(2)
-        with col_h1:
-            monto_2026_ref = st.number_input("Ingresar Presupuesto Ejecutado 2026 ($):", value=tot_2027 * 0.7, step=1000000.0)
+        try:
+            # Lectura del libro 2026
+            df_2026_raw = conn.read(spreadsheet=URL_SHEET_2026, ttl="0")
+            df_2026 = pd.DataFrame(df_2026_raw)
 
-        incremento = tot_2027 - monto_2026_ref
-        porc_incremento = (incremento / monto_2026_ref) * 100 if monto_2026_ref > 0 else 0
+            # Normalizar nombres de columnas a minúsculas y sin espacios extras
+            df_2026.columns = [str(c).strip().lower() for c in df_2026.columns]
 
-        st.markdown("---")
-        st.markdown("##### 📊 Variación Interanual Estimada")
+            # Buscar la columna que contenga el monto ejecutado o devengado
+            col_monto_2026 = None
+            for c in ["ejecutado", "devengado", "saldo inicial", "total"]:
+                if c in df_2026.columns:
+                    col_monto_2026 = c
+                    break
 
-        m_h1, m_h2, m_h3 = st.columns(3)
-        m_h1.metric("Ejecutado / Base 2026", f"${monto_2026_ref:,.2f}")
-        m_h2.metric("Proyecto 2027", f"${tot_2027:,.2f}")
-        m_h3.metric("Variación Nominal", f"${incremento:,.2f}", f"{porc_incremento:+.2f}%")
+            if col_monto_2026:
+                df_2026["total_2026"] = pd.to_numeric(df_2026[col_monto_2026], errors="coerce").fillna(0.0)
+            else:
+                df_2026["total_2026"] = 0.0
 
-        st.markdown("---")
-        st.markdown("##### 🏛️ Comparativo por Secretaría")
+            hay_datos_2026 = True
+        except Exception as e:
+            hay_datos_2026 = False
+            st.error("⚠️ No se pudo conectar con la hoja de Ejecución Presupuestaria 2026.")
+            st.info("💡 Recordá compartir el archivo de Google Sheets de 2026 con la cuenta de servicio de Streamlit (`client_email`).")
 
-        df_sec_comp = df_egr_completo.groupby("secretaria")["total"].sum().reset_index()
-        df_sec_comp.columns = ["SECRETARÍA", "PROYECTO 2027 ($)"]
-        df_sec_comp["ESTIMADO 2026 ($)"] = df_sec_comp["PROYECTO 2027 ($)"] * 0.7
-        df_sec_comp["VARIACIÓN ($)"] = df_sec_comp["PROYECTO 2027 ($)"] - df_sec_comp["ESTIMADO 2026 ($)"]
-        df_sec_comp["% CRECIMIENTO"] = (df_sec_comp["VARIACIÓN ($)"] / df_sec_comp["ESTIMADO 2026 ($)"]) * 100
+        # -------------------------------------------------------------
+        # PROCESAMIENTO COMPARATIVO 2026 vs 2027
+        # -------------------------------------------------------------
+        if hay_datos_2026 and not df_2026.empty:
+            tot_2026 = df_2026["total_2026"].sum()
+            tot_2027 = df_egr_completo["total"].sum()
 
-        st.dataframe(
-            df_sec_comp.style.format({
-                "PROYECTO 2027 ($)": "${:,.2f}",
-                "ESTIMADO 2026 ($)": "${:,.2f}",
-                "VARIACIÓN ($)": "${:,.2f}",
-                "% CRECIMIENTO": "{:+.2f}%"
-            }),
-            use_container_width=True,
-            hide_index=True
-        )
+            incremento = tot_2027 - tot_2026
+            porc_incremento = (incremento / tot_2026) * 100 if tot_2026 > 0 else 0.0
+
+            st.markdown("##### 📊 Variación Interanual Global")
+            m_h1, m_h2, m_h3 = st.columns(3)
+            m_h1.metric("Ejecutado / Base 2026", f"${tot_2026:,.2f}")
+            m_h2.metric("Proyecto 2027", f"${tot_2027:,.2f}")
+            m_h3.metric("Variación Real", f"${incremento:,.2f}", f"{porc_incremento:+.2f}%")
+
+            st.markdown("---")
+            st.markdown("##### 🏛️ Comparativo por Secretaría (2026 vs 2027)")
+
+            # Agrupamiento 2027
+            sec_2027 = df_egr_completo.groupby("secretaria")["total"].sum().reset_index()
+            sec_2027.columns = ["SECRETARÍA", "PROYECTO 2027 ($)"]
+
+            # Agrupamiento 2026
+            if "secretaria" in df_2026.columns:
+                sec_2026 = df_2026.groupby("secretaria")["total_2026"].sum().reset_index()
+                sec_2026.columns = ["SECRETARÍA", "EJECUTADO 2026 ($)"]
+            else:
+                sec_2026 = pd.DataFrame(columns=["SECRETARÍA", "EJECUTADO 2026 ($)"])
+
+            # Merge / Cruzamiento por Secretaría
+            df_comp_sec = pd.merge(sec_2027, sec_2026, on="SECRETARÍA", how="outer").fillna(0.0)
+            
+            df_comp_sec["VARIACIÓN ($)"] = df_comp_sec["PROYECTO 2027 ($)"] - df_comp_sec["EJECUTADO 2026 ($)"]
+            df_comp_sec["% VARIACIÓN"] = df_comp_sec.apply(
+                lambda r: ((r["VARIACIÓN ($)"] / r["EJECUTADO 2026 ($)"]) * 100) if r["EJECUTADO 2026 ($)"] > 0 else 0.0, 
+                axis=1
+            )
+
+            st.dataframe(
+                df_comp_sec.style.format({
+                    "PROYECTO 2027 ($)": "${:,.2f}",
+                    "EJECUTADO 2026 ($)": "${:,.2f}",
+                    "VARIACIÓN ($)": "${:,.2f}",
+                    "% VARIACIÓN": "{:+.2f}%"
+                }),
+                use_container_width=True,
+                hide_index=True
+            )

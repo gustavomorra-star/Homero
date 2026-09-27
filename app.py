@@ -48,30 +48,35 @@ def leer_datos_gsheet(param_url_o_gid):
             df = pd.read_csv(io.StringIO(resp.text))
 
             if not df.empty:
+                # 1. Limpiar nombres de columnas
                 df.columns = [str(col).strip().lower() for col in df.columns]
+
+                # 2. Reemplazar valores NaN por texto vacío ""
                 df = df.fillna("")
 
+                # 3. Limpiar espacios extra en textos
                 for col in df.select_dtypes(include=['object', 'string']).columns:
                     df[col] = df[col].astype(str).str.strip()
 
+                # 4. Convertir 'total' a numérico de forma segura (Formato Argentina / Internacional)
                 if "total" in df.columns:
-                    df["total"] = pd.to_numeric(
-                        df["total"].astype(str).str.replace("$", "", regex=False).str.replace(",", "", regex=False), 
-                        errors='coerce'
-                    ).fillna(0.0)
+                    s_total = df["total"].astype(str).str.replace("$", "", regex=False).str.strip()
+                    # Quitar puntos de miles y cambiar la coma decimal por punto
+                    s_total = s_total.str.replace(".", "", regex=False).str.replace(",", ".", regex=False)
+                    df["total"] = pd.to_numeric(s_total, errors='coerce').fillna(0.0)
             return df
         else:
             st.error(f"⚠️ No se pudo acceder al Sheet (Código HTTP: {resp.status_code}). Comprobá que el enlace esté en 'Cualquier persona con el enlace puede ver'.")
     except Exception as e:
         st.warning(f"Error de conexión con Google Sheets: {e}")
 
+    # Retorno de DataFrame vacío estructurado en caso de fallo
     if "1365567783" in str(param_url_o_gid):
         return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
 
     df_vacio = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
     df_vacio["total"] = df_vacio["total"].astype(float)
     return df_vacio
-
 def guardar_fila_gsheet(pestana, nuevo_dict):
     if pestana in st.session_state["db_local_backup"]:
         st.session_state["db_local_backup"][pestana].append(nuevo_dict)

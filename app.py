@@ -10,9 +10,10 @@ st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="�
 # --- CONEXIÓN DIRECTA Y PERMANENTE A GOOGLE SHEETS MUNICIPAL ---
 SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
-# Enlaces de exportación directa CSV indexados por el ID físico e inalterable de tus pestañas
-URL_READ_EGRESOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=447735398"
-URL_READ_DESTINOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&gid=1365567783"
+# Enlaces de exportación directa CSV con los GID numéricos reales de tu archivo
+URL_READ_EGRESOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=0"
+URL_READ_DESTINOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1365567783"
+
 
 
 def leer_datos_gsheet(url_tipo):

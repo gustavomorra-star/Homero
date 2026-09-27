@@ -244,7 +244,7 @@ with tab_egresos:
     csv_global_data = df_excel_global.to_csv(index=False, sep=';').encode('utf-8-sig')
     st.download_button(label="📗 Descargar Base de Datos Completa en 11 Columnas (.xls)", data=csv_global_data, file_name="Base_De_Datos_Egresos_General.xls", mime="application/vnd.ms-excel", use_container_width=True)
 
-    # --- PANEL SUPERVISOR DE MODIFICACIONES CON BLINDAJE TRIPLE CORREGIDO ---
+    # --- PANEL SUPERVISOR DE MODIFICACIONES CON BLINDAJE INTEGRAL DE CONTROL ---
     st.markdown("---")
     st.markdown("### 🛠️ Panel Supervisor de Modificaciones")
     
@@ -256,7 +256,7 @@ with tab_egresos:
             destino_txt = str(r.get('destino', '')).strip().upper()
             partida_txt = str(r.get('cuenta_presupuestaria', '')).strip()
             
-            if destino_txt != "" or partida_txt != "":
+            if destino_txt != "" and partida_txt != "" and "---" not in destino_txt:
                 monto_raw = str(r.get('total', '0')).replace('$', '').replace('.', '').replace(',', '.')
                 try:
                     monto_val = float(monto_raw)
@@ -330,7 +330,6 @@ with tab_egresos:
                     st.rerun()
         except:
             st.info("💡 Sincronizando e indexando el listado del panel de control central...")
-
 
 # =====================================================================
 # PESTAÑA 4: REPORTE GRÁFICO OFICIAL MUNICIPAL 2027

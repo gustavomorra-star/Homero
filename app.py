@@ -10,26 +10,28 @@ st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="�
 # --- CONEXIÓN DIRECTA Y PERMANENTE A GOOGLE SHEETS MUNICIPAL ---
 SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
-# Enlaces de conexión corregidos con protocolo de exportación directa CSV por nombre de pestaña exacto
+# Enlaces oficiales de descarga directa en formato CSV nativo de Google Drive
 URL_READ_EGRESOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&sheet=egresos"
 URL_READ_DESTINOS = f"https://google.com{SPREADSHEET_ID}/export?format=csv&sheet=destinos"
 
 def leer_datos_gsheet(url_tipo):
     try:
-        # Descargamos el CSV en tiempo real desde tu Google Drive
-        df = pd.read_csv(url_tipo)
+        # Simulamos una descarga web pura para que Google libere el archivo sin bloqueos
+        respuesta_web = requests.get(url_tipo, timeout=10)
+        if respuesta_web.status_code == 200:
+            # Transformamos el texto plano descargado en una tabla de Pandas
+            df = pd.read_csv(io.StringIO(respuesta_web.text))
+            if not df.empty and len(df.columns) > 1:
+                # Normalizamos todos los nombres de las columnas a minúsculas limpias
+                df.columns = [str(col).strip().lower() for col in df.columns]
+                return df
         
-        if df.empty or len(df.columns) <= 1:
-            if "sheet=destinos" in str(url_tipo):
-                return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
-            else:
-                df_vacio = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
-                df_vacio["total"] = df_vacio["total"].astype(float)
-                return df_vacio
-                
-        # Convertimos los encabezados a minúsculas usando sintaxis pura de Python
-        df.columns = [str(col).strip().lower() for col in df.columns]
-        return df
+        # Estructura de contingencia si la respuesta viene vacía
+        if "sheet=destinos" in str(url_tipo):
+            return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
+        df_vacio = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+        df_vacio["total"] = df_vacio["total"].astype(float)
+        return df_vacio
     except:
         if "sheet=destinos" in str(url_tipo):
             return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
@@ -52,6 +54,7 @@ def guardar_fila_gsheet(hoja, diccionario_datos):
 # Dibujamos las etiquetas de títulos superiores del sistema
 st.title("🍩 Homero - Sistema de Registro Presupuestario")
 st.write("📍 Municipalidad de Sunchales | Conexión Cooperativa a Google Sheets **2027**")
+
 
 
 # --- Plan de Cuentas Oficial Municipal ---

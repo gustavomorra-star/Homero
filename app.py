@@ -157,6 +157,9 @@ with tab_formulario:
 # =====================================================================
 # PESTAÑA 2: GESTIÓN DE DESTINOS DINÁMICOS
 # =====================================================================
+# =====================================================================
+# PESTAÑA 2: GESTIÓN DE DESTINOS DINÁMICOS
+# =====================================================================
 with tab_agregar_destino:
     st.subheader("⚙️ Panel de Configuración de Destinos")
     col_a, col_b = st.columns([1, 1.2])
@@ -170,24 +173,18 @@ with tab_agregar_destino:
             guardar_fila_gsheet("destinos", nuevo_destino)
             st.success("🎯 Destino añadido correctamente al repositorio.")
             st.rerun()
-        with col_b:
+    with col_b:
         st.markdown("**📋 Listado de Destinos Activos**")
         df_dt_gsheet = leer_datos_gsheet(URL_READ_DESTINOS)
         lista_destinos_mostrar = []
-        
-        # Leemos el archivo de Google Drive de forma directa sin filtros eliminadores
         if not df_dt_gsheet.empty:
-            # Forzamos a convertir a texto plano y rellenamos celdas vacías
             df_dt_gsheet = df_dt_gsheet.fillna("")
             lista_destinos_mostrar = df_dt_gsheet.to_dict('records')
-            
         for d_l in st.session_state["db_local_backup"]["destinos"]:
             if d_l not in lista_destinos_mostrar:
-                lista_egr_mostrar.append(d_l)
-                
+                lista_destinos_mostrar.append(d_l)
         if lista_destinos_mostrar:
             df_dt_vista = pd.DataFrame(lista_destinos_mostrar)
-            # Verificamos qué columnas trajo para no generar cortocircuitos visuales
             if "subsecretaria" in df_dt_vista.columns and "destino" in df_dt_vista.columns:
                 df_dt_vista = df_dt_vista.rename(columns={"subsecretaria": "SUBSECRETARÍA", "destino": "DESTINO"})
                 st.dataframe(df_dt_vista[["SUBSECRETARÍA", "DESTINO"]], use_container_width=True, hide_index=True)

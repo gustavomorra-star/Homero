@@ -760,7 +760,7 @@ opciones_objetos = list(MAPEO_GASTOS.keys())
 opciones_fuente_fin = ["Municipal", "Provincial", "Nacional"]
 opciones_clase = ["Corriente", "Capital"]
 opciones_tipo = ["Libre", "Afectado"]
-opciones_finalidad = ["Legislativa", "Salud", "Seguridad"]
+opciones_finalidad = ["Administración Central", "Promoción y asistencia social","Educación","Cultura","Ciencia y técnica","Servicios urbanos","Vivienda y urbanismo","Deuda Pública","Ecología y medio ambiente","Deporte y recreación","Obra pública","Apoyo a Instituciones","Desarrollo de Gestión","Legislativa", "Salud", "Seguridad","Promoción industrial y Laboral"]
 
 # MENÚ LATERAL A LA IZQUIERDA (SIDEBAR)
 with st.sidebar:

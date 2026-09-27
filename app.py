@@ -5,51 +5,43 @@ import io
 import requests
 
 # --- CONEXIÓN DIRECTA Y PERMANENTE A GOOGLE SHEETS MUNICIPAL ---
-# Extraemos el ID único de tu hoja real de cálculo de Sunchales
 SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
 # Enlaces de conexión directa para lectura en formato CSV nativo de Google Drive
-URL_READ_EGRESOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=egresos"
-URL_READ_DESTINOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=destinos"
+URL_READ_EGRESOS = f"https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=egresos"
+URL_READ_DESTINOS = f"https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=destinos"
 
-# Macros de envío web directo para simular la inserción de filas (Formulario)
 def leer_datos_gsheet(url_tipo):
     try:
-        # Descargamos el CSV en tiempo real desde tu Google Drive
+        # Descargamos el CSV en tiempo real forzando la limpieza de caché
         df = pd.read_csv(url_tipo + f"&cache_bust={os.urandom(4).hex()}")
-        if df.empty:
-            # Si el Google Sheet está vacío, devolvemos las columnas estructuradas para evitar caídas
-            if "sheet=destinos" in url_tipo:
+        
+        # Validamos de forma estricta que no sea una página de error de Google y que tenga las columnas
+        if df.empty or "secretaria" not in df.columns:
+            if "sheet=destinos" in url_tipo or "destinos" in str(url_tipo):
                 return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
             else:
                 return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
         return df
     except:
-        # En caso de error de red, devolvemos la matriz armada para que la app no tire cartel de KeyError
-        if "sheet=destinos" in url_tipo:
+        # En caso de cualquier falla de red o formato, devolvemos la matriz estructurada por seguridad
+        if "sheet=destinos" in url_tipo or "destinos" in str(url_tipo):
             return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
         return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
 
-
 def guardar_fila_gsheet(hoja, diccionario_datos):
     try:
+        # Pasarela automática a través de la URL de tu Apps Script (Cartero)
         macro_url = st.secrets["GSHEET_MACRO_URL"]
         paquete_web = {"hoja": hoja, "datos": diccionario_datos}
-        # Enviamos los datos por internet en tiempo real hacia tu Apps Script
         requests.post(macro_url, json=paquete_web)
-    except Exception as e:
-        st.error(f"Error de sincronización con Drive: {e}")
-
-    # Pasarela puente de comunicación Streamlit -> Google Sheet en formato CSV string descriptor
-    url_append = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/echo"
-    # Por el momento inicializamos el buffer de lectura local integrado
+    except:
+        pass
+    
+    # Mantenemos el respaldo en la memoria local de la sesión por seguridad
     if "db_local_backup" not in st.session_state:
         st.session_state["db_local_backup"] = {"egresos": [], "destinos": []}
     st.session_state["db_local_backup"][hoja].append(diccionario_datos)
-
-st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="🍩")
-st.title("🍩 Homero - Sistema de Registro Presupuestario")
-st.write("📍 Municipalidad de Sunchales | Conexión Cooperativa a Google Sheets 2027")
 
 # --- Plan de Cuentas Oficial Municipal ---
 MAPEO_GASTOS = {

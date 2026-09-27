@@ -245,21 +245,21 @@ with tab_egresos:
     csv_global_data = df_excel_global.to_csv(index=False, sep=';').encode('utf-8-sig')
     st.download_button(label="📗 Descargar Base de Datos Completa en 11 Columnas (.xls)", data=csv_global_data, file_name="Base_De_Datos_Egresos_General.xls", mime="application/vnd.ms-excel", use_container_width=True)
 
-    # --- PANEL SUPERVISOR DE MODIFICACIONES REPARADO ---
-    if lista_egr_mostrar:
-        st.markdown("---")
-        st.markdown("### 🛠️ Panel Supervisor de Modificaciones")
+    # --- PANEL SUPERVISOR DE MODIFICACIONES CON VALIDACIÓN DE CONTENIDO ---
+    st.markdown("---")
+    st.markdown("### 🛠️ Panel Supervisor de Modificaciones")
+    
+    if not lista_egr_mostrar:
+        st.info("💡 No hay registros contables activos para modificar en este momento. Los campos se habilitarán automáticamente cuando cargues tu primer renglón presupuestario.")
+    else:
         st.caption("Seleccioná un renglón para corregir sus valores, cambiar su partida de imputación o darlo de baja.")
         
-        # Mapeamos las opciones usando un diccionario para vincular el texto con su índice real puro
         diccionario_opciones = {}
         for idx, r in df_egr_completo.iterrows():
             texto_descriptivo = f"Fila {idx+1} | Destino: {r['destino']} | Partida: {r['cuenta_presupuestaria']} | Monto: ${r['total']:,.2f}"
             diccionario_opciones[texto_descriptivo] = idx
             
         linea_sel = st.selectbox("Seleccioná el registro a modificar por su número de fila:", opciones=list(diccionario_opciones.keys()), key="sel_mod_panel")
-        
-        # Extraemos el índice numérico puro guardado en el diccionario sin romper textos
         idx_real = diccionario_opciones[linea_sel]
         fila_r = df_egr_completo.iloc[idx_real]
         
@@ -295,7 +295,6 @@ with tab_egresos:
         col_b1, col_b2 = st.columns(2)
         with col_b1:
             if st.button("🔄 ACTUALIZAR REGISTRO SELECCIONADO", type="primary", use_container_width=True, key=f"bu_{idx_real}"):
-                # Modificamos de forma segura usando el índice numérico verificado
                 if idx_real < len(st.session_state["db_local_backup"]["egresos"]):
                     st.session_state["db_local_backup"]["egresos"][idx_real] = {
                         "secretaria": fila_r["secretaria"], "subsecretaria": fila_r["subsecretaria"], "destino": fila_r["destino"],
@@ -310,6 +309,7 @@ with tab_egresos:
                     st.session_state["db_local_backup"]["egresos"].pop(idx_real)
                 st.warning("🗑️ Registro removido del panel. Recordá borrar la fila correspondiente directamente en tu Google Sheet.")
                 st.rerun()
+
 
 # =====================================================================
 # PESTAÑA 4: REPORTE GRÁFICO OFICIAL MUNICIPAL 2027

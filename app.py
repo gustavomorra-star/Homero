@@ -763,7 +763,6 @@ opciones_tipo = ["Libre", "Afectado"]
 opciones_finalidad = ["Administración Central", "Promoción y asistencia social","Educación","Cultura","Ciencia y técnica","Servicios urbanos","Vivienda y urbanismo","Deuda Pública","Ecología y medio ambiente","Deporte y recreación","Obra pública","Apoyo a Instituciones","Desarrollo de Gestión","Legislativa", "Salud", "Seguridad","Promoción industrial y Laboral"]
 
 # MENÚ LATERAL A LA IZQUIERDA (SIDEBAR)
-# 1. Agregás las nuevas opciones al menú lateral
 with st.sidebar:
     st.title("🍩 Homero")
     st.caption("Municipalidad de Sunchales - 2027")
@@ -771,18 +770,21 @@ with st.sidebar:
     opcion_menu = st.radio(
         "Navegación del Sistema:",
         [
+            # --- PESTAÑAS EXISTENTES ---
             "📝 FORMULARIO DE REGISTRO", 
             "➕ GESTIÓN DE DESTINOS",
             "📉 GENERAL (Base de Datos Sheet)",
             "🏛️ REPORTE OFICIAL POR DESTINO",
             "🛠️ PANEL DE MODIFICACIONES",
-            # 👇 ACÁ SUMÁS LAS NUEVAS PESTAÑAS:
-            "📊 REPORTE CONSOLIDADO / ESTADÍSTICAS",
+            # --- NUEVAS PESTAÑAS (6) ---
+            "📊 REPORTE CONSOLIDADO Y ESTADÍSTICAS",
             "🔍 BUSCADOR AVANZADO",
-            "📄 EXPORTACIÓN Y FIRMAS"
+            "📄 EXPORTACIÓN Y FIRMAS",
+            "🏆 RANKING Y MAYORES EROGACIONES",
+            "⚖️ COMPARATIVO DE ESTRUCTURA Y FUENTES",
+            "🧹 AUDITORÍA Y CONTROL DE CALIDAD"
         ]
     )
-
 # =====================================================================
 # SECCIÓN 1: FORMULARIO PRINCIPAL DE REGISTRO
 # =====================================================================
@@ -1169,22 +1171,234 @@ elif opcion_menu == "🛠️ PANEL DE MODIFICACIONES":
                 st.success(f"Renglón {idx_real + 1} eliminado.")
                 st.rerun()
 # =====================================================================
-# SECCIÓN 6: REPORTE CONSOLIDADO / ESTADÍSTICAS (NUEVA)
+# SECCIÓN 6: REPORTE CONSOLIDADO Y ESTADÍSTICAS (NUEVA)
 # =====================================================================
-elif opcion_menu == "📊 REPORTE CONSOLIDADO / ESTADÍSTICAS":
-    st.subheader("📊 Análisis y Estadísticas Presupuestarias")
-    st.info("Espacio listo para agregar gráficos, comparativos por Secretaría, etc.")
+elif opcion_menu == "📊 REPORTE CONSOLIDADO Y ESTADÍSTICAS":
+    st.subheader("📊 Análisis Consolidado del Presupuesto 2027")
+
+    if df_egr_completo.empty or df_egr_completo["total"].sum() == 0:
+        st.info("💡 No hay registros contables cargados para generar estadísticas.")
+    else:
+        tot_gral = df_egr_completo["total"].sum()
+        cant_reg = len(df_egr_completo)
+        promedio = df_egr_completo["total"].mean()
+
+        m1, m2, m3 = st.columns(3)
+        m1.metric("💰 Total Presupuesto Acumulado", f"${tot_gral:,.2f}")
+        m2.metric("📋 Cantidad de Registros Cargados", f"{cant_reg}")
+        m3.metric("📊 Promedio por Renglón", f"${promedio:,.2f}")
+
+        st.markdown("---")
+        col_g1, col_g2 = st.columns(2)
+
+        with col_g1:
+            st.markdown("##### 📍 Total Presupuestado por Secretaría")
+            df_sec = df_egr_completo.groupby("secretaria")["total"].sum().reset_index()
+            df_sec["total_fmt"] = df_sec["total"].map(lambda x: f"${x:,.2f}")
+            st.dataframe(df_sec.rename(columns={"secretaria": "SECRETARÍA", "total_fmt": "TOTAL ($)"}), use_container_width=True, hide_index=True)
+
+        with col_g2:
+            st.markdown("##### 🏛️ Distribución por Fuente de Financiamiento")
+            df_fuente = df_egr_completo.groupby("fuente_fin")["total"].sum().reset_index()
+            df_fuente["total_fmt"] = df_fuente["total"].map(lambda x: f"${x:,.2f}")
+            st.dataframe(df_fuente.rename(columns={"fuente_fin": "FUENTE FINANCIAMIENTO", "total_fmt": "TOTAL ($)"}), use_container_width=True, hide_index=True)
+
 
 # =====================================================================
 # SECCIÓN 7: BUSCADOR AVANZADO (NUEVA)
 # =====================================================================
 elif opcion_menu == "🔍 BUSCADOR AVANZADO":
-    st.subheader("🔍 Buscador Filtrado de Partidas")
-    st.info("Espacio listo para búsquedas avanzadas por palabra clave o rango de montos.")
+    st.subheader("🔍 Buscador Filtrado de Partidas Presupuestarias")
+
+    if df_egr_completo.empty:
+        st.info("💡 La base de datos está vacía en este momento.")
+    else:
+        st.caption("Filtrá por palabras clave en cualquier campo o establecé un rango de montos.")
+        
+        col_b1, col_b2, col_b3 = st.columns(3)
+        with col_b1:
+            texto_buscar = st.text_input("🔎 Palabra clave (Texto/Destino/Partida):").strip().lower()
+        with col_b2:
+            min_monto = st.number_input("Monto Mínimo ($):", min_value=0.0, value=0.0)
+        with col_b3:
+            max_monto = st.number_input("Monto Máximo ($):", min_value=0.0, value=float(df_egr_completo["total"].max() or 1000000000.0))
+
+        # Filtrado
+        df_busqueda = df_egr_completo.copy()
+        
+        if texto_buscar:
+            mask_texto = df_busqueda.astype(str).apply(lambda row: row.str.lower().str.contains(texto_buscar).any(), axis=1)
+            df_busqueda = df_busqueda[mask_texto]
+
+        df_busqueda = df_busqueda[(df_busqueda["total"] >= min_monto) & (df_busqueda["total"] <= max_monto)]
+
+        st.markdown(f"**Resultados encontrados:** {len(df_busqueda)} renglón(es)")
+        
+        if not df_busqueda.empty:
+            df_v_busq = df_busqueda.copy()
+            df_v_busq["total"] = df_v_busq["total"].map(lambda x: f"${x:,.2f}")
+            st.dataframe(df_v_busq, use_container_width=True, hide_index=True)
+        else:
+            st.warning("No se encontraron registros que coincidan con los criterios de búsqueda.")
+
 
 # =====================================================================
 # SECCIÓN 8: EXPORTACIÓN Y FIRMAS (NUEVA)
 # =====================================================================
 elif opcion_menu == "📄 EXPORTACIÓN Y FIRMAS":
-    st.subheader("📄 Generador de Documentos para Firma")
-    st.info("Espacio listo para armar expedientes o planillas resumidas.")
+    st.subheader("📄 Generador de Planilla Consolidada con Cuadro de Firmas")
+
+    if df_egr_completo.empty:
+        st.info("💡 No hay registros para exportar.")
+    else:
+        st.caption("Generá un documento oficial en formato HTML listo para imprimir a PDF con espacio de firmas para el Gabinete y Contaduría.")
+
+        tot_impresion = df_egr_completo["total"].sum()
+        
+        rows_firmas = ""
+        for idx, r in df_egr_completo.iterrows():
+            rows_firmas += f"""
+            <tr>
+                <td>{r.get('secretaria', '')}</td>
+                <td>{r.get('destino', '')}</td>
+                <td>{r.get('cuenta_presupuestaria', '')}</td>
+                <td>${float(r.get('total', 0.0)):,.2f}</td>
+                <td>{r.get('fuente_fin', '')}</td>
+            </tr>
+            """
+
+        html_firmas = f"""
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                @page {{ size: A4 landscape; margin: 15mm; }}
+                body {{ font-family: Arial, sans-serif; font-size: 11px; color: #000; }}
+                h2 {{ text-align: center; margin-bottom: 5px; }}
+                h4 {{ text-align: center; margin-top: 0; color: #555; }}
+                table {{ width: 100%; border-collapse: collapse; margin-top: 15px; }}
+                th {{ border-bottom: 2px solid #000; padding: 6px; text-align: left; background-color: #f2f2f2; }}
+                td {{ border-bottom: 1px solid #ddd; padding: 6px; text-align: left; }}
+                .firmas-container {{ margin-top: 60px; width: 100%; }}
+                .firma-box {{ width: 30%; float: left; text-align: center; border-top: 1px solid #000; padding-top: 5px; margin: 0 1.5%; }}
+            </style>
+        </head>
+        <body onload="window.print();">
+            <h2>MUNICIPALIDAD DE SUNCHALES</h2>
+            <h4>RESUMEN PRESUPUESTARIO CONSOLIDADO 2027</h4>
+            <p><b>Total Acumulado:</b> ${tot_impresion:,.2f} | <b>Fecha de emisión:</b> {time.strftime('%d/%m/%Y')}</p>
+            <table>
+                <thead>
+                    <tr><th>SECRETARÍA</th><th>DESTINO</th><th>PARTIDA</th><th>PRESUPUESTO</th><th>F.FIN</th></tr>
+                </thead>
+                <tbody>
+                    {rows_firmas}
+                </tbody>
+            </table>
+            <div class="firmas-container">
+                <div class="firma-box">Responsable del Registro</div>
+                <div class="firma-box">Contaduría General</div>
+                <div class="firma-box">Intendencia / Secretaria</div>
+            </div>
+        </body>
+        </html>
+        """
+
+        st.download_button(
+            label="🖨️ IMPRIMIR PLANILLA DE PLANIFICACIÓN Y FIRMAS (PDF)",
+            data=html_firmas,
+            file_name=f"Presupuesto_Sunchales_Firmas_{time.strftime('%Y%m%d')}.html",
+            mime="text/html",
+            use_container_width=True
+        )
+
+
+# =====================================================================
+# SECCIÓN 9: RANKING Y MAYORES EROGACIONES (NUEVA)
+# =====================================================================
+elif opcion_menu == "🏆 RANKING Y MAYORES EROGACIONES":
+    st.subheader("🏆 Ranking de Partidas y Erogaciones Mayores")
+
+    if df_egr_completo.empty:
+        st.info("💡 No hay registros para analizar.")
+    else:
+        top_n = st.slider("Cantidad de partidas a mostrar:", min_value=3, max_value=20, value=10)
+        
+        df_sorted = df_egr_completo.sort_values(by="total", ascending=False).head(top_n).copy()
+        df_sorted["total"] = df_sorted["total"].map(lambda x: f"${x:,.2f}")
+
+        st.markdown(f"##### 🔝 Top {top_n} Renglones Presupuestarios de Mayor Importe")
+        st.dataframe(
+            df_sorted[["secretaria", "destino", "objeto_gasto", "cuenta_presupuestaria", "total", "fuente_fin"]].rename(
+                columns={
+                    "secretaria": "SECRETARÍA",
+                    "destino": "DESTINO",
+                    "objeto_gasto": "OBJETO GASTO",
+                    "cuenta_presupuestaria": "PARTIDA",
+                    "total": "MONTO TOTAL ($)",
+                    "fuente_fin": "FUENTE"
+                }
+            ),
+            use_container_width=True,
+            hide_index=True
+        )
+
+
+# =====================================================================
+# SECCIÓN 10: COMPARATIVO DE ESTRUCTURA Y FUENTES (NUEVA)
+# =====================================================================
+elif opcion_menu == "⚖️ COMPARATIVO DE ESTRUCTURA Y FUENTES":
+    st.subheader("⚖️ Matriz Comparativa: Clase de Gasto vs Fuente de Financiamiento")
+
+    if df_egr_completo.empty:
+        st.info("💡 No hay datos suficientes para armar la matriz comparativa.")
+    else:
+        st.caption("Cruza la Clase de Gasto (Corriente/Capital) con la Fuente de Financiamiento.")
+        
+        matriz = pd.pivot_table(
+            df_egr_completo,
+            values="total",
+            index="clase",
+            columns="fuente_fin",
+            aggfunc="sum",
+            fill_value=0.0
+        )
+
+        st.markdown("##### 📊 Matriz de Totales por Clase y Fuente ($)")
+        st.dataframe(matriz.style.format("${:,.2f}"), use_container_width=True)
+
+
+# =====================================================================
+# SECCIÓN 11: AUDITORÍA Y CONTROL DE CALIDAD (NUEVA)
+# =====================================================================
+elif opcion_menu == "🧹 AUDITORÍA Y CONTROL DE CALIDAD":
+    st.subheader("🧹 Panel de Auditoría y Verificación de Datos")
+
+    if df_egr_completo.empty:
+        st.info("💡 No hay datos para auditar.")
+    else:
+        # Detectar renglones con monto cero
+        df_cero = df_egr_completo[df_egr_completo["total"] == 0]
+        # Detectar renglones con campos vacíos esenciales
+        df_vacios = df_egr_completo[
+            (df_egr_completo["secretaria"] == "") | 
+            (df_egr_completo["destino"] == "") | 
+            (df_egr_completo["cuenta_presupuestaria"] == "")
+        ]
+
+        c_a1, c_a2 = st.columns(2)
+        c_a1.metric("⚠️ Renglones con Monto $0.00", f"{len(df_cero)}")
+        c_a2.metric("⚠️ Renglones con Datos Incompletos", f"{len(df_vacios)}")
+
+        st.markdown("---")
+        if len(df_cero) > 0:
+            st.markdown("##### 🔴 Renglones con Importe en $0.00")
+            st.dataframe(df_cero[["secretaria", "destino", "cuenta_presupuestaria"]], use_container_width=True, hide_index=True)
+        else:
+            st.success("✅ ¡Excelente! No existen renglones registrados con monto en $0.00.")
+
+        if len(df_vacios) > 0:
+            st.markdown("##### 🟡 Renglones con Campos Obligatorios Vacíos")
+            st.dataframe(df_vacios[["secretaria", "subsecretaria", "destino", "cuenta_presupuestaria"]], use_container_width=True, hide_index=True)
+        else:
+            st.success("✅ ¡Excelente! Todos los renglones tienen su ubicación e imputación completa.")

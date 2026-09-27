@@ -11,40 +11,35 @@ st.set_page_config(layout="wide", page_title="Homero Presupuesto", page_icon="�
 if "db_local_backup" not in st.session_state:
     st.session_state["db_local_backup"] = {"egresos": [], "destinos": []}
 
-# --- CONEXIÓN DIRECTA Y PERMANENTE A GOOGLE SHEETS MUNICIPAL ---
-SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
-
-# Modificamos las direcciones para indicarle al código qué pestaña pedirle al Cartero
+# Direcciones de consulta cruzada al Apps Script
 URL_READ_EGRESOS = "egresos"
 URL_READ_DESTINOS = "destinos"
 
 def leer_datos_gsheet(nombre_hoja):
     try:
-        # Le pedimos los datos directamente a la URL de tu Apps Script (El Cartero)
         macro_url = st.secrets["GSHEET_MACRO_URL"]
-        # Solicitamos la información enviando el nombre de la solapa
+        # Solicitamos la lectura limpia de celdas a la API del Cartero
         respuesta = requests.post(macro_url, json={"hoja": nombre_hoja, "accion": "leer"}, timeout=10)
         
         if respuesta.status_code == 200:
             datos_json = respuesta.json()
-            if datos_json.get("status") == "success" and datos_json.get("data"):
-                df = pd.DataFrame(datos_json["data"])
+            if datos_json.get("status") == "success" and datos_json.get("data") is not None:
+                lista_datos = datos_json["data"]
+                if len(lista_datos) == 0:
+                    if nombre_hoja == "destinos": return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
+                    return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+                
+                df = pd.DataFrame(lista_datos)
                 df.columns = [str(col).strip().lower() for col in df.columns]
                 return df
                 
-        # Matriz de contingencia por si la solapa está vacía o el Cartero no responde
-        if nombre_hoja == "destinos":
-            return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
-        df_vacio = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
-        df_vacio["total"] = df_vacio["total"].astype(float)
-        return df_vacio
+        if nombre_hoja == "destinos": return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
+        return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
     except:
-        if nombre_hoja == "destinos":
-            return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
+        if nombre_hoja == "destinos": return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
         df_falla = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
         df_falla["total"] = df_falla["total"].astype(float)
         return df_falla
-
 
 # Encabezados institucionales superiores
 st.title("🍩 Homero - Sistema de Registro Presupuestario")

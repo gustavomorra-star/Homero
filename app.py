@@ -244,20 +244,27 @@ with tab_egresos:
     csv_global_data = df_excel_global.to_csv(index=False, sep=';').encode('utf-8-sig')
     st.download_button(label="📗 Descargar Base de Datos Completa en 11 Columnas (.xls)", data=csv_global_data, file_name="Base_De_Datos_Egresos_General.xls", mime="application/vnd.ms-excel", use_container_width=True)
 
-      # --- PANEL SUPERVISOR DE MODIFICACIONES CON BLINDAJE TOTAL ---
+    # --- PANEL SUPERVISOR DE MODIFICACIONES CON BLINDAJE TOTAL ---
     st.markdown("---")
     st.markdown("### 🛠️ Panel Supervisor de Modificaciones")
     
-    # Construimos el diccionario de opciones forzando un índice numérico entero tradicional
+    # Construimos el diccionario de opciones con manejo seguro de strings
     diccionario_opciones = {}
     if not df_egr_completo.empty:
-        # Transformamos las filas en una lista limpia para recorrerla con un contador numérico puro
         filas_lista = df_egr_completo.to_dict('records')
         for i in range(len(filas_lista)):
             r = filas_lista[i]
+            destino_txt = str(r.get('destino', '')).strip()
+            partida_txt = str(r.get('cuenta_presupuestaria', '')).strip()
+            
             # Filtramos que no sean renglones vacíos de control
-            if str(r.get('destino', '')).strip() != "" and str(r.get('cuenta_presupuestaria', '')).strip() != "":
-                texto_descriptivo = f"Fila {i+1} | Destino: {r.get('destino', '')} | Partida: {r.get('cuenta_presupuestaria', '')} | Monto: ${float(r.get('total', 0)):,.2f}"
+            if destino_txt != "" or partida_txt != "":
+                monto_raw = str(r.get('total', '0')).replace('$', '').replace('.', '').replace(',', '.')
+                try:
+                    monto_val = float(monto_raw)
+                except:
+                    monto_val = 0.0
+                texto_descriptivo = f"Fila {i+1} | Destino: {destino_txt} | Partida: {partida_txt} | Monto: ${monto_val:,.2f}"
                 diccionario_opciones[texto_descriptivo] = int(i)
 
     # Si el diccionario está vacío porque la hoja no tiene datos, mostramos el aviso seguro
@@ -282,14 +289,19 @@ with tab_egresos:
             
         col_ed1, col_ed2, col_ed3 = st.columns(3)
         with col_ed1:
-            nuevo_total = st.number_input("Corregir Monto ($):", min_value=0.0, value=float(fila_r["total"]), key=f"t_{idx_real}")
+            monto_def_input = str(fila_r["total"]).replace('$', '').replace('.', '').replace(',', '.')
+            try:
+                monto_def_val = float(monto_def_input)
+            except:
+                monto_def_val = 0.0
+            nuevo_total = st.number_input("Corregir Monto ($):", min_value=0.0, value=monto_def_val, key=f"t_{idx_real}")
             nueva_partida = st.selectbox("Cambiar CUENTA IMPUTACIÓN / PARTIDA:", opciones=todas_las_partidas_oficiales, index=todas_las_partidas_oficiales.index(partida_actual_fila) if partida_actual_fila in todas_las_partidas_oficiales else 0, key=f"partida_{idx_real}")
         with col_ed2:
-            nueva_clase = st.selectbox("Cambiar Clase:", opciones_clase, index=opciones_clase.index(fila_r["clase"]) if fila_r["clase"] in opciones_clase else 0, key=f"c_{idx_real}")
-            nuevo_tipo = st.selectbox("Cambiar Tipo:", opciones_tipo, index=opciones_tipo.index(fila_r["tipo"]) if fila_r["tipo"] in opciones_tipo else 0, key=f"tp_{idx_real}")
+            nueva_clase = st.selectbox("Cambiar Clase:", opciones_clase, index=opciones_clase.index(str(fila_r["clase"])) if str(fila_r["clase"]) in opciones_clase else 0, key=f"c_{idx_real}")
+            nuevo_tipo = st.selectbox("Cambiar Tipo:", opciones_tipo, index=opciones_tipo.index(str(fila_r["tipo"])) if str(fila_r["tipo"]) in opciones_tipo else 0, key=f"tp_{idx_real}")
         with col_ed3:
-            nueva_fuente = st.selectbox("Cambiar F.Fin:", opciones_fuente_fin, index=opciones_fuente_fin.index(fila_r["fuente_fin"]) if fila_r["fuente_fin"] in opciones_fuente_fin else 0, key=f"f_{idx_real}")
-            nuevo_finan = st.selectbox("Cambiar Finalidad:", opciones_finalidad, index=opciones_finalidad.index(fila_r["finalidad"]) if fila_r["finalidad"] in opciones_finalidad else 0, key=f"fin_{idx_real}")
+            nueva_fuente = st.selectbox("Cambiar F.Fin:", opciones_fuente_fin, index=opciones_fuente_fin.index(str(fila_r["fuente_fin"])) if str(fila_r["fuente_fin"]) in opciones_fuente_fin else 0, key=f"f_{idx_real}")
+            nuevo_finan = st.selectbox("Cambiar Finalidad:", opciones_finalidad, index=opciones_finalidad.index(str(fila_r["finalidad"])) if str(fila_r["finalidad"]) in opciones_finalidad else 0, key=f"fin_{idx_real}")
             
         nuevo_objeto_gasto = str(fila_r["objeto_gasto"])
         nueva_cuenta_padre = str(fila_r["cuenta_padre"])

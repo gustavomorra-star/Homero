@@ -197,7 +197,6 @@ with tab_agregar_destino:
 
 
 # =====================================================================
-# =====================================================================
 # PESTAÑA 3: BASE DE DATOS GENERAL (REPORTE TIPO SHEET MASIVO)
 # =====================================================================
 with tab_egresos:
@@ -207,16 +206,27 @@ with tab_egresos:
     lista_egr_mostrar = []
     
     if not df_egr_gsheet.empty:
-        # Rellenamos cualquier celda vacía con un guion o cero para que Pandas no la borre
         df_egr_gsheet = df_egr_gsheet.fillna({"total": 0.0}).fillna("")
         lista_egr_mostrar = df_egr_gsheet.to_dict('records')
         
     for e_l in st.session_state["db_local_backup"]["egresos"]:
         lista_egr_mostrar.append(e_l)
-
+        
+    # Inicializamos una matriz armada a la fuerza si la lista combinada vino vacía
+    if not lista_egr_mostrar:
+        df_egr_completo = pd.DataFrame(columns=["secretaria", "subsecretaria", "destino", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo", "finalidad"])
+        df_egr_completo["total"] = df_egr_completo["total"].astype(float)
     else:
         df_egr_completo = pd.DataFrame(lista_egr_mostrar)
-        st.metric(label="📋 TOTAL GENERAL ACUMULADO MUNICIPAL (EGRESOS)", value=f"${df_egr_completo['total'].sum():,.2f}")
+        # Si por alguna razón la tabla no trajo la columna 'total', la fabricamos numéricamente
+        if "total" not in df_egr_completo.columns:
+            df_egr_completo["total"] = 0.0
+            
+    # Forzamos que la columna sea decimal para que la suma devuelva cero en lugar de error
+    df_egr_completo["total"] = pd.to_numeric(df_egr_completo["total"], errors='coerce').fillna(0.0)
+    
+    st.metric(label="📋 TOTAL GENERAL ACUMULADO MUNICIPAL (EGRESOS)", value=f"${df_egr_completo['total'].sum():,.2f}")
+
         
         df_plano_masivo = pd.DataFrame({
             "SECRETARIA": df_egr_completo["secretaria"], "SUBSECRETARIA": df_egr_completo["subsecretaria"],

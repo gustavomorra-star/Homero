@@ -9,7 +9,6 @@ import time
 if "db_local_backup" not in st.session_state or not isinstance(st.session_state["db_local_backup"], dict):
     st.session_state["db_local_backup"] = {"destinos": [], "egresos": []}
 
-# Garantiza que las subclaves existan como listas aunque la sesión se haya corrompido
 if "destinos" not in st.session_state["db_local_backup"] or not isinstance(st.session_state["db_local_backup"]["destinos"], list):
     st.session_state["db_local_backup"]["destinos"] = []
 
@@ -25,19 +24,15 @@ st.set_page_config(page_title="Presupuesto Municipal 2027", layout="wide")
 
 SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
 
-# Definimos las variables para no romper llamadas viejas del código
 URL_READ_EGRESOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=0"
 URL_READ_DESTINOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1365567783"
 
 def construir_url_csv(param):
     param_str = str(param).strip()
-    # Si pasa un GID suelto ("0" o "1365567783")
     if param_str.isdigit():
         return f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={param_str}&_t={int(time.time())}"
-    # Si ya es una URL completa
     if "docs.google.com" in param_str:
         if "export?format=csv" not in param_str:
-            # Extraer GID de la URL si viene en formato normal
             gid = "0"
             if "gid=" in param_str:
                 gid = param_str.split("gid=")[1].split("&")[0].split("#")[0]
@@ -48,23 +43,17 @@ def construir_url_csv(param):
 def leer_datos_gsheet(param_url_o_gid):
     url = construir_url_csv(param_url_o_gid)
     try:
-        # Petición HTTP con Timeout para evitar congelamientos
         resp = requests.get(url, timeout=10)
         if resp.status_code == 200:
             df = pd.read_csv(io.StringIO(resp.text))
 
             if not df.empty:
-                # 1. Limpiar nombres de columnas
                 df.columns = [str(col).strip().lower() for col in df.columns]
-
-                # 2. Reemplazar valores NaN por texto vacío ""
                 df = df.fillna("")
 
-                # 3. Limpiar espacios extra en textos
                 for col in df.select_dtypes(include=['object', 'string']).columns:
                     df[col] = df[col].astype(str).str.strip()
 
-                # 4. Convertir 'total' a numérico
                 if "total" in df.columns:
                     df["total"] = pd.to_numeric(
                         df["total"].astype(str).str.replace("$", "", regex=False).str.replace(",", "", regex=False), 
@@ -76,7 +65,6 @@ def leer_datos_gsheet(param_url_o_gid):
     except Exception as e:
         st.warning(f"Error de conexión con Google Sheets: {e}")
 
-    # Retorno de DataFrame vacío estructurado en caso de fallo
     if "1365567783" in str(param_url_o_gid):
         return pd.DataFrame(columns=["secretaria", "subsecretaria", "destino"])
 
@@ -85,20 +73,15 @@ def leer_datos_gsheet(param_url_o_gid):
     return df_vacio
 
 def guardar_fila_gsheet(pestana, nuevo_dict):
-    """Guarda en la memoria local de respaldo para actualización inmediata"""
     if pestana in st.session_state["db_local_backup"]:
         st.session_state["db_local_backup"][pestana].append(nuevo_dict)
 
 # =====================================================================
-# 2. CARGA PRINCIPAL
+# 2. CARGA PRINCIPAL DE DATOS Y MENÚ LATERAL
 # =====================================================================
 
 df_egr_completo = leer_datos_gsheet(URL_READ_EGRESOS)
 df_destinos_gsheet = leer_datos_gsheet(URL_READ_DESTINOS)
-
-# Dibujamos las etiquetas de títulos superiores del sistema
-st.title("🍩 Homero - Sistema de Registro Presupuestario")
-st.write("📍 Municipalidad de Sunchales | Conexión Cooperativa a Google Sheets **2027**")
 
 # --- Plan de Cuentas Oficial Municipal ---
 MAPEO_GASTOS = {
@@ -132,26 +115,29 @@ opciones_clase = ["Corriente", "Capital"]
 opciones_tipo = ["Libre", "Afectado"]
 opciones_finalidad = ["Legislativa", "Salud", "Seguridad"]
 
-# DEFINICIÓN ÚNICA DE LAS 5 PESTAÑAS
-tab_formulario, tab_agregar_destino, tab_egresos, tab_oficial, tab_modificaciones = st.tabs([
-    "📝 FORMULARIO DE REGISTRO", 
-    "➕ GESTIÓN DE DESTINOS",
-    "📉 GENERAL (Base de Datos Sheet)",
-    "🏛️ REPORTE OFICIAL POR DESTINO",
-    "🛠️ PANEL DE MODIFICACIONES"
-])
+# MENÚ LATERAL A LA IZQUIERDA (SIDEBAR)
+with st.sidebar:
+    st.title("🍩 Homero")
+    st.caption("Municipalidad de Sunchales - 2027")
+    st.markdown("---")
+    opcion_menu = st.radio(
+        "Navegación del Sistema:",
+        [
+            "📝 FORMULARIO DE REGISTRO", 
+            "➕ GESTIÓN DE DESTINOS",
+            "📉 GENERAL (Base de Datos Sheet)",
+            "🏛️ REPORTE OFICIAL POR DESTINO",
+            "🛠️ PANEL DE MODIFICACIONES"
+        ]
+    )
 
-    with tab_formulario:
-      # ... código pestaña 1 ...
+st.title("🍩 Homero - Sistema de Registro Presupuestario")
+st.write("📍 Municipalidad de Sunchales | Conexión Cooperativa a Google Sheets **2027**")
 
-    with tab_agregar_destino:
-      # ... código pestaña 2 ...
-
-      # etc...
 # =====================================================================
-# PESTAÑA 1: FORMULARIO PRINCIPAL DE REGISTRO
+# SECCIÓN 1: FORMULARIO PRINCIPAL DE REGISTRO
 # =====================================================================
-with tab_formulario:
+if opcion_menu == "📝 FORMULARIO DE REGISTRO":
     st.subheader("📥 Cargar Nuevo Renglón Presupuestario")
 
     col1, col2 = st.columns(2)
@@ -215,9 +201,9 @@ with tab_formulario:
         st.rerun()
 
 # =====================================================================
-# PESTAÑA 2: GESTIÓN DE DESTINOS DINÁMICOS
+# SECCIÓN 2: GESTIÓN DE DESTINOS DINÁMICOS
 # =====================================================================
-with tab_agregar_destino:
+elif opcion_menu == "➕ GESTIÓN DE DESTINOS":
     st.subheader("⚙️ Panel de Configuración de Destinos")
     col_a, col_b = st.columns([1, 1.2])
     with col_a:
@@ -246,9 +232,9 @@ with tab_agregar_destino:
             st.dataframe(df_dt_vista, use_container_width=True, hide_index=True)
 
 # =====================================================================
-# PESTAÑA 3: BASE DE DATOS GENERAL (REPORTE TIPO SHEET MASIVO)
+# SECCIÓN 3: BASE DE DATOS GENERAL (REPORTE TIPO SHEET MASIVO)
 # =====================================================================
-with tab_egresos:
+elif opcion_menu == "📉 GENERAL (Base de Datos Sheet)":
     st.subheader("📊 Base de Datos General de Egresos")
 
     df_egr_gsheet = leer_datos_gsheet(URL_READ_EGRESOS)
@@ -297,16 +283,12 @@ with tab_egresos:
     st.download_button(label="📗 Descargar Base de Datos Completa en 11 Columnas (.xls)", data=csv_global_data, file_name="Base_De_Datos_Egresos_General.xls", mime="application/vnd.ms-excel", use_container_width=True)
 
 # =====================================================================
-# PESTAÑA 4: REPORTE GRÁFICO OFICIAL MUNICIPAL 2027 (PROTEGIDO CONTRA KEYERROR)
+# SECCIÓN 4: REPORTE GRÁFICO OFICIAL MUNICIPAL 2027
 # =====================================================================
-with tab_oficial:
+elif opcion_menu == "🏛️ REPORTE OFICIAL POR DESTINO":
     st.subheader("📋 Consulta de Presupuesto de Gasto por Destino Oficial")
 
-    lista_of_mostrar = []
-    if not df_egr_completo.empty:
-        lista_of_mostrar = df_egr_completo.to_dict('records')
-
-    if not lista_of_mostrar:
+    if df_egr_completo.empty:
         st.info("No hay transacciones cargadas en el servidor actualmente.")
     else:
         cf1, cf2, col_f3 = st.columns(3)
@@ -318,14 +300,18 @@ with tab_oficial:
         with col_f3:
             if sec_s != "" and sub_s != "":
                 lista_dest_oficial = []
-                df_d_g = leer_datos_gsheet("1365567783")
+                df_d_g = leer_datos_gsheet(URL_READ_DESTINOS)
 
                 if not df_d_g.empty and "destino" in df_d_g.columns:
                     mask_dest = (df_d_g["secretaria"].astype(str).str.strip().str.upper() == sec_s.strip().upper()) & \
                                 (df_d_g["subsecretaria"].astype(str).str.strip().str.upper() == sub_s.strip().upper())
-                    lista_dest_oficial = [str(d).strip().upper() for d in df_d_g[mask_dest]["destino"].dropna().tolist() if str(d).strip() != ""]
+                    lista_dest_oficial.extend([str(d).strip().upper() for d in df_d_g[mask_dest]["destino"].dropna().tolist() if str(d).strip() != ""])
 
-                # REVISION SEGURA DE BACKUP LOCAL (Evita KeyError)
+                if not df_egr_completo.empty and "destino" in df_egr_completo.columns:
+                    mask_egr = (df_egr_completo["secretaria"].astype(str).str.strip().str.upper() == sec_s.strip().upper()) & \
+                               (df_egr_completo["subsecretaria"].astype(str).str.strip().str.upper() == sub_s.strip().upper())
+                    lista_dest_oficial.extend([str(d).strip().upper() for d in df_egr_completo[mask_egr]["destino"].dropna().tolist() if str(d).strip() != ""])
+
                 backup_data = st.session_state.get("db_local_backup", {})
                 if isinstance(backup_data, dict):
                     lista_dest_backup = backup_data.get("destinos", [])
@@ -334,10 +320,11 @@ with tab_oficial:
                             if isinstance(d_l, dict):
                                 if str(d_l.get("secretaria","")).strip().upper() == sec_s.strip().upper() and str(d_l.get("subsecretaria","")).strip().upper() == sub_s.strip().upper():
                                     d_nom = str(d_l.get("destino","")).strip().upper()
-                                    if d_nom and d_nom not in lista_dest_oficial:
+                                    if d_nom:
                                         lista_dest_oficial.append(d_nom)
 
-                dest_s = st.selectbox("3. SELECCIONÁ DESTINO:", options=[""] + sorted(list(set(lista_dest_oficial))), format_func=lambda x: "--- Seleccioná ---" if x == "" else str(x).upper(), key="of_dest")
+                opciones_destinos_unicos = sorted(list(set(lista_dest_oficial)))
+                dest_s = st.selectbox("3. SELECCIONÁ DESTINO:", options=[""] + opciones_destinos_unicos, format_func=lambda x: "--- Seleccioná ---" if x == "" else str(x).upper(), key="of_dest")
             else: 
                 dest_s = st.selectbox("3. SELECCIONÁ DESTINO:", options=[""], key="of_dest")
 
@@ -366,7 +353,7 @@ with tab_oficial:
             """, unsafe_allow_html=True)
 
             if df_f_of.empty:
-                st.warning(f"⚠️ No se encontraron gastos registrados para **{dest_s}**. Verificá que en la Pestaña 3 (Base de Datos General) aparezca exactamente este mismo destino cargado.")
+                st.warning(f"⚠️ No se encontraron gastos registrados para **{dest_s}**.")
             else:
                 f_plan, html_rows = [], ""
                 for obj, df_obj in df_f_of.groupby("objeto_gasto"):
@@ -426,9 +413,9 @@ with tab_oficial:
                 st.download_button(label="🖨️ GENERAR Y ABRIR REPORTE IMPRIMIBLE A PDF", data=html_imp, file_name=f"Reporte_{str(dest_s).replace(' ', '_')}.html", mime="text/html", use_container_width=True)
 
 # =====================================================================
-# PESTAÑA 5: PANEL EXCLUSIVO DE MODIFICACIONES (SOLAPA AISLADA)
+# SECCIÓN 5: PANEL EXCLUSIVO DE MODIFICACIONES
 # =====================================================================
-with tab_modificaciones:
+elif opcion_menu == "🛠️ PANEL DE MODIFICACIONES":
     st.subheader("🛠️ Panel Supervisor de Modificaciones y Actualización")
 
     diccionario_opciones = {}
@@ -455,7 +442,7 @@ with tab_modificaciones:
     lista_claves_validas = list(diccionario_opciones.keys())
 
     if len(lista_claves_validas) == 0:
-        st.info("💡 No hay registros contables activos para modificar en este momento. Los campos se habilitarán automáticamente cuando cargues tu primer renglón presupuestario en el sistema.")
+        st.info("💡 No hay registros contables activos para modificar en este momento.")
     else:
         st.caption("Seleccioná un renglón para corregir sus valores contables o darlo de baja.")
 
@@ -470,31 +457,24 @@ with tab_modificaciones:
 
         with col_mod1:
             st.markdown("#### ✏️ Modificar Datos del Renglón")
-            
-            # --- DATOS FIJOS DE UBICACIÓN (DESHABILITADOS) ---
             st.info(f"📍 **Ubicación Fija:** {fila_r.get('secretaria', '')} ➔ {fila_r.get('subsecretaria', '')} ➔ **{fila_r.get('destino', '')}**")
             
             with st.form(key=f"form_modificacion_{idx_real}"):
-                # 1. Campos de Impuntación / Partida
                 val_obj_act = str(fila_r.get("objeto_gasto", ""))
                 idx_obj = opciones_objetos.index(val_obj_act) if val_obj_act in opciones_objetos else 0
                 mod_obj = st.selectbox("OBJETO DE GASTO:", options=opciones_objetos, index=idx_obj)
 
-                # Cuentas Padre dinámicas según el objeto seleccionado
                 cuentas_padre_opts = list(MAPEO_GASTOS.get(mod_obj, {}).keys())
                 val_padre_act = str(fila_r.get("cuenta_padre", ""))
                 idx_padre = cuentas_padre_opts.index(val_padre_act) if val_padre_act in cuentas_padre_opts else 0
                 mod_padre = st.selectbox("CUENTA PADRE:", options=cuentas_padre_opts, index=idx_padre) if cuentas_padre_opts else st.text_input("CUENTA PADRE:", value=val_padre_act)
 
-                # Partidas dinámicas según la cuenta padre
                 cuentas_partida_opts = MAPEO_GASTOS.get(mod_obj, {}).get(mod_padre, [])
                 val_presup_act = str(fila_r.get("cuenta_presupuestaria", ""))
                 idx_presup = cuentas_partida_opts.index(val_presup_act) if val_presup_act in cuentas_partida_opts else 0
                 mod_presup = st.selectbox("CUENTA DE IMPUTACIÓN / PARTIDA:", options=cuentas_partida_opts, index=idx_presup) if cuentas_partida_opts else st.text_input("CUENTA DE IMPUTACIÓN / PARTIDA:", value=val_presup_act)
 
                 st.markdown("---")
-                
-                # 2. Valores Numéricos y Financiamiento
                 col_m1, col_m2 = st.columns(2)
                 with col_m1:
                     mod_monto = st.number_input("PRESUPUESTO / VALOR ($):", value=float(fila_r.get("total", 0.0)), min_value=0.0, step=100.0)
@@ -517,7 +497,6 @@ with tab_modificaciones:
                 mod_finalidad = st.selectbox("FINALIDAD / FUNCIÓN:", options=opciones_finalidad, index=idx_fin)
 
                 if st.form_submit_button("💾 Guardar Cambios en este Registro", use_container_width=True, type="primary"):
-                    # Actualizar en la base de memoria local
                     if idx_real < len(st.session_state["db_local_backup"]["egresos"]):
                         st.session_state["db_local_backup"]["egresos"][idx_real].update({
                             "objeto_gasto": mod_obj,

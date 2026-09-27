@@ -776,13 +776,15 @@ with st.sidebar:
             "📉 GENERAL (Base de Datos Sheet)",
             "🏛️ REPORTE OFICIAL POR DESTINO",
             "🛠️ PANEL DE MODIFICACIONES",
-            # --- NUEVAS PESTAÑAS (6) ---
             "📊 REPORTE CONSOLIDADO Y ESTADÍSTICAS",
             "🔍 BUSCADOR AVANZADO",
             "📄 EXPORTACIÓN Y FIRMAS",
             "🏆 RANKING Y MAYORES EROGACIONES",
             "⚖️ COMPARATIVO DE ESTRUCTURA Y FUENTES",
-            "🧹 AUDITORÍA Y CONTROL DE CALIDAD"
+            "🧹 AUDITORÍA Y CONTROL DE CALIDAD",
+            # --- NUEVAS PESTAÑAS (2) ---
+            "🏢 VISTA POR SECRETARÍA Y SUBSECRETARÍA",
+            "🎯 REPORTE POR FINALIDAD Y FUNCIÓN"
         ]
     )
 # =====================================================================
@@ -1447,3 +1449,147 @@ elif opcion_menu == "🧹 AUDITORÍA Y CONTROL DE CALIDAD":
             st.dataframe(df_vacios[["secretaria", "subsecretaria", "destino", "cuenta_presupuestaria"]], use_container_width=True, hide_index=True)
         else:
             st.success("✅ ¡Excelente! Todos los renglones tienen su ubicación e imputación completa.")
+# =====================================================================
+# SECCIÓN 12: VISTA POR SECRETARÍA Y SUBSECRETARÍA (NUEVA)
+# =====================================================================
+elif opcion_menu == "🏢 VISTA POR SECRETARÍA Y SUBSECRETARÍA":
+    st.subheader("🏢 Vista Jerárquica por Secretaría y Subsecretaría")
+
+    if df_egr_completo.empty:
+        st.info("💡 No hay registros contables cargados para mostrar.")
+    else:
+        st.caption("Seleccioná la Secretaría y la Subsecretaría para consultar los Destinos y sus partidas presupuestarias asignadas.")
+
+        # Obtener lista de secretarías únicas
+        lista_secretarias = sorted([s for s in df_egr_completo["secretaria"].unique() if str(s).strip() != ""])
+
+        col_sec, col_sub = st.columns(2)
+
+        with col_sec:
+            sec_seleccionada = st.selectbox("1. Seleccionar Secretaría:", lista_secretarias)
+
+        # Filtrar subsecretarías pertenecientes a la secretaría elegida
+        df_sec_filtrado = df_egr_completo[df_egr_completo["secretaria"] == sec_seleccionada]
+        lista_subsecretarias = sorted([s for s in df_sec_filtrado["subsecretaria"].unique() if str(s).strip() != ""])
+
+        with col_sub:
+            sub_seleccionada = st.selectbox("2. Seleccionar Subsecretaría:", lista_subsecretarias)
+
+        # Filtrar datos finales por Secretaría y Subsecretaría
+        df_area = df_sec_filtrado[df_sec_filtrado["subsecretaria"] == sub_seleccionada]
+
+        st.markdown("---")
+
+        if df_area.empty:
+            st.warning("No se encontraron registros cargados para la combinación seleccionada.")
+        else:
+            tot_area = df_area["total"].sum()
+            cant_destinos = df_area["destino"].nunique()
+
+            # Métricas rápidas del Área
+            m_a1, m_a2 = st.columns(2)
+            m_a1.metric("💰 Presupuesto Total de la Subsecretaría", f"${tot_area:,.2f}")
+            m_a2.metric("📌 Cantidad de Destinos Asignados", f"{cant_destinos}")
+
+            st.markdown("### 📍 Resumen de Destinos")
+
+            # Resumen acumulado por Destino
+            df_destinos_resumen = df_area.groupby("destino")["total"].sum().reset_index()
+            df_destinos_resumen["total_fmt"] = df_destinos_resumen["total"].map(lambda x: f"${x:,.2f}")
+            df_destinos_resumen.columns = ["DESTINO", "TOTAL ($)", "PRESUPUESTO FORMATEADO"]
+
+            st.dataframe(
+                df_destinos_resumen[["DESTINO", "PRESUPUESTO FORMATEADO"]],
+                use_container_width=True,
+                hide_index=True
+            )
+
+            st.markdown("---")
+            st.markdown("### 🔍 Detalle por Destino y Partidas")
+
+            # Desplegable individual por Destino
+            for dest, df_d in df_area.groupby("destino"):
+                tot_d = df_d["total"].sum()
+                with st.expander(f"📌 DESTINO: {str(dest).upper()} — Total: ${tot_d:,.2f}"):
+                    df_mostrar = df_d.copy()
+                    df_mostrar["total"] = df_mostrar["total"].map(lambda x: f"${x:,.2f}")
+                    st.dataframe(
+                        df_mostrar[["objeto_gasto", "cuenta_padre", "cuenta_presupuestaria", "total", "fuente_fin", "clase", "tipo"]].rename(
+                            columns={
+                                "objeto_gasto": "OBJETO GASTO",
+                                "cuenta_padre": "CUENTA PADRE",
+                                "cuenta_presupuestaria": "PARTIDA",
+                                "total": "MONTO ($)",
+                                "fuente_fin": "FUENTE",
+                                "clase": "CLASE",
+                                "tipo": "TIPO"
+                            }
+                        ),
+                        use_container_width=True,
+                        hide_index=True
+                    )
+
+
+# =====================================================================
+# SECCIÓN 13: REPORTE POR FINALIDAD Y FUNCIÓN (NUEVA)
+# =====================================================================
+elif opcion_menu == "🎯 REPORTE POR FINALIDAD Y FUNCIÓN":
+    st.subheader("🎯 Consolidado Presupuestario por Finalidad y Función")
+
+    if df_egr_completo.empty:
+        st.info("💡 No hay registros contables cargados para generar el reporte de finalidades.")
+    else:
+        st.caption("Resumen consolidado con la suma total del presupuesto distribuido por cada **Finalidad** y su correspondiente **Función / Tipo de Financiamiento**.")
+
+        # Verificar qué columna representa la función (en la base se suele usar 'finalidad' o 'tipo')
+        col_fin = "finalidad" if "finalidad" in df_egr_completo.columns else df_egr_completo.columns[0]
+        col_fun = "tipo" if "tipo" in df_egr_completo.columns else col_fin
+
+        # Agrupamiento por Finalidad y Función
+        df_fin_fun = df_egr_completo.groupby([col_fin, col_fun])["total"].sum().reset_index()
+        tot_general_ff = df_fin_fun["total"].sum()
+
+        st.metric("💰 TOTAL GENERAL PRESUPUESTO", f"${tot_general_ff:,.2f}")
+
+        st.markdown("---")
+        st.markdown("##### 📋 Resumen Acumulado por Finalidad y Función")
+
+        # Formatear montos para la tabla
+        df_tabla_ff = df_fin_fun.copy()
+        df_tabla_ff["porcentaje"] = (df_tabla_ff["total"] / (tot_general_ff if tot_general_ff > 0 else 1)) * 100
+        df_tabla_ff["total_fmt"] = df_tabla_ff["total"].map(lambda x: f"${x:,.2f}")
+        df_tabla_ff["porcentaje_fmt"] = df_tabla_ff["porcentaje"].map(lambda x: f"{x:.2f}%")
+
+        st.dataframe(
+            df_tabla_ff[[col_fin, col_fun, "total_fmt", "porcentaje_fmt"]].rename(
+                columns={
+                    col_fin: "FINALIDAD",
+                    col_fun: "FUNCIÓN / TIPO",
+                    "total_fmt": "TOTAL PRESUPUESTADO ($)",
+                    "porcentaje_fmt": "% DEL TOTAL"
+                }
+            ),
+            use_container_width=True,
+            hide_index=True
+        )
+
+        st.markdown("---")
+        st.markdown("##### 🏛️ Totales Exclusivos por Finalidad")
+
+        # Agrupado solo por Finalidad
+        df_solo_fin = df_egr_completo.groupby(col_fin)["total"].sum().reset_index()
+        df_solo_fin["porcentaje"] = (df_solo_fin["total"] / (tot_general_ff if tot_general_ff > 0 else 1)) * 100
+        df_solo_fin["total_fmt"] = df_solo_fin["total"].map(lambda x: f"${x:,.2f}")
+        df_solo_fin["porcentaje_fmt"] = df_solo_fin["porcentaje"].map(lambda x: f"{x:.2f}%")
+
+        st.dataframe(
+            df_solo_fin[[col_fin, "total_fmt", "porcentaje_fmt"]].rename(
+                columns={
+                    col_fin: "FINALIDAD",
+                    "total_fmt": "MONTO TOTAL ($)",
+                    "porcentaje_fmt": "% DEL TOTAL"
+                }
+            ),
+            use_container_width=True,
+            hide_index=True
+        )

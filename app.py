@@ -437,6 +437,6 @@ with tab_modificaciones:
         st.caption("Seleccioná un renglón para corregir sus valores, cambiar su partida de imputación o darlo de baja.")
         
         # Ahora lista_claves_validas no generará el TypeError
-        linea_sel = st.selectbox("Seleccioná el registro a modificar por su número de fila:", opciones=lista_claves_validas, key="sel_mod_panel")
+        linea_sel = st.selectbox("Seleccioná el registro a modificar por su número de fila:", options=lista_claves_validas, key="sel_mod_panel")
         idx_real = diccionario_opciones[linea_sel]
         fila_r = df_egr_completo.loc[idx_real]

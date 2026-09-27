@@ -5,6 +5,16 @@ import io
 import requests
 import time
 
+# Inicialización blindada que se ejecuta SIEMPRE antes que cualquier consulta
+if "db_local_backup" not in st.session_state or not isinstance(st.session_state["db_local_backup"], dict):
+    st.session_state["db_local_backup"] = {"destinos": [], "egresos": []}
+
+# Garantiza que las subclaves existan como listas aunque la sesión se haya corrompido
+if "destinos" not in st.session_state["db_local_backup"] or not isinstance(st.session_state["db_local_backup"]["destinos"], list):
+    st.session_state["db_local_backup"]["destinos"] = []
+
+if "egresos" not in st.session_state["db_local_backup"] or not isinstance(st.session_state["db_local_backup"]["egresos"], list):
+    st.session_state["db_local_backup"]["egresos"] = []
 # Configuración de la página
 st.set_page_config(page_title="Presupuesto Municipal 2027", layout="wide")
 

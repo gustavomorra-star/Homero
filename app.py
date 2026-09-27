@@ -2229,7 +2229,7 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
         )
 
 # =====================================================================
-# SECCIÓN 20: COMPARATIVO E HISTÓRICO DE MODIFICACIONES (CONVERSIÓN DE TIPOS)
+# SECCIÓN 20: COMPARATIVO E HISTÓRICO PRESUPUESTARIO (FILTRO COLUMNA D)
 # =====================================================================
 elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     st.subheader("🔄 Comparativo e Histórico Presupuestario (2026 vs 2027)")
@@ -2237,7 +2237,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados para el proyecto 2027.")
     else:
-        st.caption("Cruce en tiempo real sumando únicamente las **cuentas de imputación de gastos** (filtrando recursos y subtotales).")
+        st.caption("Cruce exacto sumando únicamente los registros que poseen **datos de referencia en la Columna D** (partidas de imputación real).")
 
         CSV_URL_SALDOS = "https://docs.google.com/spreadsheets/d/1JLCDkHYiSFV_cCOjVigcIXLkpD61pHpoxOmJ1CvK2m4/export?format=csv&gid=2027704109"
 
@@ -2250,48 +2250,34 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
 
         try:
             # 1. Detectar cabecera real
-            df_raw_no_header = pd.read_csv(CSV_URL_SALDOS, header=None)
+            df_raw_no_header = pd.read_csv(CSV_URL_SALDOS, header=None, on_bad_lines='skip')
             
             header_row_idx = 0
             for idx, row in df_raw_no_header.iterrows():
-                # Conversión segura de cada celda a string para evitar errores de float
                 row_str = " ".join([str(val) if pd.notna(val) else "" for val in row.values]).upper()
                 if "PRESUPUESTADO" in row_str and "DEVENGADO" in row_str:
                     header_row_idx = idx
                     break
 
-            # 2. Cargar datos salteando membrete
-            df_2026 = pd.read_csv(CSV_URL_SALDOS, skiprows=header_row_idx)
-            df_2026.columns = [str(c).strip().upper() for c in df_2026.columns]
+            # 2. Cargar DataFrame salteando el membrete
+            df_2026 = pd.read_csv(CSV_URL_SALDOS, skiprows=header_row_idx, on_bad_lines='skip')
 
             # ---------------------------------------------------------
-            # FILTRADO 1: QUITAR RECURSOS (CONVERSIÓN SEGURA A STRING)
+            # FILTRADO CLAVE: SOLO FILAS DONDE LA COLUMNA D (ÍNDICE 3) NO ESTÉ VACÍA
             # ---------------------------------------------------------
-            fila_texto = df_2026.apply(
-                lambda row: " ".join([str(val) if pd.notna(val) else "" for val in row.values]).upper(), 
-                axis=1
-            )
+            # La Columna D en base 0 es el índice 3
+            col_d_values = df_2026.iloc[:, 3]
             
-            # Excluir filas que contengan términos de Recursos
-            filtro_recursos = ~fila_texto.str.contains(
-                r"\bRECURSO\b|\bRECURSOS\b|\bINGRESOS TRIBUTARIOS\b|\bINGRESOS NO TRIBUTARIOS\b|\bRECURSOS PROPIOS\b", 
-                regex=True
-            )
-            df_2026 = df_2026[filtro_recursos]
+            # Condición: no nulo, no vacío y no espacios en blanco
+            mask_col_d = col_d_values.notna() & (col_d_values.astype(str).str.strip() != "") & (col_d_values.astype(str).str.strip() != "nan")
+            
+            # Aplicar filtro estricto
+            df_2026_filtrado = df_2026[mask_col_d].copy()
 
-            # ---------------------------------------------------------
-            # FILTRADO 2: CONSERVAR SOLO CUENTAS DE IMPUTACIÓN
-            # ---------------------------------------------------------
-            if "CUENTA DE GASTO" in df_2026.columns:
-                df_2026 = df_2026[
-                    df_2026["CUENTA DE GASTO"].notna() & 
-                    (df_2026["CUENTA DE GASTO"].astype(str).str.strip() != "") &
-                    (df_2026["CUENTA DE GASTO"].astype(str).str.strip() != "0")
-                ]
-            elif "OBJETO DE GASTO" in df_2026.columns:
-                df_2026 = df_2026[df_2026["OBJETO DE GASTO"].astype(str).str.contains(r"\d", regex=True, na=False)]
+            # Normalizar nombres de columnas
+            df_2026_filtrado.columns = [str(c).strip().upper() for c in df_2026_filtrado.columns]
 
-            # 3. Mapear columna seleccionada
+            # 3. Mapear columna seleccionada por el usuario
             if "Inicial" in modo_comparacion:
                 col_monto_target = "PRESUPUESTADO"
             elif "Efectivo" in modo_comparacion:
@@ -2300,12 +2286,12 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 col_monto_target = "DEVENGADO"
 
             col_encontrada = None
-            for c in df_2026.columns:
+            for c in df_2026_filtrado.columns:
                 if col_monto_target in c:
                     col_encontrada = c
                     break
 
-            # 4. Función de conversión numérica para formato argentino
+            # 4. Función de conversión numérica para formato argentino (ej: "62.573.641,68" -> 62573641.68)
             def parse_num_arg(val):
                 if pd.isna(val):
                     return 0.0
@@ -2315,9 +2301,9 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 return pd.to_numeric(s, errors="coerce")
 
             if col_encontrada:
-                df_2026["TOTAL_2026_CLEAN"] = df_2026[col_encontrada].apply(parse_num_arg).fillna(0.0)
+                df_2026_filtrado["TOTAL_2026_CLEAN"] = df_2026_filtrado[col_encontrada].apply(parse_num_arg).fillna(0.0)
             else:
-                df_2026["TOTAL_2026_CLEAN"] = 0.0
+                df_2026_filtrado["TOTAL_2026_CLEAN"] = 0.0
 
             hay_datos_2026 = True
         except Exception as e:
@@ -2327,15 +2313,15 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
         # -------------------------------------------------------------
         # PROCESAR Y DESPLEGAR COMPARATIVA
         # -------------------------------------------------------------
-        if hay_datos_2026 and not df_2026.empty:
-            tot_2026 = df_2026["TOTAL_2026_CLEAN"].sum()
+        if hay_datos_2026 and not df_2026_filtrado.empty:
+            tot_2026 = df_2026_filtrado["TOTAL_2026_CLEAN"].sum()
             tot_2027 = df_egr_completo["total"].sum()
 
             incremento = tot_2027 - tot_2026
             porc_incremento = (incremento / tot_2026) * 100 if tot_2026 > 0 else 0.0
 
             st.markdown("---")
-            st.markdown("##### 📊 Variación Interanual Global (Solo Gastos de Imputación)")
+            st.markdown("##### 📊 Variación Interanual Global (Imputaciones Directas - Columna D)")
             m_h1, m_h2, m_h3 = st.columns(3)
             m_h1.metric(f"Base 2026 ({col_monto_target})", f"${tot_2026:,.2f}")
             m_h2.metric("Proyecto 2027", f"${tot_2027:,.2f}")
@@ -2350,11 +2336,11 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             sec_2027["SECRETARÍA"] = sec_2027["SECRETARÍA"].astype(str).str.strip().str.upper()
 
             # Agrupamiento 2026
-            col_sec_2026 = "SECRETARÍA" if "SECRETARÍA" in df_2026.columns else ("SECRETARIA" if "SECRETARIA" in df_2026.columns else None)
+            col_sec_2026 = "SECRETARÍA" if "SECRETARÍA" in df_2026_filtrado.columns else ("SECRETARIA" if "SECRETARIA" in df_2026_filtrado.columns else None)
 
             if col_sec_2026:
-                df_2026[col_sec_2026] = df_2026[col_sec_2026].astype(str).str.strip().str.upper()
-                sec_2026 = df_2026.groupby(col_sec_2026)["TOTAL_2026_CLEAN"].sum().reset_index()
+                df_2026_filtrado[col_sec_2026] = df_2026_filtrado[col_sec_2026].astype(str).str.strip().str.upper()
+                sec_2026 = df_2026_filtrado.groupby(col_sec_2026)["TOTAL_2026_CLEAN"].sum().reset_index()
                 sec_2026.columns = ["SECRETARÍA", f"BASE 2026 ({col_monto_target}) ($)"]
             else:
                 sec_2026 = pd.DataFrame(columns=["SECRETARÍA", f"BASE 2026 ({col_monto_target}) ($)"])
@@ -2363,7 +2349,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             df_comp_sec = pd.merge(sec_2027, sec_2026, on="SECRETARÍA", how="outer").fillna(0.0)
             col_base_nom = f"BASE 2026 ({col_monto_target}) ($)"
 
-            # Descartar nulos
+            # Limpieza de valores nulos o encabezados filtrados
             df_comp_sec = df_comp_sec[~df_comp_sec["SECRETARÍA"].isin(["NAN", "NONE", "", "0.0", "UNNAMED: 0"])]
 
             df_comp_sec["VARIACIÓN ($)"] = df_comp_sec["PROYECTO 2027 ($)"] - df_comp_sec[col_base_nom]

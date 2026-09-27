@@ -345,21 +345,31 @@ with st.sidebar:
 # =====================================================================
 # SECCIÓN: REGISTRO DE RECURSOS (INGRESOS)
 # =====================================================================
-if opcion_menu == "📥 REGISTRO DE RECURSOS":
+elif opcion_menu == "📥 REGISTRO DE RECURSOS":
     st.subheader("📥 Cargar Nuevo Recurso / Ingreso Presupuestario")
 
     df_rec_gsheet = leer_datos_gsheet(URL_READ_RECURSOS)
     lista_rec_mostrar = []
+    
     if not df_rec_gsheet.empty:
-        df_rec_gsheet = df_rec_gsheet.fillna({"valor": 0.0, "totales": 0.0}).fillna("")
+        df_rec_gsheet.columns = [str(c).strip().upper() for c in df_rec_gsheet.columns]
+        
+        cols_necesarias = ["ORIGEN GENERAL", "PARTIDA / CUENTA PADRE", "CONCEPTO ESPECÍFICO", "VALOR", "TOTALES", "TIPO", "DESTINO"]
+        for cn in cols_necesarias:
+            if cn not in df_rec_gsheet.columns:
+                df_rec_gsheet[cn] = ""
+                
+        df_rec_gsheet["VALOR"] = pd.to_numeric(df_rec_gsheet["VALOR"].astype(str).str.replace("$", "", regex=False).str.replace(".", "", regex=False).str.replace(",", ".", regex=False), errors='coerce').fillna(0.0)
+        df_rec_gsheet["TOTALES"] = pd.to_numeric(df_rec_gsheet["TOTALES"].astype(str).str.replace("$", "", regex=False).str.replace(".", "", regex=False).str.replace(",", ".", regex=False), errors='coerce').fillna(0.0)
+        
         lista_rec_mostrar = df_rec_gsheet.to_dict('records')
 
     for r_l in st.session_state.get("db_local_backup", {}).get("recursos", []):
         lista_rec_mostrar.append(r_l)
 
-    df_rec_completo = pd.DataFrame(lista_rec_mostrar) if lista_rec_mostrar else pd.DataFrame(columns=["concepto", "valor", "totales", "destino", "tipo", "origen"])
+    df_rec_completo = pd.DataFrame(lista_rec_mostrar) if lista_rec_mostrar else pd.DataFrame(columns=["ORIGEN GENERAL", "PARTIDA / CUENTA PADRE", "CONCEPTO ESPECÍFICO", "VALOR", "TOTALES", "TIPO", "DESTINO"])
     
-    for col_n in ["valor", "totales"]:
+    for col_n in ["VALOR", "TOTALES"]:
         if col_n in df_rec_completo.columns:
             df_rec_completo[col_n] = pd.to_numeric(df_rec_completo[col_n], errors='coerce').fillna(0.0)
         else:
@@ -394,12 +404,13 @@ if opcion_menu == "📥 REGISTRO DE RECURSOS":
 
     if st.button("💾 GUARDAR RECURSO EN GOOGLE SHEETS", type="primary", use_container_width=True, disabled=not recurso_completo):
         nuevo_recurso = {
-            "concepto": f"{r_cuenta_padre} -> {r_concepto}".upper(),
-            "valor": r_valor,
-            "totales": r_totales,
-            "destino": r_destino.strip().upper(),
-            "tipo": r_tipo,
-            "origen": r_origen
+            "ORIGEN GENERAL": r_origen.upper(),
+            "PARTIDA / CUENTA PADRE": r_cuenta_padre.upper(),
+            "CONCEPTO ESPECÍFICO": r_concepto.upper(),
+            "VALOR": float(r_valor),
+            "TOTALES": float(r_totales),
+            "TIPO": r_tipo.upper(),
+            "DESTINO": r_destino.strip().upper()
         }
         guardar_fila_gsheet("recursos", nuevo_recurso)
         st.success("✅ ¡Recurso guardado correctamente en la base de datos!")
@@ -410,22 +421,71 @@ if opcion_menu == "📥 REGISTRO DE RECURSOS":
     st.markdown("### 📋 Listado Consolidado de Recursos")
     
     if not df_rec_completo.empty:
-        tot_val_gral = df_rec_completo["valor"].sum()
-        tot_tot_gral = df_rec_completo["totales"].sum()
+        tot_val_gral = df_rec_completo["VALOR"].sum() if "VALOR" in df_rec_completo.columns else 0.0
+        tot_tot_gral = df_rec_completo["TOTALES"].sum() if "TOTALES" in df_rec_completo.columns else 0.0
 
         m1, m2 = st.columns(2)
         m1.metric(label="💰 TOTAL VALOR", value=f"${tot_val_gral:,.2f}")
         m2.metric(label="📊 TOTAL GENERAL ACUMULADO", value=f"${tot_tot_gral:,.2f}")
 
         df_v_rec = df_rec_completo.copy()
-        df_v_rec["valor"] = df_v_rec["valor"].map(lambda x: f"${x:,.2f}")
-        df_v_rec["totales"] = df_v_rec["totales"].map(lambda x: f"${x:,.2f}")
-        df_v_rec.columns = ["CONCEPTO", "VALOR", "TOTALES", "DESTINO", "TIPO", "ORIGEN"]
+        if "VALOR" in df_v_rec.columns:
+            df_v_rec["VALOR"] = df_v_rec["VALOR"].map(lambda x: f"${x:,.2f}")
+        if "TOTALES" in df_v_rec.columns:
+            df_v_rec["TOTALES"] = df_v_rec["TOTALES"].map(lambda x: f"${x:,.2f}")
         
         st.dataframe(df_v_rec, use_container_width=True, hide_index=True)
+
+        # --- BOTONES DE EXPORTACIÓN E IMPRESIÓN DENTRO DE LA PESTAÑA ---
+        st.markdown("---")
+        col_exp1, col_exp2 = st.columns(2)
+        
+        with col_exp1:
+            html_imprimir = """
+            <script>
+            function imprimirSeccion() {
+                window.print();
+            }
+            </script>
+            <button onclick="imprimirSeccion()" style="
+                width: 100%;
+                background-color: #ff4b4b;
+                color: white;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 4px;
+                font-weight: bold;
+                cursor: pointer;
+                font-size: 16px;">
+                🖨️ Imprimir / Guardar PDF
+            </button>
+            """
+            st.components.v1.html(html_imprimir, height=50)
+
+        with col_exp2:
+            csv_recursos = df_rec_completo.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Descargar Reporte en CSV",
+                data=csv_recursos,
+                file_name="reporte_recursos.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+            
+        st.markdown("""
+            <style>
+            @media print {
+                [data-testid="stSidebar"], header, footer, .stButton {
+                    display: none !important;
+                }
+                .main {
+                    background-color: white !important;
+                }
+            }
+            </style>
+        """, unsafe_allow_html=True)
     else:
         st.info("💡 Todavía no hay recursos registrados.")
-
 # =====================================================================
 # SECCIÓN 1: FORMULARIO PRINCIPAL DE REGISTRO (Egresos)
 # =====================================================================

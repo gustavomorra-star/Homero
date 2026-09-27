@@ -90,21 +90,23 @@ def leer_datos_gsheet(param_url_o_gid):
     return df_vacio
 
 # URL de tu Webhook de Google Apps Script para escritura real
-URL_WEBHOOK_GSHEET = "https://script.google.com/macros/s/AKfycbw_JFy1SroUwVwavgV-1WJYgAtHz58QRRUUqJaW1v_HPS_h1OsFPPeU8NJD3HayA0ID/exec"
+URL_WEBHOOK_GSHEET = "https://script.google.com/macros/s/TU_URL_DE_APPS_SCRIPT_AQUI/exec"
 
 def guardar_fila_gsheet(pestana, nuevo_dict):
-    # 1. Respaldo local inmediato en sesión
+    # Respaldo local inmediato en sesión
     if pestana in st.session_state["db_local_backup"]:
         st.session_state["db_local_backup"][pestana].append(nuevo_dict)
         
-    # 2. Escritura física en Google Sheets mediante Webhook
+    # Sincronización directa con el Google Sheet en la nube
     try:
         payload = {"pestana": pestana, **nuevo_dict}
-        resp = requests.post(URL_WEBHOOK_GSHEET, json=payload, timeout=10)
-        if resp.status_code != 200:
-            st.warning("⚠️ El dato se guardó localmente, pero hubo un problema al sincronizar con la nube.")
+        resp = requests.post(URL_WEBHOOK_GSHEET, json=payload, timeout=5)
+        if resp.status_code == 200:
+            st.success("✅ ¡Guardado localmente y sincronizado en Google Sheets!")
+        else:
+            st.warning("⚠️ Guardado localmente, pero el servidor web de Google respondió con una alerta.")
     except Exception as e:
-        st.warning(f"No se pudo conectar con el servidor de escritura: {e}")
+        st.warning(f"⚠️ Guardado en la sesión. No se pudo conectar al Webhook: {e}")
 
 # =====================================================================
 # 2. CARGA PRINCIPAL DE DATOS Y MENÚ LATERAL

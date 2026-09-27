@@ -170,18 +170,30 @@ with tab_agregar_destino:
             guardar_fila_gsheet("destinos", nuevo_destino)
             st.success("🎯 Destino añadido correctamente al repositorio.")
             st.rerun()
-    with col_b:
+        with col_b:
         st.markdown("**📋 Listado de Destinos Activos**")
         df_dt_gsheet = leer_datos_gsheet(URL_READ_DESTINOS)
         lista_destinos_mostrar = []
-        if not df_dt_gsheet.empty and "destino" in df_dt_gsheet.columns:
-            lista_destinos_mostrar = df_dt_gsheet[["subsecretaria", "destino"]].dropna().to_dict('records')
+        
+        # Leemos el archivo de Google Drive de forma directa sin filtros eliminadores
+        if not df_dt_gsheet.empty:
+            # Forzamos a convertir a texto plano y rellenamos celdas vacías
+            df_dt_gsheet = df_dt_gsheet.fillna("")
+            lista_destinos_mostrar = df_dt_gsheet.to_dict('records')
+            
         for d_l in st.session_state["db_local_backup"]["destinos"]:
-            if {"subsecretaria": d_l["subsecretaria"], "destino": d_l["destino"]} not in lista_destinos_mostrar:
-                lista_destinos_mostrar.append({"subsecretaria": d_l["subsecretaria"], "destino": d_l["destino"]})
+            if d_l not in lista_destinos_mostrar:
+                lista_egr_mostrar.append(d_l)
+                
         if lista_destinos_mostrar:
-            df_dt_vista = pd.DataFrame(lista_destinos_mostrar).rename(columns={"subsecretaria": "SUBSECRETARÍA", "destino": "DESTINO"})
-            st.dataframe(df_dt_vista, use_container_width=True, hide_index=True)
+            df_dt_vista = pd.DataFrame(lista_destinos_mostrar)
+            # Verificamos qué columnas trajo para no generar cortocircuitos visuales
+            if "subsecretaria" in df_dt_vista.columns and "destino" in df_dt_vista.columns:
+                df_dt_vista = df_dt_vista.rename(columns={"subsecretaria": "SUBSECRETARÍA", "destino": "DESTINO"})
+                st.dataframe(df_dt_vista[["SUBSECRETARÍA", "DESTINO"]], use_container_width=True, hide_index=True)
+            else:
+                st.dataframe(df_dt_vista, use_container_width=True, hide_index=True)
+
 
 # =====================================================================
 # =====================================================================
@@ -192,13 +204,15 @@ with tab_egresos:
     
     df_egr_gsheet = leer_datos_gsheet(URL_READ_EGRESOS)
     lista_egr_mostrar = []
-    if not df_egr_gsheet.empty and "total" in df_egr_gsheet.columns:
-        lista_egr_mostrar = df_egr_gsheet.dropna(subset=["total"]).to_dict('records')
+    
+    if not df_egr_gsheet.empty:
+        # Rellenamos cualquier celda vacía con un guion o cero para que Pandas no la borre
+        df_egr_gsheet = df_egr_gsheet.fillna({"total": 0.0}).fillna("")
+        lista_egr_mostrar = df_egr_gsheet.to_dict('records')
+        
     for e_l in st.session_state["db_local_backup"]["egresos"]:
         lista_egr_mostrar.append(e_l)
-        
-    if not lista_egr_mostrar:
-        st.info("No hay movimientos registrados en la base de datos actualmente.")
+
     else:
         df_egr_completo = pd.DataFrame(lista_egr_mostrar)
         st.metric(label="📋 TOTAL GENERAL ACUMULADO MUNICIPAL (EGRESOS)", value=f"${df_egr_completo['total'].sum():,.2f}")

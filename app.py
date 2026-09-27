@@ -89,9 +89,22 @@ def leer_datos_gsheet(param_url_o_gid):
     df_vacio["total"] = df_vacio["total"].astype(float)
     return df_vacio
 
+# URL de tu Webhook de Google Apps Script para escritura real
+URL_WEBHOOK_GSHEET = "PEGAR_AQUI_TU_URL_DE_APPS_SCRIPT"
+
 def guardar_fila_gsheet(pestana, nuevo_dict):
+    # 1. Respaldo local inmediato en sesión
     if pestana in st.session_state["db_local_backup"]:
         st.session_state["db_local_backup"][pestana].append(nuevo_dict)
+        
+    # 2. Escritura física en Google Sheets mediante Webhook
+    try:
+        payload = {"pestana": pestana, **nuevo_dict}
+        resp = requests.post(URL_WEBHOOK_GSHEET, json=payload, timeout=10)
+        if resp.status_code != 200:
+            st.warning("⚠️ El dato se guardó localmente, pero hubo un problema al sincronizar con la nube.")
+    except Exception as e:
+        st.warning(f"No se pudo conectar con el servidor de escritura: {e}")
 
 # =====================================================================
 # 2. CARGA PRINCIPAL DE DATOS Y MENÚ LATERAL

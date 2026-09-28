@@ -392,7 +392,7 @@ with st.sidebar:
             "🛡️ CONTROL DE TECHOS PRESUPUESTARIOS",
             "📋 FICHA TÉCNICA POR DESTINO",
             "🔄 COMPARATIVO E HISTÓRICO",
-			"📈 EJECUCIÓN PRESUPUESTARIA ACTUAL"
+			"📈 REPORTE DE EJECUCIÓN OFICIAL"
         ]
 	
     )
@@ -2008,34 +2008,73 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 use_container_width=True, hide_index=True
             )
 # =====================================================================
-# SECCIÓN 21: EJECUCIÓN PRESUPUESTARIA ACTUAL
+# SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (ESCALONADO POR DESTINO)
 # =====================================================================
-elif opcion_menu == "📈 EJECUCIÓN PRESUPUESTARIA ACTUAL":
-  st.subheader("📈 Planilla de Ejecución Presupuestaria")
+elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
+    st.subheader("📈 Reporte de Ejecución Presupuestaria Escalonado por Destino")
 
-  # Leemos los datos directamente de la hoja "EJECUCIÓN" usando su gid
-  df_ejecucion = leer_datos_gsheet(URL_READ_EJECUCION)
+    # Leemos la planilla de ejecución desde la hoja configurada
+    df_ejec_oficial = leer_datos_gsheet(URL_READ_EJECUCION)
 
-  if not df_ejecucion.empty:
-    tot_ejec = (
-        df_ejecucion["total"].sum() if "total" in df_ejecucion.columns else 0.0
-    )
-    st.metric(label="💰 TOTAL EJECUTADO", value=f"${tot_ejec:,.2f}")
+    if df_ejec_oficial.empty:
+        st.warning("⚠️ No se pudieron cargar los datos de la hoja de ejecución.")
+    else:
+        # Aseguramos nombres de columnas estándar en mayúsculas para mapear bien
+        df_ejec_oficial.columns = [str(c).strip().upper() for c in df_ejec_oficial.columns]
 
-    st.markdown("---")
-    st.dataframe(df_ejecucion, use_container_width=True, hide_index=True)
+        # Filtros de selección rápida en pantalla
+        c_ex1, c_ex2 = st.columns(2)
+        
+        # Obtenemos secretarías únicas si existen
+        col_sec_key = [c for c in df_ejec_oficial.columns if "SECRETARÍA" in c or "SEC" in c]
+        col_sec_key = col_sec_key[0] if col_sec_key else df_ejec_oficial.columns[0]
+        
+        sec_opciones = sorted([str(x) for x in df_ejec_oficial[col_sec_key].unique() if str(x).strip() != "" and str(x).strip() != "NAN"])
+        
+        with c_ex1:
+            ejec_sec_sel = st.selectbox("1. SELECCIONÁ SECRETARÍA:", options=[""] + sec_opciones, key="ejec_sec")
 
-    # Botón para descargar en CSV si lo necesitás
-    csv_ejec = df_ejecucion.to_csv(index=False).encode("utf-8-sig")
-    st.download_button(
-        label="📥 Descargar Planilla de Ejecución en CSV",
-        data=csv_ejec,
-        file_name="ejecucion_presupuestaria_actual.csv",
-        mime="text/csv",
-        use_container_width=True,
-    )
-  else:
-    st.warning(
-        "⚠️ No se pudieron cargar los datos de la hoja de ejecución. Verificá"
-        " que el enlace y la pestaña sean públicos."
-    )
+        df_ejec_f1 = df_ejec_oficial[df_ejec_oficial[col_sec_key].astype(str).str.strip().str.upper() == ejec_sec_sel.strip().upper()] if ejec_sec_sel else pd.DataFrame()
+
+        col_sub_key = [c for c in df_ejec_oficial.columns if "SUB" in c]
+        col_sub_key = col_sub_key[0] if col_sub_key else (df_ejec_oficial.columns[1] if len(df_ejec_oficial.columns) > 1 else col_sec_key)
+        
+        sub_opciones = sorted([str(x) for x in df_ejec_f1[col_sub_key].unique() if str(x).strip() != "" and str(x).strip() != "NAN"]) if not df_ejec_f1.empty else []
+
+        with c_ex2:
+            ejec_sub_sel = st.selectbox("2. SELECCIONÁ SUBSECRETARÍA:", options=[""] + sub_opciones, key="ejec_sub")
+
+        if ejec_sec_sel and ejec_sub_sel:
+            df_filtrado_final = df_ejec_f1[df_ejec_f1[col_sub_key].astype(str).str.strip().str.upper() == ejec_sub_sel.strip().upper()]
+
+            st.markdown("---")
+            st.markdown(f"### 📍 Secretaría: {ejec_sec_sel} | Subsecretaría: {ejec_sub_sel}")
+
+            if df_filtrado_final.empty:
+                st.info("💡 No hay registros para esta combinación.")
+            else:
+                # Armamos la tabla con el formato escalonado y las columnas de valores solicitadas
+                lineas_tabla = []
+                
+                # Identificamos columnas según tu descripción (A: Sec, B: Sub, C: Destino, D: Objeto, N: Cuenta Padre, E: Imputación)
+                # Y valores: G: Presupuestado, H: Devengado, I: Ejecutado, J: Modificaciones, K: Saldo
+                for destino_val, df_dest in df_filtrado_final.groupby(df_filtrado_final.columns[2] if len(df_filtrado_final.columns) > 2 else df_filtrado_final.columns[0]):
+                    st.markdown(f"#### 📌 DESTINO: {str(destino_val).upper()}")
+                    
+                    tabla_destino_rows = []
+                    for _, row in df_dest.iterrows():
+                        tabla_destino_rows.append({
+                            "OBJETO DE GASTO": row.get(df_filtrado_final.columns[3] if len(df_filtrado_final.columns) > 3 else "", ""),
+                            "CUENTA PADRE": row.get(df_filtrado_final.columns[13] if len(df_filtrado_final.columns) > 13 else "", ""),
+                            "IMPUTACIÓN": row.get(df_filtrado_final.columns[4] if len(df_filtrado_final.columns) > 4 else "", ""),
+                            "PRESUPUESTADO (G)": row.get(df_filtrado_final.columns[6] if len(df_filtrado_final.columns) > 6 else 0.0, 0.0),
+                            "DEVENGADO (H)": row.get(df_filtrado_final.columns[7] if len(df_filtrado_final.columns) > 7 else 0.0, 0.0),
+                            "EJECUTADO (I)": row.get(df_filtrado_final.columns[8] if len(df_filtrado_final.columns) > 8 else 0.0, 0.0),
+                            "MODIFICACIONES (J)": row.get(df_filtrado_final.columns[9] if len(df_filtrado_final.columns) > 9 else 0.0, 0.0),
+                            "SALDO (K)": row.get(df_filtrado_final.columns[10] if len(df_filtrado_final.columns) > 10 else 0.0, 0.0),
+                        })
+                    
+                    df_view_dest = pd.DataFrame(tabla_destino_rows)
+                    st.dataframe(df_view_dest, use_container_width=True, hide_index=True)
+        else:
+            st.info("💡 Seleccioná una Secretaría y una Subsecretaría para visualizar el desglose escalonado de ejecución.")

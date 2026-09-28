@@ -175,7 +175,8 @@ MAPEO_GASTOS = {
         "22.5.0.0.00.000 - Productos químicos y combustibles": ["22.5.6.0.00.000 - Combustibles y lubricantes", "22.5.2.0.00.000 - Productos farmacéuticos"]
     },
     "3. Servicios": {
-        "23.1.0.0.00.000 - Servicios básicos": ["23.1.1.0.00.000 - Energía Eléctrica", "23.1.4.0.00.000 - Teléfono"],
+        "23.1.0.0.00.000 - Servicios básicos": ["23.1.1.0.00.000 - Energía Eléctrica","23.1.2.0.00.000 - Agua","23.1.3.0.00.000 - Gas","23.1.4.0.00.000 - Teléfono","23.1.5.0.00.000 - Correos y telégrafos"],
+        "23.2.0.0.00.000 - Alquileres y derechos": ["23.2.1.0.00.000 - Alquileres de edificios y locales","23.2.2.0.00.000 - Alquiler de maquinaria, equipos y medios de transporte","23.2.3.0.00.000 - Alquiler de equipos de computación","23.2.4.0.00.000 - Alquiler de fotocopiadoras","23.2.5.0.00.000 - Alquiler de tierras y terrenos","23.2.6.0.00.000 - Derechos de bienes intangibles","23.2.9.1.00.000 - Alquiler de máquinas expendedoras de alimantos","23.2.9.2.00.000 - Alquiler de expendedores de agua","23.2.9.3.00.000 - Alquiler de baños químicos","23.2.9.4.00.000 - Alquiler Estructuras Varias (Incluye Vallas de Seguridad, Gradas, etc.)"],
         "23.3.0.0.00.000 - Mantenimiento y reparación": ["23.3.2.0.00.000 - Mantenimiento de vehículos", "23.3.9.1.00.000 - Espacios Verdes"]
     },
     "4. Bienes de Uso": {

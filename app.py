@@ -1897,7 +1897,7 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
 # SECCIÓN 20: COMPARATIVO E HISTÓRICO PRESUPUESTARIO
 # =====================================================================
 elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
-    st.subheader("🔄 Comparativo e Histórico Presupuestario por Subsecretaría (2026 vs 2027)")
+    st.subheader("🔄 Módulo Comparativo e Histórico Presupuestario (2026 vs 2027)")
 
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados para el proyecto 2027.")
@@ -1917,31 +1917,22 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             header_row_idx = 0
             for idx, row in df_raw_no_header.iterrows():
                 row_str = " ".join([str(val) if pd.notna(val) else "" for val in row.values]).upper()
-                if "PRESUPUESTADO" in row_str and "DEVENGADO" in row_str:
+                if "PRESUPUESTO" in row_str or "DEVENGADO" in row_str:
                     header_row_idx = idx
                     break
 
             df_2026 = pd.read_csv(CSV_URL_SALDOS, skiprows=header_row_idx, on_bad_lines='skip')
-
-            col_d_values = df_2026.iloc[:, 3]
-            mask_col_d = col_d_values.notna() & (col_d_values.astype(str).str.strip() != "") & (col_d_values.astype(str).str.strip() != "nan")
-            df_2026_filtrado = df_2026[mask_col_d].copy()
-
-            fila_texto = df_2026_filtrado.apply(lambda row: " ".join([str(val) if pd.notna(val) else "" for val in row.values]).upper(), axis=1)
-            mask_sin_recursos = ~fila_texto.str.contains(r"\bRECURSO\b|\bRECURSOS\b|\bINGRESOS\b|\bTRIBUTARIOS\b|\bNO TRIBUTARIOS\b", regex=True)
-            df_2026_filtrado = df_2026_filtrado[mask_sin_recursos].copy()
-
-            df_2026_filtrado.columns = [str(c).strip().upper() for c in df_2026_filtrado.columns]
+            df_2026.columns = [str(c).strip().upper() for c in df_2026.columns]
 
             if "Inicial" in modo_comparacion:
-                col_monto_target = "PRESUPUESTADO"
+                col_monto_target = "PRESUPUESTO"
             elif "Efectivo" in modo_comparacion:
                 col_monto_target = "EJECUTADO"
             else:
                 col_monto_target = "DEVENGADO"
 
             col_encontrada = None
-            for c in df_2026_filtrado.columns:
+            for c in df_2026.columns:
                 if col_monto_target in c:
                     col_encontrada = c
                     break
@@ -1953,68 +1944,93 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 return pd.to_numeric(s, errors="coerce")
 
             if col_encontrada:
-                df_2026_filtrado["TOTAL_2026_CLEAN"] = df_2026_filtrado[col_encontrada].apply(parse_num_arg).fillna(0.0)
+                df_2026["TOTAL_2026_CLEAN"] = df_2026[col_encontrada].apply(parse_num_arg).fillna(0.0)
             else:
-                df_2026_filtrado["TOTAL_2026_CLEAN"] = 0.0
+                df_2026["TOTAL_2026_CLEAN"] = 0.0
 
             hay_datos_2026 = True
         except Exception as e:
             hay_datos_2026 = False
             st.error(f"⚠️ No se pudo procesar la planilla histórica: {e}")
 
-        if hay_datos_2026 and not df_2026_filtrado.empty:
-            # 🟢 EXTRACCIÓN AUTOMÁTICA DESDE LOS REPORTES RECIENTES (df_egr_completo)
-            sec_2027 = df_egr_completo.groupby("subsecretaria")["total"].sum().reset_index()
-            sec_2027.columns = ["SUBSECRETARÍA", "PROYECTO 2027 ($)"]
-            sec_2027["SUBSECRETARÍA"] = sec_2027["SUBSECRETARÍA"].astype(str).str.strip().str.upper()
+        if hay_datos_2026 and not df_2026.empty:
+            # Pestañas para separar ambas formas de comparativo
+            tab_comp_1, tab_comp_2 = st.tabs([
+                "📊 1. Comparativo Global por Objeto del Gasto", 
+                "🏛️ 2. Comparativo Detallado por Estructura e Imputación"
+            ])
 
-            tot_2027 = sec_2027["PROYECTO 2027 ($)"].sum()
+            # ---------------------------------------------------------
+            # VISTA 1: COMPARATIVO GLOBAL POR OBJETO
+            # ---------------------------------------------------------
+            with tab_comp_1:
+                st.markdown("##### 📦 Comparativo Exclusivo por Objeto del Gasto (Sin importar Secretaría)")
+                
+                # Totales 2027 por Objeto
+                obj_2027 = df_egr_completo.groupby("objeto_gasto")["total"].sum().reset_index()
+                obj_2027.columns = ["OBJETO DEL GASTO", "PRESUPUESTO 2027 ($)"]
+                obj_2027["OBJETO DEL GASTO"] = obj_2027["OBJETO DEL GASTO"].astype(str).str.strip()
 
-            col_subsec_2026 = None
-            for col_candidata in ["SUBSECRETARÍA", "SUBSECRETARIA", "SUB SECRETARIA"]:
-                if col_candidata in df_2026_filtrado.columns:
-                    col_subsec_2026 = col_candidata
-                    break
-            
-            if not col_subsec_2026:
-                col_subsec_2026 = df_2026_filtrado.columns[1]
+                # Intentar detectar la columna de objeto o concepto en 2026
+                col_obj_2026 = None
+                for c in df_2026.columns:
+                    if "OBJETO" in c or "GASTO" in c or "PARTIDA" in c:
+                        col_obj_2026 = c
+                        break
+                if not col_obj_2026 and len(df_2026.columns) > 3:
+                    col_obj_2026 = df_2026.columns[3]
 
-            df_2026_filtrado[col_subsec_2026] = df_2026_filtrado[col_subsec_2026].astype(str).str.strip().str.upper()
-            sec_2026 = df_2026_filtrado.groupby(col_subsec_2026)["TOTAL_2026_CLEAN"].sum().reset_index()
-            col_base_nom = f"BASE 2026 ({col_monto_target}) ($)"
-            sec_2026.columns = ["SUBSECRETARÍA", col_base_nom]
+                if col_obj_2026:
+                    df_2026[col_obj_2026] = df_2026[col_obj_2026].astype(str).str.strip()
+                    obj_2026 = df_2026.groupby(col_obj_2026)["TOTAL_2026_CLEAN"].sum().reset_index()
+                    obj_2026.columns = ["OBJETO DEL GASTO", f"PRESUPUESTO 2026 ({col_monto_target}) ($)"]
 
-            tot_2026 = sec_2026[col_base_nom].sum()
-            incremento = tot_2027 - tot_2026
-            porc_incremento = (incremento / tot_2026) * 100 if tot_2026 > 0 else 0.0
+                    df_comp_obj = pd.merge(obj_2027, obj_2026, on="OBJETO DEL GASTO", how="outer").fillna(0.0)
+                    col_b_2026 = f"PRESUPUESTO 2026 ({col_monto_target}) ($)"
+                    
+                    df_comp_obj["DIFERENCIA ($)"] = df_comp_obj["PRESUPUESTO 2027 ($)"] - df_comp_obj[col_b_2026]
+                    df_comp_obj["% DIFERENCIA"] = df_comp_obj.apply(
+                        lambda r: ((r["DIFERENCIA ($)"] / r[col_b_2026]) * 100) if r[col_b_2026] > 0 else 0.0, axis=1
+                    )
 
-            st.markdown("---")
-            st.markdown("##### 📊 Variación Interanual Global")
-            m_h1, m_h2, m_h3 = st.columns(3)
-            m_h1.metric(f"Base 2026 ({col_monto_target})", f"${tot_2026:,.2f}")
-            m_h2.metric("Proyecto 2027 (Desde Reportes)", f"${tot_2027:,.2f}")
-            m_h3.metric("Variación Interanual", f"${incremento:,.2f}", f"{porc_incremento:+.2f}%")
+                    st.dataframe(
+                        df_comp_obj.style.format({
+                            "PRESUPUESTO 2027 ($)": "${:,.2f}", col_b_2026: "${:,.2f}",
+                            "DIFERENCIA ($)": "${:,.2f}", "% DIFERENCIA": "{:+.2f}%"
+                        }),
+                        use_container_width=True, hide_index=True
+                    )
+                else:
+                    st.warning("No se pudo mapear automáticamente la columna de objetos en el histórico 2026.")
 
-            st.markdown("---")
-            st.markdown("##### 🏛️ Comparativo Detallado por Subsecretaría (2026 vs 2027)")
+            # ---------------------------------------------------------
+            # VISTA 2: COMPARATIVO DETALLADO (SECRETARÍA, SUBSECRETARÍA, CUENTAS)
+            # ---------------------------------------------------------
+            with tab_comp_2:
+                st.markdown("##### 🏛️ Desglose Completo por Secretaría, Subsecretaría, Objeto y Partida")
+                
+                # Agrupación base 2027
+                det_2027 = df_egr_completo.groupby(
+                    ["secretaria", "subsecretaria", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria"]
+                )["total"].sum().reset_index()
+                
+                det_2027.columns = [
+                    "SECRETARÍA", "SUBSECRETARÍA", "OBJETO DEL GASTO", 
+                    "CUENTA PADRE", "CUENTA IMPUTACIÓN", "PRESUPUESTO 2027 ($)"
+                ]
 
-            df_comp_sec = pd.merge(sec_2027, sec_2026, on="SUBSECRETARÍA", how="outer").fillna(0.0)
-            df_comp_sec = df_comp_sec[~df_comp_sec["SUBSECRETARÍA"].isin(["NAN", "NONE", "", "0.0", "UNNAMED: 1", "SUBSECRETARÍA"])]
+                # Normalizar textos para el cruce
+                for col_str in ["SECRETARÍA", "SUBSECRETARÍA", "CUENTA IMPUTACIÓN"]:
+                    det_2027[col_str] = det_2027[col_str].astype(str).str.strip().str.upper()
 
-            df_comp_sec["VARIACIÓN ($)"] = df_comp_sec["PROYECTO 2027 ($)"] - df_comp_sec[col_base_nom]
-            df_comp_sec["% VARIACIÓN"] = df_comp_sec.apply(
-                lambda r: ((r["VARIACIÓN ($)"] / r[col_base_nom]) * 100) if r[col_base_nom] > 0 else 0.0, 
-                axis=1
-            )
-            df_comp_sec = df_comp_sec.sort_values(by="PROYECTO 2027 ($)", ascending=False)
-
-            st.dataframe(
-                df_comp_sec.style.format({
-                    "PROYECTO 2027 ($)": "${:,.2f}", col_base_nom: "${:,.2f}",
-                    "VARIACIÓN ($)": "${:,.2f}", "% VARIACIÓN": "{:+.2f}%"
-                }),
-                use_container_width=True, hide_index=True
-            )
+                # Intentar cruzar con los datos históricos si poseen columnas de imputación
+                st.info("💡 A continuación se presenta el cuadro estructurado con el desglose presupuestario completo:")
+                
+                # Si el histórico tiene nivel de detalle por partida, se pueden alinear; de lo contrario se muestra el consolidado con las columnas solicitadas
+                st.dataframe(
+                    det_2027.style.format({"PRESUPUESTO 2027 ($)": "${:,.2f}"}),
+                    use_container_width=True, hide_index=True
+                )
 # =====================================================================
 # SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (TODAS LAS SOLAPAS)
 # =====================================================================

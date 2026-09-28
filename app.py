@@ -1960,28 +1960,15 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             hay_datos_2026 = True
         except Exception as e:
             hay_datos_2026 = False
-            st.error(f"⚠️ No se pudo procesar la planilla: {e}")
+            st.error(f"⚠️ No se pudo procesar la planilla histórica: {e}")
 
         if hay_datos_2026 and not df_2026_filtrado.empty:
-            tot_2026 = df_2026_filtrado["TOTAL_2026_CLEAN"].sum()
-            tot_2027 = df_egr_completo["total"].sum()
-
-            incremento = tot_2027 - tot_2026
-            porc_incremento = (incremento / tot_2026) * 100 if tot_2026 > 0 else 0.0
-
-            st.markdown("---")
-            st.markdown("##### 📊 Variación Interanual Global")
-            m_h1, m_h2, m_h3 = st.columns(3)
-            m_h1.metric(f"Base 2026 ({col_monto_target})", f"${tot_2026:,.2f}")
-            m_h2.metric("Proyecto 2027", f"${tot_2027:,.2f}")
-            m_h3.metric("Variación Interanual", f"${incremento:,.2f}", f"{porc_incremento:+.2f}%")
-
-            st.markdown("---")
-            st.markdown("##### 🏛️ Comparativo Detallado por Subsecretaría (2026 vs 2027)")
-
+            # 🟢 EXTRACCIÓN AUTOMÁTICA DESDE LOS REPORTES RECIENTES (df_egr_completo)
             sec_2027 = df_egr_completo.groupby("subsecretaria")["total"].sum().reset_index()
             sec_2027.columns = ["SUBSECRETARÍA", "PROYECTO 2027 ($)"]
             sec_2027["SUBSECRETARÍA"] = sec_2027["SUBSECRETARÍA"].astype(str).str.strip().str.upper()
+
+            tot_2027 = sec_2027["PROYECTO 2027 ($)"].sum()
 
             col_subsec_2026 = None
             for col_candidata in ["SUBSECRETARÍA", "SUBSECRETARIA", "SUB SECRETARIA"]:
@@ -1994,11 +1981,24 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
 
             df_2026_filtrado[col_subsec_2026] = df_2026_filtrado[col_subsec_2026].astype(str).str.strip().str.upper()
             sec_2026 = df_2026_filtrado.groupby(col_subsec_2026)["TOTAL_2026_CLEAN"].sum().reset_index()
-            sec_2026.columns = ["SUBSECRETARÍA", f"BASE 2026 ({col_monto_target}) ($)"]
+            col_base_nom = f"BASE 2026 ({col_monto_target}) ($)"
+            sec_2026.columns = ["SUBSECRETARÍA", col_base_nom]
+
+            tot_2026 = sec_2026[col_base_nom].sum()
+            incremento = tot_2027 - tot_2026
+            porc_incremento = (incremento / tot_2026) * 100 if tot_2026 > 0 else 0.0
+
+            st.markdown("---")
+            st.markdown("##### 📊 Variación Interanual Global")
+            m_h1, m_h2, m_h3 = st.columns(3)
+            m_h1.metric(f"Base 2026 ({col_monto_target})", f"${tot_2026:,.2f}")
+            m_h2.metric("Proyecto 2027 (Desde Reportes)", f"${tot_2027:,.2f}")
+            m_h3.metric("Variación Interanual", f"${incremento:,.2f}", f"{porc_incremento:+.2f}%")
+
+            st.markdown("---")
+            st.markdown("##### 🏛️ Comparativo Detallado por Subsecretaría (2026 vs 2027)")
 
             df_comp_sec = pd.merge(sec_2027, sec_2026, on="SUBSECRETARÍA", how="outer").fillna(0.0)
-            col_base_nom = f"BASE 2026 ({col_monto_target}) ($)"
-
             df_comp_sec = df_comp_sec[~df_comp_sec["SUBSECRETARÍA"].isin(["NAN", "NONE", "", "0.0", "UNNAMED: 1", "SUBSECRETARÍA"])]
 
             df_comp_sec["VARIACIÓN ($)"] = df_comp_sec["PROYECTO 2027 ($)"] - df_comp_sec[col_base_nom]

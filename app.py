@@ -2008,7 +2008,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 use_container_width=True, hide_index=True
             )
 # =====================================================================
-# SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (COLUMNAS FINANCIERAS COMPLETAS Y EJECUTADO)
+# SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (COLUMNAS G, H, I, J, K EXACTAS)
 # =====================================================================
 elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
     st.subheader("📈 Módulo de Ejecución Presupuestaria - Reportes Oficiales")
@@ -2034,6 +2034,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             except Exception:
                 return 0.0
 
+        # Mapeo exacto según tus requerimientos y estructura
         c_sec_k = cols_e[0] if len(cols_e) > 0 else "SECRETARIA"
         c_sub_k = cols_e[1] if len(cols_e) > 1 else "SUBSECRETARÍA"
         c_dest_k = cols_e[2] if len(cols_e) > 2 else "DESTINO"
@@ -2041,21 +2042,14 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
         c_partida = cols_e[4] if len(cols_e) > 4 else cols_e[5] # Columna E (Imputación)
         c_padre = cols_e[13] if len(cols_e) > 13 else cols_e[4] # Columna N (Cuenta Padre)
 
-        # Mapeo exacto de las columnas monetarias de egresos
-        c_pres = [c for c in cols_e if "PRESUPUESTO" in c or "INICIAL" in c]
-        c_pres = c_pres[0] if c_pres else cols_e[6]
-        
-        c_mod = [c for c in cols_e if "MODIFIC" in c or "AMP" in c]
-        c_mod = c_mod[0] if c_mod else None
-
-        c_vig = [c for c in cols_e if "VIGENTE" in c]
-        c_vig = c_vig[0] if c_vig else None
-
-        c_dev = [c for c in cols_e if "DEVENG" in c or "EJECUTADO" in c or "TOTAL" in c]
-        c_dev = c_dev[0] if c_dev else cols_e[6]
-
-        c_saldo = [c for c in cols_e if "SALDO" in c or "DISPONIBLE" in c]
-        c_saldo = c_saldo[0] if c_saldo else None
+        # Columnas de valores exactas según tus letras asignadas:
+        # G = Presupuesto (índice 6), H = Devengado (índice 7), I = Ejecutado (índice 8)
+        # J = Modificaciones (índice 9), K = Saldo (índice 10)
+        c_pres = cols_e[6] if len(cols_e) > 6 else cols_e[6]
+        c_dev = cols_e[7] if len(cols_e) > 7 else cols_e[6]
+        c_ejec = cols_e[8] if len(cols_e) > 8 else cols_e[6]
+        c_mod = cols_e[9] if len(cols_e) > 9 else cols_e[6]
+        c_saldo = cols_e[10] if len(cols_e) > 10 else cols_e[6]
 
         # FILTRADO ESTRICTO: D y N con datos válidos
         df_validas = df_ejec_completo[
@@ -2078,7 +2072,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
         ])
 
         with tab_ejec_1:
-            st.markdown("##### 📋 Vista Jerárquica de Egresos - Columnas Oficiales")
+            st.markdown("##### 📋 Vista Jerárquica de Egresos - Columnas Exactas (G, H, I, J, K)")
             cf1, cf2, col_f3 = st.columns(3)
             sec_ops = sorted([str(x) for x in df_validas[c_sec_k].unique() if str(x).strip() != ""])
 
@@ -2102,21 +2096,21 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             if sec_s_ejec and sub_s_ejec and dest_s_ejec:
                 df_f_oficial_ejec = df_ejec_f2[df_ejec_f2[c_dest_k].astype(str).str.strip().str.upper() == dest_s_ejec.strip().upper()].copy()
                 
-                df_f_oficial_ejec["_P_VAL"] = df_f_oficial_ejec[c_pres].apply(limpiar_monto_val) if c_pres else 0.0
-                df_f_oficial_ejec["_M_VAL"] = df_f_oficial_ejec[c_mod].apply(limpiar_monto_val) if c_mod else 0.0
-                df_f_oficial_ejec["_V_VAL"] = df_f_oficial_ejec[c_vig].apply(limpiar_monto_val) if c_vig else (df_f_oficial_ejec["_P_VAL"] + df_f_oficial_ejec["_M_VAL"])
-                df_f_oficial_ejec["_D_VAL"] = df_f_oficial_ejec[c_dev].apply(limpiar_monto_val) if c_dev else 0.0
-                df_f_oficial_ejec["_S_VAL"] = df_f_oficial_ejec[c_saldo].apply(limpiar_monto_val) if c_saldo else (df_f_oficial_ejec["_V_VAL"] - df_f_oficial_ejec["_D_VAL"])
+                df_f_oficial_ejec["_G_VAL"] = df_f_oficial_ejec[c_pres].apply(limpiar_monto_val)
+                df_f_oficial_ejec["_H_VAL"] = df_f_oficial_ejec[c_dev].apply(limpiar_monto_val)
+                df_f_oficial_ejec["_I_VAL"] = df_f_oficial_ejec[c_ejec].apply(limpiar_monto_val)
+                df_f_oficial_ejec["_J_VAL"] = df_f_oficial_ejec[c_mod].apply(limpiar_monto_val)
+                df_f_oficial_ejec["_K_VAL"] = df_f_oficial_ejec[c_saldo].apply(limpiar_monto_val)
 
-                tot_dev = df_f_oficial_ejec["_D_VAL"].sum()
+                tot_ejec_val = df_f_oficial_ejec["_I_VAL"].sum()
 
                 st.markdown(f"""
                 <div style="border: 1px solid #000; padding: 0px; border-radius: 2px; background-color: #fff; font-family: Arial, sans-serif;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <tr>
                             <td style="width: 25%; font-size: 11px; padding: 15px; border-right: 1px solid #000; text-align: left;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 9px; color: #777;">Ejecución de Egresos</span></td>
-                            <td style="width: 50%; text-align: center; padding: 15px; border-right: 1px solid #000; vertical-align: middle;"><h2 style="margin: 0; font-size: 16px; font-weight: bold;">REPORTE DE EJECUCIÓN POR DESTINO</h2><h4 style="margin: 4px 0 0 0; font-size: 12px; font-weight: normal;">- Control Presupuestario -</h4></td>
-                            <td style="width: 25%; text-align: center; background-color: #f5f5f5; vertical-align: middle;"><div style="font-size: 12px; font-weight: bold; border-bottom: 1px solid #000; padding: 4px 0;">Total Ejecutado / Devengado</div><div style="font-size: 16px; font-weight: bold;">${tot_dev:,.2f}</div></td>
+                            <td style="width: 50%; text-align: center; padding: 15px; border-right: 1px solid #000; vertical-align: middle;"><h2 style="margin: 0; font-size: 16px; font-weight: bold;">REPORTE DE EJECUCIÓN POR DESTINO</h2><h4 style="margin: 4px 0 0 0; font-size: 12px; font-weight: normal;">- Control Financiero -</h4></td>
+                            <td style="width: 25%; text-align: center; background-color: #f5f5f5; vertical-align: middle;"><div style="font-size: 12px; font-weight: bold; border-bottom: 1px solid #000; padding: 4px 0;">Total Ejecutado</div><div style="font-size: 16px; font-weight: bold;">${tot_ejec_val:,.2f}</div></td>
                         </tr>
                     </table>
                     <div style="border-top: 1px solid #000; font-size: 11px; padding: 6px 10px;">
@@ -2130,49 +2124,49 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                 else:
                     f_plan_ejec = []
                     for obj, df_obj in df_f_oficial_ejec.groupby(c_obj):
-                        tp_p = df_obj["_P_VAL"].sum()
-                        tp_m = df_obj["_M_VAL"].sum()
-                        tp_v = df_obj["_V_VAL"].sum()
-                        tp_d = df_obj["_D_VAL"].sum()
-                        tp_s = df_obj["_S_VAL"].sum()
+                        tp_g = df_obj["_G_VAL"].sum()
+                        tp_h = df_obj["_H_VAL"].sum()
+                        tp_i = df_obj["_I_VAL"].sum()
+                        tp_j = df_obj["_J_VAL"].sum()
+                        tp_k = df_obj["_K_VAL"].sum()
                         f_plan_ejec.append({
                             "OBJETO / CUENTA / IMPUTACIÓN": f"<b>{obj}</b>",
-                            "PRESUPUESTO": f"<b>${tp_p:,.2f}</b>",
-                            "MODIF.": f"<b>${tp_m:,.2f}</b>",
-                            "VIGENTE": f"<b>${tp_v:,.2f}</b>",
-                            "EJECUTADO": f"<b>${tp_d:,.2f}</b>",
-                            "SALDO": f"<b>${tp_s:,.2f}</b>"
+                            "PRESUPUESTADO (G)": f"<b>${tp_g:,.2f}</b>",
+                            "DEVENGADO (H)": f"<b>${tp_h:,.2f}</b>",
+                            "EJECUTADO (I)": f"<b>${tp_i:,.2f}</b>",
+                            "MODIFICACIONES (J)": f"<b>${tp_j:,.2f}</b>",
+                            "SALDO (K)": f"<b>${tp_k:,.2f}</b>"
                         })
 
                         for pad, df_pad in df_obj.groupby(c_padre):
-                            pad_p = df_pad["_P_VAL"].sum()
-                            pad_m = df_pad["_M_VAL"].sum()
-                            pad_v = df_pad["_V_VAL"].sum()
-                            pad_d = df_pad["_D_VAL"].sum()
-                            pad_s = df_pad["_S_VAL"].sum()
+                            pad_g = df_pad["_G_VAL"].sum()
+                            pad_h = df_pad["_H_VAL"].sum()
+                            pad_i = df_pad["_I_VAL"].sum()
+                            pad_j = df_pad["_J_VAL"].sum()
+                            pad_k = df_pad["_K_VAL"].sum()
                             f_plan_ejec.append({
                                 "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{pad}</b>",
-                                "PRESUPUESTO": f"<b>${pad_p:,.2f}</b>",
-                                "MODIF.": f"<b>${pad_m:,.2f}</b>",
-                                "VIGENTE": f"<b>${pad_v:,.2f}</b>",
-                                "EJECUTADO": f"<b>${pad_d:,.2f}</b>",
-                                "SALDO": f"<b>${pad_s:,.2f}</b>"
+                                "PRESUPUESTADO (G)": f"<b>${pad_g:,.2f}</b>",
+                                "DEVENGADO (H)": f"<b>${pad_h:,.2f}</b>",
+                                "EJECUTADO (I)": f"<b>${pad_i:,.2f}</b>",
+                                "MODIFICACIONES (J)": f"<b>${pad_j:,.2f}</b>",
+                                "SALDO (K)": f"<b>${pad_k:,.2f}</b>"
                             })
 
                             for _, r in df_pad.iterrows():
-                                vp = limpiar_monto_val(r.get(c_pres, 0))
-                                vm = limpiar_monto_val(r.get(c_mod, 0)) if c_mod else 0.0
-                                vv = limpiar_monto_val(r.get(c_vig, 0)) if c_vig else (vp + vm)
-                                vd = limpiar_monto_val(r.get(c_dev, 0))
-                                vs = limpiar_monto_val(r.get(c_saldo, 0)) if c_saldo else (vv - vd)
+                                vg = limpiar_monto_val(r.get(c_pres, 0))
+                                vh = limpiar_monto_val(r.get(c_dev, 0))
+                                vi = limpiar_monto_val(r.get(c_ejec, 0))
+                                vj = limpiar_monto_val(r.get(c_mod, 0))
+                                vk = limpiar_monto_val(r.get(c_saldo, 0))
                                 partida_val = str(r.get(c_partida, ""))
                                 f_plan_ejec.append({
                                     "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{partida_val}",
-                                    "PRESUPUESTO": f"${vp:,.2f}",
-                                    "MODIF.": f"${vm:,.2f}",
-                                    "VIGENTE": f"${vv:,.2f}",
-                                    "EJECUTADO": f"${vd:,.2f}",
-                                    "SALDO": f"${vs:,.2f}"
+                                    "PRESUPUESTADO (G)": f"${vg:,.2f}",
+                                    "DEVENGADO (H)": f"${vh:,.2f}",
+                                    "EJECUTADO (I)": f"${vi:,.2f}",
+                                    "MODIFICACIONES (J)": f"${vj:,.2f}",
+                                    "SALDO (K)": f"${vk:,.2f}"
                                 })
 
                     st.markdown("<br>", unsafe_allow_html=True)
@@ -2182,8 +2176,8 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
 
         with tab_ejec_2:
             st.markdown("##### 📦 Consolidado de Egresos por Objeto del Gasto")
-            df_validas["_D_VAL"] = df_validas[c_dev].apply(limpiar_monto_val) if c_dev else 0.0
-            df_obj_res = df_validas.groupby(c_obj)["_D_VAL"].sum().reset_index()
+            df_validas["_I_VAL"] = df_validas[c_ejec].apply(limpiar_monto_val)
+            df_obj_res = df_validas.groupby(c_obj)["_I_VAL"].sum().reset_index()
             df_obj_res.columns = ["OBJETO DEL GASTO", "EJECUTADO ($)"]
             df_obj_res["EJECUTADO ($)"] = df_obj_res["EJECUTADO ($)"].map(lambda x: f"${x:,.2f}")
             st.dataframe(df_obj_res, use_container_width=True, hide_index=True)
@@ -2202,42 +2196,42 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             st.info("💡 Hacé clic abajo para descargar el reporte oficial completo con sus columnas financieras y firmas.")
 
             bloques_ejec_html = ""
-            total_general_dev = 0.0
+            total_general_ejec = 0.0
 
             for (s_exp, sub_e, d_exp), df_g_exp in df_validas.groupby([c_sec_k, c_sub_k, c_dest_k]):
                 rows_html_exp = ""
                 tot_p_dest = 0.0
 
                 for obj, df_obj in df_g_exp.groupby(c_obj):
-                    tp_p = sum(limpiar_monto_val(r.get(c_pres, 0)) for _, r in df_obj.iterrows())
-                    tp_m = sum(limpiar_monto_val(r.get(c_mod, 0)) for _, r in df_obj.iterrows()) if c_mod else 0.0
-                    tp_v = sum(limpiar_monto_val(r.get(c_vig, 0)) for _, r in df_obj.iterrows()) if c_vig else (tp_p + tp_m)
-                    tp_d = sum(limpiar_monto_val(r.get(c_dev, 0)) for _, r in df_obj.iterrows())
-                    tp_s = sum(limpiar_monto_val(r.get(c_saldo, 0)) for _, r in df_obj.iterrows()) if c_saldo else (tp_v - tp_d)
-                    tot_p_dest += tp_d
+                    tp_g = sum(limpiar_monto_val(r.get(c_pres, 0)) for _, r in df_obj.iterrows())
+                    tp_h = sum(limpiar_monto_val(r.get(c_dev, 0)) for _, r in df_obj.iterrows())
+                    tp_i = sum(limpiar_monto_val(r.get(c_ejec, 0)) for _, r in df_obj.iterrows())
+                    tp_j = sum(limpiar_monto_val(r.get(c_mod, 0)) for _, r in df_obj.iterrows())
+                    tp_k = sum(limpiar_monto_val(r.get(c_saldo, 0)) for _, r in df_obj.iterrows())
+                    tot_p_dest += tp_i
 
-                    rows_html_exp += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${tp_p:,.2f}</td><td style="text-align: right;">${tp_m:,.2f}</td><td style="text-align: right;">${tp_v:,.2f}</td><td style="text-align: right;">${tp_d:,.2f}</td><td style="text-align: right;">${tp_s:,.2f}</td></tr>'
+                    rows_html_exp += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${tp_g:,.2f}</td><td style="text-align: right;">${tp_h:,.2f}</td><td style="text-align: right;">${tp_i:,.2f}</td><td style="text-align: right;">${tp_j:,.2f}</td><td style="text-align: right;">${tp_k:,.2f}</td></tr>'
 
                     for pad, df_pad in df_obj.groupby(c_padre):
-                        pad_p = sum(limpiar_monto_val(r.get(c_pres, 0)) for _, r in df_pad.iterrows())
-                        pad_m = sum(limpiar_monto_val(r.get(c_mod, 0)) for _, r in df_pad.iterrows()) if c_mod else 0.0
-                        pad_v = sum(limpiar_monto_val(r.get(c_vig, 0)) for _, r in df_pad.iterrows()) if c_vig else (pad_p + pad_m)
-                        pad_d = sum(limpiar_monto_val(r.get(c_dev, 0)) for _, r in df_pad.iterrows())
-                        pad_s = sum(limpiar_monto_val(r.get(c_saldo, 0)) for _, r in df_pad.iterrows()) if c_saldo else (pad_v - pad_d)
+                        pad_g = sum(limpiar_monto_val(r.get(c_pres, 0)) for _, r in df_pad.iterrows())
+                        pad_h = sum(limpiar_monto_val(r.get(c_dev, 0)) for _, r in df_pad.iterrows())
+                        pad_i = sum(limpiar_monto_val(r.get(c_ejec, 0)) for _, r in df_pad.iterrows())
+                        pad_j = sum(limpiar_monto_val(r.get(c_mod, 0)) for _, r in df_pad.iterrows())
+                        pad_k = sum(limpiar_monto_val(r.get(c_saldo, 0)) for _, r in df_pad.iterrows())
 
-                        rows_html_exp += f'<tr style="font-weight: bold;"><td style="text-align: left; padding-left: 20px;">{pad}</td><td style="text-align: right;">${pad_p:,.2f}</td><td style="text-align: right;">${pad_m:,.2f}</td><td style="text-align: right;">${pad_v:,.2f}</td><td style="text-align: right;">${pad_d:,.2f}</td><td style="text-align: right;">${pad_s:,.2f}</td></tr>'
+                        rows_html_exp += f'<tr style="font-weight: bold;"><td style="text-align: left; padding-left: 20px;">{pad}</td><td style="text-align: right;">${pad_g:,.2f}</td><td style="text-align: right;">${pad_h:,.2f}</td><td style="text-align: right;">${pad_i:,.2f}</td><td style="text-align: right;">${pad_j:,.2f}</td><td style="text-align: right;">${pad_k:,.2f}</td></tr>'
 
                         for _, rw in df_pad.iterrows():
-                            vp = limpiar_monto_val(rw.get(c_pres, 0))
-                            vm = limpiar_monto_val(rw.get(c_mod, 0)) if c_mod else 0.0
-                            vv = limpiar_monto_val(rw.get(c_vig, 0)) if c_vig else (vp + vm)
-                            vd = limpiar_monto_val(rw.get(c_dev, 0))
-                            vs = limpiar_monto_val(rw.get(c_saldo, 0)) if c_saldo else (vv - vd)
+                            vg = limpiar_monto_val(rw.get(c_pres, 0))
+                            vh = limpiar_monto_val(rw.get(c_dev, 0))
+                            vi = limpiar_monto_val(rw.get(c_ejec, 0))
+                            vj = limpiar_monto_val(rw.get(c_mod, 0))
+                            vk = limpiar_monto_val(rw.get(c_saldo, 0))
                             partida_txt = str(rw.get(c_partida, ""))
 
-                            rows_html_exp += f'<tr><td style="text-align: left; padding-left: 40px;">{partida_txt}</td><td style="text-align: right;">${vp:,.2f}</td><td style="text-align: right;">${vm:,.2f}</td><td style="text-align: right;">${vv:,.2f}</td><td style="text-align: right;">${vd:,.2f}</td><td style="text-align: right;">${vs:,.2f}</td></tr>'
+                            rows_html_exp += f'<tr><td style="text-align: left; padding-left: 40px;">{partida_txt}</td><td style="text-align: right;">${vg:,.2f}</td><td style="text-align: right;">${vh:,.2f}</td><td style="text-align: right;">${vi:,.2f}</td><td style="text-align: right;">${vj:,.2f}</td><td style="text-align: right;">${vk:,.2f}</td></tr>'
 
-                total_general_dev += tot_p_dest
+                total_general_ejec += tot_p_dest
 
                 bloques_ejec_html += f"""
                 <div class="bloque-destino">
@@ -2257,10 +2251,10 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                         <thead>
                             <tr>
                                 <th style="text-align: left; padding-left: 8px;">OBJETO / CUENTA / IMPUTACIÓN</th>
-                                <th style="text-align: right;">PRESUPUESTO</th>
-                                <th style="text-align: right;">MODIF.</th>
-                                <th style="text-align: right;">VIGENTE</th>
+                                <th style="text-align: right;">PRESUPUESTADO</th>
+                                <th style="text-align: right;">DEVENGADO</th>
                                 <th style="text-align: right;">EJECUTADO</th>
+                                <th style="text-align: right;">MODIFICACIONES</th>
                                 <th style="text-align: right;">SALDO</th>
                             </tr>
                         </thead>
@@ -2296,7 +2290,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             <body onload="window.print();">
                 {bloques_ejec_html}
                 <div class="resumen-final">
-                    <b>TOTAL GENERAL EJECUTADO MUNICIPAL:</b> ${total_general_dev:,.2f}
+                    <b>TOTAL GENERAL EJECUTADO MUNICIPAL:</b> ${total_general_ejec:,.2f}
                 </div>
                 <div class="firmas-container">
                     <div class="firma-box">Responsable Presupuesto</div>

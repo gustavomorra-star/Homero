@@ -2030,10 +2030,10 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
         ])
 
         # -------------------------------------------------------------
-        # SOLAPA 1: DESGLOSE ESCALONADO CON LAS 5 COLUMNAS DE VALORES
+        # SOLAPA 1: DESGLOSE ESCALONADO CON LAS COLUMNAS DE VALORES
         # -------------------------------------------------------------
         with tab_ejec_1:
-            st.markdown("##### 📋 Vista Jerárquica con Control Financiero (Presupuesto, Devengado, Ejecutado, Modif., Saldo)")
+            st.markdown("##### 📋 Vista Jerárquica con Control Financiero")
 
             c_ex1, c_ex2 = st.columns(2)
             col_sec_key = [c for c in df_ejec_completo.columns if "SECRETARÍA" in c or "SEC" in c]
@@ -2063,27 +2063,49 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                 if df_filtrado_final.empty:
                     st.info("💡 No hay registros para esta combinación.")
                 else:
-                    for destino_val, df_dest in df_filtrado_final.groupby(df_filtrado_final.columns[2] if len(df_filtrado_final.columns) > 2 else df_filtrado_final.columns[0]):
+                    # Detectamos de forma segura las columnas por posición o nombre
+                    cols_totales = df_filtrado_final.columns.tolist()
+                    
+                    def obtener_val_seguro(row, idx_preferido):
+                        if len(cols_totales) > idx_preferido:
+                            val = row.get(cols_totales[idx_preferido], 0)
+                        else:
+                            val = 0
+                        try:
+                            # Limpiamos símbolos de moneda si los hubiera
+                            s_val = str(val).replace("$", "").replace(".", "").replace(",", ".").strip()
+                            return float(s_val) if s_val and s_val != "nan" else 0.0
+                        except Exception:
+                            return 0.0
+
+                    for destino_val, df_dest in df_filtrado_final.groupby(cols_totales[2] if len(cols_totales) > 2 else cols_totales[0]):
                         st.markdown(f"#### 📌 DESTINO: {str(destino_val).upper()}")
 
                         tabla_destino_rows = []
                         for _, row in df_dest.iterrows():
+                            # Índices seguros basados en tu estructura: 
+                            # 3: Objeto, 13 (o última): Cuenta Padre, 4: Imputación, 6: Presup, 7: Devengado, 8: Ejec, 9: Modif, 10: Saldo
+                            val_presup = obtener_val_seguro(row, 6)
+                            val_deveng = obtener_val_seguro(row, 7)
+                            val_ejec   = obtener_val_seguro(row, 8)
+                            val_modif  = obtener_val_seguro(row, 9)
+                            val_saldo  = obtener_val_seguro(row, 10)
+
                             tabla_destino_rows.append({
-                                "OBJETO DE GASTO": row.get(df_filtrado_final.columns[3] if len(df_filtrado_final.columns) > 3 else "", ""),
-                                "CUENTA PADRE": row.get(df_filtrado_final.columns[13] if len(df_filtrado_final.columns) > 13 else "", ""),
-                                "IMPUTACIÓN": row.get(df_filtrado_final.columns[4] if len(df_filtrado_final.columns) > 4 else "", ""),
-                                "PRESUPUESTADO (G)": f"${float(row.get(df_filtrado_final.columns[6], 0) or 0):,.2f}",
-                                "DEVENGADO (H)": f"${float(row.get(df_filtrado_final.columns[7], 0) or 0):,.2f}",
-                                "EJECUTADO (I)": f"${float(row.get(df_filtrado_final.columns[8], 0) or 0):,.2f}",
-                                "MODIFICACIONES (J)": f"${float(row.get(df_filtrado_final.columns[9], 0) or 0):,.2f}",
-                                "SALDO (K)": f"${float(row.get(df_filtrado_final.columns[10], 0) or 0):,.2f}",
+                                "OBJETO DE GASTO": row.get(cols_totales[3] if len(cols_totales) > 3 else "", ""),
+                                "CUENTA PADRE": row.get(cols_totales[13] if len(cols_totales) > 13 else cols_totales[-1], ""),
+                                "IMPUTACIÓN": row.get(cols_totales[4] if len(cols_totales) > 4 else "", ""),
+                                "PRESUPUESTADO (G)": f"${val_presup:,.2f}",
+                                "DEVENGADO (H)": f"${val_deveng:,.2f}",
+                                "EJECUTADO (I)": f"${val_ejec:,.2f}",
+                                "MODIFICACIONES (J)": f"${val_modif:,.2f}",
+                                "SALDO (K)": f"${val_saldo:,.2f}",
                             })
 
                         df_view_dest = pd.DataFrame(tabla_destino_rows)
                         st.dataframe(df_view_dest, use_container_width=True, hide_index=True)
             else:
                 st.info("💡 Seleccioná Secretaría y Subsecretaría arriba para desplegar el árbol de ejecución.")
-
         # -------------------------------------------------------------
         # SOLAPA 2: TOTALES POR OBJETO DEL GASTO
         # -------------------------------------------------------------

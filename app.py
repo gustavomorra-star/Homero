@@ -2008,75 +2008,186 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 use_container_width=True, hide_index=True
             )
 # =====================================================================
-# SECCIÓN 21: SISTEMA INTEGRAL DE EJECUCIÓN PRESUPUESTARIA
+# SECCIÓN 21: SISTEMA INTEGRAL DE EJECUCIÓN PRESUPUESTARIA OFICIAL
 # =====================================================================
 elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
-  st.subheader(
-      "📈 Módulo de Ejecución Presupuestaria - Reportes y Análisis"
-  )
+    st.subheader("📈 Módulo de Ejecución Presupuestaria - Reportes Oficiales")
 
-  df_ejec_completo = leer_datos_gsheet(URL_READ_EJECUCION)
+    df_ejec_completo = leer_datos_gsheet(URL_READ_EJECUCION)
 
-  if df_ejec_completo.empty:
-    st.warning("⚠️ No se pudieron cargar los datos de la hoja de ejecución.")
-  else:
-    # Estandarizamos columnas a mayúsculas
-    df_ejec_completo.columns = [
-        str(c).strip().upper() for c in df_ejec_completo.columns
-    ]
+    if df_ejec_completo.empty:
+        st.warning("⚠️ No se pudieron cargar los datos de la hoja de ejecución.")
+    else:
+        # Estandarizamos columnas a mayúsculas
+        df_ejec_completo.columns = [str(c).strip().upper() for c in df_ejec_completo.columns]
 
-    # Creamos las solapas internas para tener todos los reportes organizados
-    tab_ejec_1, tab_ejec_2, tab_ejec_3, tab_ejec_4 = st.tabs([
-        "🏛️ Desglose Escalonado por Destino",
-        "📦 Totales por Objeto del Gasto",
-        "🏢 Vista por Subsecretaría",
-        "🔍 Buscador y Control de Saldos",
-    ])
+        # Pestañas internas para ordenar todas las vistas de ejecución
+        tab_ejec_1, tab_ejec_2, tab_ejec_3, tab_ejec_4 = st.tabs([
+            "🏛️ Desglose Escalonado por Destino",
+            "📦 Totales por Objeto del Gasto",
+            "🔍 Buscador y Control de Saldos",
+            "📄 Exportación y Firmas (PDF)"
+        ])
 
-    # -----------------------------------------------------------------
-    # SOLAPA 1: DESGLOSE ESCALONADO (Estructura jerárquica completa)
-    # -----------------------------------------------------------------
-    with tab_ejec_1:
-      st.markdown("##### 📋 Desglose Jerárquico con Columnas de Ejecución")
-      # Aquí colocamos los selectores de Secretaría / Subsecretaría y la tabla escalonada
-      st.info(
-          "💡 Seleccioná el área para desplegar el árbol presupuestario con"
-          " Presupuesto, Devengado, Ejecutado, Modificaciones y Saldo."
-      )
+        # -------------------------------------------------------------
+        # SOLAPA 1: DESGLOSE ESCALONADO CON LAS 5 COLUMNAS DE VALORES
+        # -------------------------------------------------------------
+        with tab_ejec_1:
+            st.markdown("##### 📋 Vista Jerárquica con Control Financiero (Presupuesto, Devengado, Ejecutado, Modif., Saldo)")
 
-      # (Aquí integramos los filtros de Secretaría, Subsecretaría y la tabla con las columnas G, H, I, J, K)
+            c_ex1, c_ex2 = st.columns(2)
+            col_sec_key = [c for c in df_ejec_completo.columns if "SECRETARÍA" in c or "SEC" in c]
+            col_sec_key = col_sec_key[0] if col_sec_key else df_ejec_completo.columns[0]
 
-    # -----------------------------------------------------------------
-    # SOLAPA 2: TOTALES POR OBJETO
-    # -----------------------------------------------------------------
-    with tab_ejec_2:
-      st.markdown("##### 📦 Consolidado de Ejecución por Objeto del Gasto")
-      st.info(
-          "💡 Próximamente: Agrupamiento automático por Objeto de Gasto para"
-          " comparar lo devengado vs lo presupuestado."
-      )
+            sec_opciones = sorted([str(x) for x in df_ejec_completo[col_sec_key].unique() if str(x).strip() != "" and str(x).strip() != "NAN"])
 
-    # -----------------------------------------------------------------
-    # SOLAPA 3: VISTA POR SUBSECRETARÍA
-    # -----------------------------------------------------------------
-    with tab_ejec_3:
-      st.markdown("##### 🏢 Resumen Financiero por Subsecretaría")
-      st.info(
-          "💡 Próximamente: Métricas de ejecución y avance porcentual por cada"
-      )
+            with c_ex1:
+                ejec_sec_sel = st.selectbox("1. SELECCIONÁ SECRETARÍA:", options=[""] + sec_opciones, key="ejec_sec_tab1")
 
-    # -----------------------------------------------------------------
-    # SOLAPA 4: BUSCADOR
-    # -----------------------------------------------------------------
-    with tab_ejec_4:
-      st.markdown("##### 🔍 Buscador General de Partidas en Ejecución")
-      q_ejec = st.text_input(
-          "Buscar cuenta, partida o texto:", key="busq_avanzada_ejec"
-      ).strip()
-      if q_ejec:
-        mask_q = df_ejec_completo.astype(str).apply(
-            lambda r: r.str.lower().str.contains(q_ejec.lower()).any(), axis=1
-        )
-        st.dataframe(
-            df_ejec_completo[mask_q], use_container_width=True, hide_index=True
-        )
+            df_ejec_f1 = df_ejec_completo[df_ejec_completo[col_sec_key].astype(str).str.strip().str.upper() == ejec_sec_sel.strip().upper()] if ejec_sec_sel else pd.DataFrame()
+
+            col_sub_key = [c for c in df_ejec_completo.columns if "SUB" in c]
+            col_sub_key = col_sub_key[0] if col_sub_key else (df_ejec_completo.columns[1] if len(df_ejec_completo.columns) > 1 else col_sec_key)
+
+            sub_opciones = sorted([str(x) for x in df_ejec_f1[col_sub_key].unique() if str(x).strip() != "" and str(x).strip() != "NAN"]) if not df_ejec_f1.empty else []
+
+            with c_ex2:
+                ejec_sub_sel = st.selectbox("2. SELECCIONÁ SUBSECRETARÍA:", options=[""] + sub_opciones, key="ejec_sub_tab1")
+
+            if ejec_sec_sel and ejec_sub_sel:
+                df_filtrado_final = df_ejec_f1[df_ejec_f1[col_sub_key].astype(str).str.strip().str.upper() == ejec_sub_sel.strip().upper()]
+
+                st.markdown("---")
+                st.markdown(f"### 📍 Secretaría: {ejec_sec_sel} | Subsecretaría: {ejec_sub_sel}")
+
+                if df_filtrado_final.empty:
+                    st.info("💡 No hay registros para esta combinación.")
+                else:
+                    for destino_val, df_dest in df_filtrado_final.groupby(df_filtrado_final.columns[2] if len(df_filtrado_final.columns) > 2 else df_filtrado_final.columns[0]):
+                        st.markdown(f"#### 📌 DESTINO: {str(destino_val).upper()}")
+
+                        tabla_destino_rows = []
+                        for _, row in df_dest.iterrows():
+                            tabla_destino_rows.append({
+                                "OBJETO DE GASTO": row.get(df_filtrado_final.columns[3] if len(df_filtrado_final.columns) > 3 else "", ""),
+                                "CUENTA PADRE": row.get(df_filtrado_final.columns[13] if len(df_filtrado_final.columns) > 13 else "", ""),
+                                "IMPUTACIÓN": row.get(df_filtrado_final.columns[4] if len(df_filtrado_final.columns) > 4 else "", ""),
+                                "PRESUPUESTADO (G)": f"${float(row.get(df_filtrado_final.columns[6], 0) or 0):,.2f}",
+                                "DEVENGADO (H)": f"${float(row.get(df_filtrado_final.columns[7], 0) or 0):,.2f}",
+                                "EJECUTADO (I)": f"${float(row.get(df_filtrado_final.columns[8], 0) or 0):,.2f}",
+                                "MODIFICACIONES (J)": f"${float(row.get(df_filtrado_final.columns[9], 0) or 0):,.2f}",
+                                "SALDO (K)": f"${float(row.get(df_filtrado_final.columns[10], 0) or 0):,.2f}",
+                            })
+
+                        df_view_dest = pd.DataFrame(tabla_destino_rows)
+                        st.dataframe(df_view_dest, use_container_width=True, hide_index=True)
+            else:
+                st.info("💡 Seleccioná Secretaría y Subsecretaría arriba para desplegar el árbol de ejecución.")
+
+        # -------------------------------------------------------------
+        # SOLAPA 2: TOTALES POR OBJETO DEL GASTO
+        # -------------------------------------------------------------
+        with tab_ejec_2:
+            st.markdown("##### 📦 Consolidado de Ejecución por Objeto del Gasto")
+            obj_col_idx = 3 if len(df_ejec_completo.columns) > 3 else 0
+            val_col_presup = 6 if len(df_ejec_completo.columns) > 6 else obj_col_idx
+            
+            # Aseguramos formato numérico para sumar
+            df_ejec_completo["_TMP_PRES"] = pd.to_numeric(df_ejec_completo.iloc[:, val_col_presup].astype(str).str.replace("$","").str.replace(".","").str.replace(",","."), errors='coerce').fillna(0.0)
+            
+            df_obj_resumen = df_ejec_completo.groupby(df_ejec_completo.columns[obj_col_idx])["_TMP_PRES"].sum().reset_index()
+            df_obj_resumen.columns = ["OBJETO DEL GASTO", "TOTAL PRESUPUESTADO ($)"]
+            df_obj_resumen["TOTAL PRESUPUESTADO ($)"] = df_obj_resumen["TOTAL PRESUPUESTADO ($)"].map(lambda x: f"${x:,.2f}")
+            
+            st.dataframe(df_obj_resumen, use_container_width=True, hide_index=True)
+
+        # -------------------------------------------------------------
+        # SOLAPA 3: BUSCADOR GENERAL
+        # -------------------------------------------------------------
+        with tab_ejec_3:
+            st.markdown("##### 🔍 Buscador de Partidas en Planilla de Ejecución")
+            q_ejec = st.text_input("Buscar texto, cuenta, partida o destino en ejecución:", key="busq_avanzada_ejec").strip()
+            if q_ejec:
+                mask_q = df_ejec_completo.astype(str).apply(lambda r: r.str.lower().str.contains(q_ejec.lower()).any(), axis=1)
+                st.dataframe(df_ejec_completo[mask_q], use_container_width=True, hide_index=True)
+            else:
+                st.info("Escribí un criterio de búsqueda para filtrar la planilla en tiempo real.")
+
+        # -------------------------------------------------------------
+        # SOLAPA 4: EXPORTACIÓN Y FIRMAS (Con formato oficial HTML/PDF)
+        # -------------------------------------------------------------
+        with tab_ejec_4:
+            st.markdown("##### 📄 Exportación Oficial con Cuadros de Firmas")
+            st.info("Generá el reporte completo listo para imprimir o guardar como PDF con las firmas institucionales.")
+
+            if st.button("🖨️ Generar Reporte Oficial de Ejecución con Firmas", type="primary", use_container_width=True):
+                # Armamos el HTML con diseño oficial para impresión
+                html_ejec_firmas = f"""
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <style>
+                        @page {{ size: A4 landscape; margin: 12mm; }}
+                        body {{ font-family: Arial, sans-serif; color: #000; margin: 0 auto; width: 100%; max-width: 1050px; }}
+                        .m-box {{ border: 1px solid #000; padding: 10px; margin-bottom: 15px; background-color: #fff; }}
+                        .t-hdr {{ width: 100%; border-collapse: collapse; }}
+                        .t-hdr td {{ padding: 4px; vertical-align: middle; border: none; }}
+                        .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; margin-bottom: 25px; }}
+                        .tabla-datos th {{ border-bottom: 2px solid #000; padding: 6px 4px; text-align: center; font-weight: bold; background-color: #f2f2f2; }}
+                        .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 6px 4px; vertical-align: middle; }}
+                        .firmas-container {{ margin-top: 50px; width: 100%; page-break-inside: avoid; }}
+                        .firma-box {{ width: 30%; float: left; text-align: center; border-top: 1px solid #000; padding-top: 5px; margin: 0 1.5%; font-size: 11px; font-weight: bold; }}
+                    </style>
+                </head>
+                <body onload="window.print();">
+                    <div class="m-box">
+                        <table class="t-hdr">
+                            <tr>
+                                <td style="width: 30%;"><b>Municipalidad de Sunchales</b><br><small>Ejecución Presupuestaria Actual</small></td>
+                                <td style="width: 40%; text-align: center;"><h3>REPORTE OFICIAL DE EJECUCIÓN</h3></td>
+                                <td style="width: 30%; text-align: right;"><small>Fecha: {time.strftime('%d/%m/%Y')}</small></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <table class="tabla-datos">
+                        <thead>
+                            <tr>
+                                <th>SECRETARÍA</th>
+                                <th>SUBSECRETARÍA</th>
+                                <th>DESTINO</th>
+                                <th>PARTIDA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                """
+                
+                # Agregamos las filas principales de ejemplo al reporte imprimible
+                for _, rw in df_ejec_completo.head(50).iterrows():
+                    html_ejec_firmas += f"""
+                            <tr>
+                                <td>{rw.get(df_ejec_completo.columns[0], '')}</td>
+                                <td>{rw.get(df_ejec_completo.columns[1], '')}</td>
+                                <td>{rw.get(df_ejec_completo.columns[2], '')}</td>
+                                <td>{rw.get(df_ecap := df_ejec_completo.columns[4] if len(df_ejec_completo.columns) > 4 else '', '')}</td>
+                            </tr>
+                    """
+
+                html_ejec_firmas += """
+                        </tbody>
+                    </table>
+                    <div class="firmas-container">
+                        <div class="firma-box">Responsable Presupuesto</div>
+                        <div class="firma-box">Contaduría General</div>
+                        <div class="firma-box">Intendente / Secretario</div>
+                    </div>
+                </body>
+                </html>
+                """
+
+                st.download_button(
+                    label="📥 Descargar HTML Imprimible (Abrir y Guardar PDF)",
+                    data=html_ejec_firmas,
+                    file_name=f"Reporte_Ejecucion_Oficial_{time.strftime('%Y%m%d')}.html",
+                    mime="text/html",
+                    use_container_width=True
+                )

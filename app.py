@@ -2157,7 +2157,129 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             else:
                 st.info("Escribí un criterio de búsqueda para filtrar las partidas válidas.")
 
+        # -------------------------------------------------------------
+        # SOLAPA 4: EXPORTACIÓN Y FIRMAS (CON DESCARGA DIRECTA)
+        # -------------------------------------------------------------
         with tab_ejec_4:
-            st.markdown("##### 📄 Exportación Oficial de Ejecución con Firmas")
-            if st.button("🖨️ Generar y Descargar Reporte Oficial Consolidado", type="primary", use_container_width=True):
-                st.success("¡Reporte listo para imprimir o guardar como PDF!")
+          st.markdown("##### 📄 Exportación Oficial de Ejecución con Firmas")
+          st.info(
+              "💡 Hacé clic en el botón de abajo para generar y descargar"
+              " instantáneamente el reporte oficial consolidado de ejecución."
+          )
+
+          bloques_ejec_html = ""
+          col_sec_exp = cols_e[0]
+          col_sub_exp = cols_e[1] if len(cols_e) > 1 else cols_e[0]
+          col_dest_exp = cols_e[2] if len(cols_e) > 2 else cols_e[0]
+
+          for (s_exp, sub_e, d_exp), df_g_exp in df_validas.groupby(
+              [col_sec_exp, col_sub_exp, col_dest_exp]
+          ):
+            rows_html_exp = ""
+            tot_p_dest = 0.0
+
+            for _, rw in df_g_exp.iterrows():
+              p_val = limpiar_monto_val(
+                  rw.get(cols_e[6] if len(cols_e) > 6 else 0, 0)
+              )
+              d_val = limpiar_monto_val(
+                  rw.get(cols_e[7] if len(cols_e) > 7 else 0, 0)
+              )
+              e_val = limpiar_monto_val(
+                  rw.get(cols_e[8] if len(cols_e) > 8 else 0, 0)
+              )
+              m_val = limpiar_monto_val(
+                  rw.get(cols_e[9] if len(cols_e) > 9 else 0, 0)
+              )
+              s_val = limpiar_monto_val(
+                  rw.get(cols_e[10] if len(cols_e) > 10 else 0, 0)
+              )
+
+              tot_p_dest += p_val
+              partida_txt = rw.get(
+                  cols_e[4] if len(cols_e) > 4 else cols_e[3], ""
+              )
+              rows_html_exp += f"""
+                        <tr>
+                            <td style="text-align: left; padding-left: 8px;">{partida_txt}</td>
+                            <td style="text-align: right;">${p_val:,.2f}</td>
+                            <td style="text-align: right;">${d_val:,.2f}</td>
+                            <td style="text-align: right;">${e_val:,.2f}</td>
+                            <td style="text-align: right;">${m_val:,.2f}</td>
+                            <td style="text-align: right;">${s_val:,.2f}</td>
+                        </tr>
+                        """
+
+            bloques_ejec_html += f"""
+                    <div class="bloque-destino">
+                        <div class="m-box">
+                            <table class="t-hdr">
+                                <tr>
+                                    <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Ejecución Presupuestaria Actual</span></td>
+                                    <td style="width: 50%; text-align: center;"><b>REPORTE OFICIAL DE EJECUCIÓN</b><br><small>- Actual -</small></td>
+                                    <td style="width: 25%;" class="b-tot"><small>Total Destino (Presup.)</small><br><b>${tot_p_dest:,.2f}</b></td>
+                                </tr>
+                            </table>
+                            <div style="border-top: 1px solid #000; font-size: 11px; padding-top: 6px; margin-top: 6px;">
+                                <b>SECRETARÍA:</b> {s_exp} | <b>SUBSECRETARÍA:</b> {sub_e} | <span style="float: right;"><b>DESTINO:</b> {str(d_exp).upper()}</span>
+                            </div>
+                        </div>
+                        <table class="tabla-datos">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: left; padding-left: 8px;">CUENTA / IMPUTACIÓN</th>
+                                    <th style="text-align: right;">PRESUPUESTO</th>
+                                    <th style="text-align: right;">DEVENGADO</th>
+                                    <th style="text-align: right;">EJECUTADO</th>
+                                    <th style="text-align: right;">MODIFICACIONES</th>
+                                    <th style="text-align: right;">SALDO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows_html_exp}
+                            </tbody>
+                        </table>
+                        <div class="salto-pagina"></div>
+                    </div>
+                    """
+
+          html_completo_ejec_oficial = f"""
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <style>
+                        @page {{ size: A4 landscape; margin: 12mm; }}
+                        body {{ font-family: Arial, sans-serif; color: #000; margin: 0 auto; width: 100%; max-width: 1050px; }}
+                        .m-box {{ border: 1px solid #000; padding: 10px; margin-bottom: 15px; background-color: #fff; }}
+                        .t-hdr {{ width: 100%; border-collapse: collapse; }}
+                        .t-hdr td {{ padding: 4px; vertical-align: middle; border: none; }}
+                        .b-tot {{ border: 1px solid #000; background-color: #f5f5f5; text-align: center; }}
+                        .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; margin-bottom: 25px; }}
+                        .tabla-datos th {{ border-bottom: 2px solid #000; padding: 6px 4px; text-align: center; font-weight: bold; background-color: #f2f2f2; }}
+                        .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 6px 4px; vertical-align: middle; }}
+                        .salto-pagina {{ page-break-after: always; }}
+                        .firmas-container {{ margin-top: 50px; width: 100%; page-break-inside: avoid; }}
+                        .firma-box {{ width: 30%; float: left; text-align: center; border-top: 1px solid #000; padding-top: 5px; margin: 0 1.5%; font-size: 11px; font-weight: bold; }}
+                    </style>
+                </head>
+                <body onload="window.print();">
+                    {bloques_ejec_html}
+                    <div class="firmas-container">
+                        <div class="firma-box">Responsable Presupuesto</div>
+                        <div class="firma-box">Contaduría General</div>
+                        <div class="firma-box">Intendente / Secretario</div>
+                    </div>
+                </body>
+                </html>
+                """
+
+          st.download_button(
+              label="📥 Descargar Reporte Oficial Consolidado (HTML/PDF)",
+              data=html_completo_ejec_oficial,
+              file_name=(
+                  f"Reporte_Ejecucion_Consolidado_{time.strftime('%Y%m%d')}.html"
+              ),
+              mime="text/html",
+              use_container_width=True,
+              type="primary",
+          )

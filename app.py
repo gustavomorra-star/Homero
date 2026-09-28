@@ -2008,228 +2008,176 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 use_container_width=True, hide_index=True
             )
 # =====================================================================
-# SECCIÓN 21: SISTEMA INTEGRAL DE EJECUCIÓN PRESUPUESTARIA OFICIAL
+# SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (FILTRADO POR CUENTA VÁLIDA)
 # =====================================================================
 elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
-    st.subheader("📈 Módulo de Ejecución Presupuestaria - Reportes Oficiales")
+    st.subheader("📈 Reporte Oficial de Ejecución Presupuestaria")
 
-    df_ejec_completo = leer_datos_gsheet(URL_READ_EJECUCION)
+    df_ejec_oficial = leer_datos_gsheet(URL_READ_EJECUCION)
 
-    if df_ejec_completo.empty:
+    if df_ejec_oficial.empty:
         st.warning("⚠️ No se pudieron cargar los datos de la hoja de ejecución.")
     else:
-        # Estandarizamos columnas a mayúsculas
-        df_ejec_completo.columns = [str(c).strip().upper() for c in df_ejec_completo.columns]
+        df_ejec_oficial.columns = [str(c).strip().upper() for c in df_ejec_oficial.columns]
+        cols_e = df_ejec_oficial.columns.tolist()
 
-        # Función auxiliar interna para limpiar y convertir montos de forma segura
-        def limpiar_monto_seguro(val):
+        def limpiar_monto(val):
             if pd.isna(val): return 0.0
-            s_val = str(val).replace("$", "").replace(" ", "").strip()
-            if not s_val or s_val.lower() == "nan": return 0.0
-            if "," in s_val and "." in s_val:
-                s_val = s_val.replace(".", "").replace(",", ".")
-            elif "," in s_val:
-                s_val = s_val.replace(",", ".")
+            s = str(val).replace("$", "").replace(" ", "").strip()
+            if not s or s.lower() == "nan": return 0.0
+            if "," in s and "." in s:
+                s = s.replace(".", "").replace(",", ".")
+            elif "," in s:
+                s = s.replace(",", ".")
             try:
-                return float(s_val)
+                return float(s)
             except Exception:
                 return 0.0
 
-        # Pestañas internas para ordenar todas las vistas de ejecución exactamente igual
-        tab_ejec_1, tab_ejec_2, tab_ejec_3, tab_ejec_4 = st.tabs([
-            "🏛️ Desglose Escalonado por Destino",
-            "📦 Totales por Objeto del Gasto",
-            "🔍 Buscador y Control de Saldos",
-            "📄 Exportación y Firmas (PDF)"
-        ])
+        # Identificación segura de columnas según tu estructura
+        c_sec_k = cols_e[0]
+        c_sub_k = cols_e[1] if len(cols_e) > 1 else cols_e[0]
+        c_dest_k = cols_e[2] if len(cols_e) > 2 else cols_e[0]
+        c_obj = cols_e[3] if len(cols_e) > 3 else cols_e[0]
+        c_partida = cols_e[4] if len(cols_e) > 4 else cols_e[0] # Cuenta de Imputación
+        c_padre = cols_e[13] if len(cols_e) > 13 else cols_e[-1] # Cuenta Padre (Columna N aprox)
 
-        cols_totales = df_ejec_completo.columns.tolist()
+        # 🛡️ FILTRO ESTRICTO: Solo tomamos filas donde la Cuenta de Imputación (C) Y el Objeto/Padre no estén vacíos
+        df_validas = df_ejec_oficial[
+            df_ejec_oficial[c_partida].notna() & 
+            (df_ejec_oficial[c_partida].astype(str).str.strip() != "") & 
+            (df_ejec_oficial[c_partida].astype(str).str.upper() != "NAN") &
+            df_ejec_oficial[c_obj].notna() &
+            (df_ejec_oficial[c_obj].astype(str).str.strip() != "")
+        ].copy()
 
-        # -------------------------------------------------------------
-        # SOLAPA 1: DESGLOSE ESCALONADO CON LAS COLUMNAS DE VALORES REALES
-        # -------------------------------------------------------------
-        with tab_ejec_1:
-            st.markdown("##### 📋 Vista Jerárquica con Control Financiero Completo")
+        cf1, cf2, col_f3 = st.columns(3)
+        sec_ops = sorted([str(x) for x in df_validas[c_sec_k].unique() if str(x).strip() != ""])
 
-            c_ex1, c_ex2 = st.columns(2)
-            col_sec_key = [c for c in cols_totales if "SECRETARÍA" in c or "SEC" in c]
-            col_sec_key = col_sec_key[0] if col_sec_key else cols_totales[0]
+        with cf1:
+            sec_s_ejec = st.selectbox("1. SELECCIONÁ SECRETARÍA:", options=[""] + sec_ops, key="ejec_of_sec")
 
-            sec_opciones = sorted([str(x) for x in df_ejec_completo[col_sec_key].unique() if str(x).strip() != "" and str(x).strip() != "NAN"])
+        df_ejec_f1 = df_validas[df_validas[c_sec_k].astype(str).str.strip().str.upper() == sec_s_ejec.strip().upper()] if sec_s_ejec else pd.DataFrame()
+        sub_ops = sorted([str(x) for x in df_ejec_f1[c_sub_k].unique() if str(x).strip() != ""]) if not df_ejec_f1.empty else []
 
-            with c_ex1:
-                ejec_sec_sel = st.selectbox("1. SELECCIONÁ SECRETARÍA:", options=[""] + sec_opciones, key="ejec_sec_tab1")
+        with cf2:
+            sub_s_ejec = st.selectbox("2. SELECCIONÁ SUBSECRETARÍA:", options=[""] + sub_ops, key="ejec_of_sub")
 
-            df_ejec_f1 = df_ejec_completo[df_ejec_completo[col_sec_key].astype(str).str.strip().str.upper() == ejec_sec_sel.strip().upper()] if ejec_sec_sel else pd.DataFrame()
+        with col_f3:
+            if sec_s_ejec and sub_s_ejec:
+                df_ejec_f2 = df_ejec_f1[df_ejec_f1[c_sub_k].astype(str).str.strip().str.upper() == sub_s_ejec.strip().upper()]
+                dest_ops = sorted([str(x) for x in df_ejec_f2[c_dest_k].unique() if str(x).strip() != ""])
+                dest_s_ejec = st.selectbox("3. SELECCIONÁ DESTINO:", options=[""] + dest_ops, key="ejec_of_dest")
+            else:
+                dest_s_ejec = st.selectbox("3. SELECCIONÁ DESTINO:", options=[""], key="ejec_of_dest")
 
-            col_sub_key = [c for c in cols_totales if "SUB" in c]
-            col_sub_key = col_sub_key[0] if col_sub_key else (cols_totales[1] if len(cols_totales) > 1 else col_sec_key)
+        if sec_s_ejec and sub_s_ejec and dest_s_ejec:
+            df_f_oficial_ejec = df_ejec_f2[df_ejec_f2[c_dest_k].astype(str).str.strip().str.upper() == dest_s_ejec.strip().upper()].copy()
 
-            sub_opciones = sorted([str(x) for x in df_ejec_f1[col_sub_key].unique() if str(x).strip() != "" and str(x).strip() != "NAN"]) if not df_ejec_f1.empty else []
+            tot_p = sum(limpiar_monto(r.get(cols_e[6] if len(cols_e) > 6 else 0, 0)) for _, r in df_f_oficial_ejec.iterrows())
+            tot_e = sum(limpiar_monto(r.get(cols_e[8] if len(cols_e) > 8 else 0, 0)) for _, r in df_f_oficial_ejec.iterrows())
 
-            with c_ex2:
-                ejec_sub_sel = st.selectbox("2. SELECCIONÁ SUBSECRETARÍA:", options=[""] + sub_opciones, key="ejec_sub_tab1")
+            st.markdown(f"""
+            <div style="border: 1px solid #000; padding: 0px; border-radius: 2px; background-color: #fff; font-family: Arial, sans-serif;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="width: 25%; font-size: 11px; padding: 15px; border-right: 1px solid #000; text-align: left;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 9px; color: #777;">Ejecución Presupuestaria Actual</span></td>
+                        <td style="width: 50%; text-align: center; padding: 15px; border-right: 1px solid #000; vertical-align: middle;"><h2 style="margin: 0; font-size: 16px; font-weight: bold;">REPORTE DE EJECUCIÓN POR DESTINO</h2><h4 style="margin: 4px 0 0 0; font-size: 12px; font-weight: normal;">- Control Financiero Filtrado -</h4></td>
+                        <td style="width: 25%; text-align: center; background-color: #f5f5f5; vertical-align: middle;"><div style="font-size: 12px; font-weight: bold; border-bottom: 1px solid #000; padding: 4px 0;">Total Presupuestado</div><div style="font-size: 16px; font-weight: bold;">${tot_p:,.2f}</div></td>
+                    </tr>
+                </table>
+                <div style="border-top: 1px solid #000; font-size: 11px; padding: 6px 10px;">
+                    <b>SECRETARÍA:</b> {sec_s_ejec} | <b>SUBSECRETARÍA:</b> {sub_s_ejec} | <span style="float: right;"><b>DESTINO:</b> {str(dest_s_ejec).upper()}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-            if ejec_sec_sel and ejec_sub_sel:
-                df_filtrado_final = df_ejec_f1[df_ejec_f1[col_sub_key].astype(str).str.strip().str.upper() == ejec_sub_sel.strip().upper()]
+            if df_f_oficial_ejec.empty:
+                st.warning(f"⚠️ No se encontraron registros válidos con cuenta de imputación para **{dest_s_ejec}**.")
+            else:
+                f_plan_ejec = []
+                html_rows_ejec = ""
+
+                for obj, df_obj in df_f_oficial_ejec.groupby(c_obj):
+                    tp_obj = sum(limpiar_monto(r.get(cols_e[6] if len(cols_e) > 6 else 0, 0)) for _, r in df_obj.iterrows())
+                    td_obj = sum(limpiar_monto(r.get(cols_e[7] if len(cols_e) > 7 else 0, 0)) for _, r in df_obj.iterrows())
+                    te_obj = sum(limpiar_monto(r.get(cols_e[8] if len(cols_e) > 8 else 0, 0)) for _, r in df_obj.iterrows())
+                    tm_obj = sum(limpiar_monto(r.get(cols_e[9] if len(cols_e) > 9 else 0, 0)) for _, r in df_obj.iterrows())
+                    ts_obj = sum(limpiar_monto(r.get(cols_e[10] if len(cols_e) > 10 else 0, 0)) for _, r in df_obj.iterrows())
+
+                    f_plan_ejec.append({"OBJETO / CUENTA": f"<b>{obj}</b>", "PRESUPUESTO": f"<b>${tp_obj:,.2f}</b>", "DEVENGADO": f"<b>${td_obj:,.2f}</b>", "EJECUTADO": f"<b>${te_obj:,.2f}</b>", "MODIF.": f"<b>${tm_obj:,.2f}</b>", "SALDO": f"<b>${ts_obj:,.2f}</b>"})
+                    html_rows_ejec += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td>${tp_obj:,.2f}</td><td>${td_obj:,.2f}</td><td>${te_obj:,.2f}</td><td>${tm_obj:,.2f}</td><td>${ts_obj:,.2f}</td></tr>'
+
+                    for pad, df_pad in df_obj.groupby(c_padre):
+                        tp_pad = sum(limpiar_monto(r.get(cols_e[6] if len(cols_e) > 6 else 0, 0)) for _, r in df_pad.iterrows())
+                        td_pad = sum(limpiar_monto(r.get(cols_e[7] if len(cols_e) > 7 else 0, 0)) for _, r in df_pad.iterrows())
+                        te_pad = sum(limpiar_monto(r.get(cols_e[8] if len(cols_e) > 8 else 0, 0)) for _, r in df_pad.iterrows())
+                        tm_pad = sum(limpiar_monto(r.get(cols_e[9] if len(cols_e) > 9 else 0, 0)) for _, r in df_pad.iterrows())
+                        ts_pad = sum(limpiar_monto(r.get(cols_e[10] if len(cols_e) > 10 else 0, 0)) for _, r in df_pad.iterrows())
+
+                        f_plan_ejec.append({"OBJETO / CUENTA": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{pad}</b>", "PRESUPUESTO": f"<b>${tp_pad:,.2f}</b>", "DEVENGADO": f"<b>${td_pad:,.2f}</b>", "EJECUTADO": f"<b>${te_pad:,.2f}</b>", "MODIF.": f"<b>${tm_pad:,.2f}</b>", "SALDO": f"<b>${ts_pad:,.2f}</b>"})
+                        html_rows_ejec += f'<tr style="font-weight: bold;"><td style="text-align: left; padding-left: 20px;">{pad}</td><td>${tp_pad:,.2f}</td><td>${td_pad:,.2f}</td><td>${te_pad:,.2f}</td><td>${tm_pad:,.2f}</td><td>${ts_pad:,.2f}</td></tr>'
+
+                        for _, r in df_pad.iterrows():
+                            vp = limpiar_monto(r.get(cols_e[6] if len(cols_e) > 6 else 0, 0))
+                            vd = limpiar_monto(r.get(cols_e[7] if len(cols_e) > 7 else 0, 0))
+                            ve = limpiar_monto(r.get(cols_e[8] if len(cols_e) > 8 else 0, 0))
+                            vm = limpiar_monto(r.get(cols_e[9] if len(cols_e) > 9 else 0, 0))
+                            vs = limpiar_monto(r.get(cols_e[10] if len(cols_e) > 10 else 0, 0))
+                            partida_val = r.get(c_partida, "")
+
+                            f_plan_ejec.append({"OBJETO / CUENTA": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{partida_val}", "PRESUPUESTO": f"${vp:,.2f}", "DEVENGADO": f"${vd:,.2f}", "EJECUTADO": f"${ve:,.2f}", "MODIF.": f"${vm:,.2f}", "SALDO": f"${vs:,.2f}"})
+                            html_rows_ejec += f'<tr><td style="text-align: left; padding-left: 40px;">{partida_val}</td><td>${vp:,.2f}</td><td>${vd:,.2f}</td><td>${ve:,.2f}</td><td>${vm:,.2f}</td><td>${vs:,.2f}</td></tr>'
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.write(pd.DataFrame(f_plan_ejec).to_html(escape=False, index=False), unsafe_allow_html=True)
 
                 st.markdown("---")
-                st.markdown(f"### 📍 Secretaría: {ejec_sec_sel} | Subsecretaría: {ejec_sub_sel}")
-
-                if df_filtrado_final.empty:
-                    st.info("💡 No hay registros para esta combinación.")
-                else:
-                    col_dest_key = cols_totales[2] if len(cols_totales) > 2 else cols_totales[0]
-                    
-                    for destino_val, df_dest in df_filtrado_final.groupby(col_dest_key):
-                        st.markdown(f"#### 📌 DESTINO: {str(destino_val).upper()}")
-
-                        tabla_destino_rows = []
-                        for _, row in df_dest.iterrows():
-                            v_presup = limpiar_monto_seguro(row.get(cols_totales[6] if len(cols_totales) > 6 else 0, 0))
-                            v_deveng = limpiar_monto_seguro(row.get(cols_totales[7] if len(cols_totales) > 7 else 0, 0))
-                            v_ejec   = limpiar_monto_seguro(row.get(cols_totales[8] if len(cols_totales) > 8 else 0, 0))
-                            v_modif  = limpiar_monto_seguro(row.get(cols_totales[9] if len(cols_totales) > 9 else 0, 0))
-                            v_saldo  = limpiar_monto_seguro(row.get(cols_totales[10] if len(cols_totales) > 10 else 0, 0))
-
-                            tabla_destino_rows.append({
-                                "OBJETO DE GASTO": row.get(cols_totales[3] if len(cols_totales) > 3 else "", ""),
-                                "CUENTA PADRE": row.get(cols_totales[13] if len(cols_totales) > 13 else cols_totales[-1], ""),
-                                "IMPUTACIÓN": row.get(cols_totales[4] if len(cols_totales) > 4 else "", ""),
-                                "PRESUPUESTO (G)": f"${v_presup:,.2f}",
-                                "DEVENGADO (H)": f"${v_deveng:,.2f}",
-                                "EJECUTADO (I)": f"${v_ejec:,.2f}",
-                                "MODIFICACIONES (J)": f"${v_modif:,.2f}",
-                                "SALDO (K)": f"${v_saldo:,.2f}",
-                            })
-
-                        df_view_dest = pd.DataFrame(tabla_destino_rows)
-                        st.dataframe(df_view_dest, use_container_width=True, hide_index=True)
-            else:
-                st.info("💡 Seleccioná Secretaría y Subsecretaría arriba para desplegar el árbol de ejecución.")
-
-        # -------------------------------------------------------------
-        # SOLAPA 2: TOTALES POR OBJETO DEL GASTO
-        # -------------------------------------------------------------
-        with tab_ejec_2:
-            st.markdown("##### 📦 Consolidado de Ejecución por Objeto del Gasto")
-            obj_col_idx = 3 if len(cols_totales) > 3 else 0
-            val_col_presup = 6 if len(cols_totales) > 6 else obj_col_idx
-            
-            df_ejec_completo["_TMP_PRES"] = df_ejec_completo.iloc[:, val_col_presup].apply(limpiar_monto_seguro)
-            df_obj_resumen = df_ejec_completo.groupby(cols_totales[obj_col_idx])["_TMP_PRES"].sum().reset_index()
-            df_obj_resumen.columns = ["OBJETO DEL GASTO", "TOTAL PRESUPUESTADO ($)"]
-            df_obj_resumen["TOTAL PRESUPUESTADO ($)"] = df_obj_resumen["TOTAL PRESUPUESTADO ($)"].map(lambda x: f"${x:,.2f}")
-            
-            st.dataframe(df_obj_resumen, use_container_width=True, hide_index=True)
-
-        # -------------------------------------------------------------
-        # SOLAPA 3: BUSCADOR GENERAL Y CONTROL DE SALDOS
-        # -------------------------------------------------------------
-        with tab_ejec_3:
-            st.markdown("##### 🔍 Buscador y Control de Partidas")
-            q_ejec = st.text_input("Buscar texto, cuenta, partida o destino en ejecución:", key="busq_avanzada_ejec").strip()
-            if q_ejec:
-                mask_q = df_ejec_completo.astype(str).apply(lambda r: r.str.lower().str.contains(q_ejec.lower()).any(), axis=1)
-                st.dataframe(df_ejec_completo[mask_q], use_container_width=True, hide_index=True)
-            else:
-                st.info("Escribí un criterio de búsqueda para filtrar la planilla de ejecución en tiempo real.")
-
-        # -------------------------------------------------------------
-        # SOLAPA 4: EXPORTACIÓN Y FIRMAS (IDÉNTICA AL FORMATO OFICIAL)
-        # -------------------------------------------------------------
-        with tab_ejec_4:
-            st.markdown("##### 📄 Exportación Oficial de Ejecución con Cuadros de Firmas")
-            st.info("Generá el reporte consolidado completo con formato horizontal, columnas financieras y casillas de firma institucional.")
-
-            if st.button("🖨️ Generar Reporte Oficial Completo de Ejecución", type="primary", use_container_width=True):
-                bloques_ejec_html = ""
-                
-                col_sec_exp = cols_totales[0]
-                col_sub_exp = cols_totales[1] if len(cols_totales) > 1 else cols_totales[0]
-                col_dest_exp = cols_totales[2] if len(cols_totales) > 2 else cols_totales[0]
-
-                for (s_exp, sub_e, d_exp), df_g_exp in df_ejec_completo.groupby([col_sec_exp, col_sub_exp, col_dest_exp]):
-                    rows_html_exp = ""
-                    tot_p_dest = 0.0
-                    tot_e_dest = 0.0
-
-                    for _, rw in df_g_exp.iterrows():
-                        p_val = limpiar_monto_seguro(rw.get(cols_totales[6] if len(cols_totales) > 6 else 0, 0))
-                        d_val = limpiar_monto_seguro(rw.get(cols_totales[7] if len(cols_totales) > 7 else 0, 0))
-                        e_val = limpiar_monto_seguro(rw.get(cols_totales[8] if len(cols_totales) > 8 else 0, 0))
-                        m_val = limpiar_monto_seguro(rw.get(cols_totales[9] if len(cols_totales) > 9 else 0, 0))
-                        s_val = limpiar_monto_seguro(rw.get(cols_totales[10] if len(cols_totales) > 10 else 0, 0))
-
-                        tot_p_dest += p_val
-                        tot_e_dest += e_val
-
-                        partida_txt = rw.get(cols_totales[4] if len(cols_totales) > 4 else cols_totales[3], "")
-                        rows_html_exp += f"""
-                        <tr>
-                            <td style="text-align: left; padding-left: 8px;">{partida_txt}</td>
-                            <td style="text-align: right;">${p_val:,.2f}</td>
-                            <td style="text-align: right;">${d_val:,.2f}</td>
-                            <td style="text-align: right;">${e_val:,.2f}</td>
-                            <td style="text-align: right;">${m_val:,.2f}</td>
-                            <td style="text-align: right;">${s_val:,.2f}</td>
-                        </tr>
-                        """
-
-                    bloques_ejec_html += f"""
-                    <div class="bloque-destino">
-                        <div class="m-box">
-                            <table class="t-hdr">
-                                <tr>
-                                    <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Ejecución Presupuestaria Actual</span></td>
-                                    <td style="width: 50%; text-align: center;"><b>REPORTE OFICIAL DE EJECUCIÓN</b><br><small>- Actual -</small></td>
-                                    <td style="width: 25%;" class="b-tot"><small>Total Destino (Presup.)</small><br><b>${tot_p_dest:,.2f}</b></td>
-                                </tr>
-                            </table>
-                            <div style="border-top: 1px solid #000; font-size: 11px; padding-top: 6px; margin-top: 6px;">
-                                <b>SECRETARÍA:</b> {s_exp} | <b>SUBSECRETARÍA:</b> {sub_e} | <span style="float: right;"><b>DESTINO:</b> {str(d_exp).upper()}</span>
-                            </div>
-                        </div>
-                        <table class="tabla-datos">
-                            <thead>
-                                <tr>
-                                    <th style="text-align: left; padding-left: 8px;">CUENTA / IMPUTACIÓN</th>
-                                    <th style="text-align: right;">PRESUPUESTADO</th>
-                                    <th style="text-align: right;">DEVENGADO</th>
-                                    <th style="text-align: right;">EJECUTADO</th>
-                                    <th style="text-align: right;">MODIFICACIONES</th>
-                                    <th style="text-align: right;">SALDO</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {rows_html_exp}
-                            </tbody>
-                        </table>
-                        <div class="salto-pagina"></div>
-                    </div>
-                    """
-
-                html_completo_ejec_oficial = f"""
+                html_imp_ejec = f"""
                 <html>
                 <head>
                     <meta charset="utf-8">
                     <style>
-                        @page {{ size: A4 landscape; margin: 12mm; }}
+                        @page {{ size: A4 landscape; margin: 15mm; }}
                         body {{ font-family: Arial, sans-serif; color: #000; margin: 0 auto; width: 100%; max-width: 1050px; }}
-                        .m-box {{ border: 1px solid #000; padding: 10px; margin-bottom: 15px; background-color: #fff; }}
+                        .m-box {{ border: 1px solid #000; padding: 12px; margin-bottom: 20px; }}
                         .t-hdr {{ width: 100%; border-collapse: collapse; }}
-                        .t-hdr td {{ padding: 4px; vertical-align: middle; border: none; }}
+                        .t-hdr td {{ padding: 5px; vertical-align: middle; border: none; }}
                         .b-tot {{ border: 1px solid #000; background-color: #f5f5f5; text-align: center; }}
-                        .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; margin-bottom: 25px; }}
-                        .tabla-datos th {{ border-bottom: 2px solid #000; padding: 6px 4px; text-align: center; font-weight: bold; background-color: #f2f2f2; }}
-                        .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 6px 4px; vertical-align: middle; }}
-                        .salto-pagina {{ page-break-after: always; }}
+                        .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 10px; }}
+                        .tabla-datos th {{ border-bottom: 2px solid #000; padding: 8px 5px; text-align: center; font-weight: bold; background-color: #f2f2f2; }}
+                        .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 7px 5px; vertical-align: middle; text-align: center; }}
+                        .tabla-datos th:first-child, .tabla-datos td:first-child {{ text-align: left !important; padding-left: 10px; }}
                         .firmas-container {{ margin-top: 50px; width: 100%; page-break-inside: avoid; }}
                         .firma-box {{ width: 30%; float: left; text-align: center; border-top: 1px solid #000; padding-top: 5px; margin: 0 1.5%; font-size: 11px; font-weight: bold; }}
                     </style>
                 </head>
                 <body onload="window.print();">
-                    {bloques_ejec_html}
+                    <div class="m-box">
+                        <table class="t-hdr">
+                            <tr>
+                                <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Ejecución Presupuestaria</span></td>
+                                <td style="width: 50%; text-align: center;"><b>REPORTE OFICIAL DE EJECUCIÓN POR DESTINO</b><br><small>- Control Financiero -</small></td>
+                                <td style="width: 25%;" class="b-tot"><small>Total Presupuestado</small><br><b>${tot_p:,.2f}</b></td>
+                            </tr>
+                        </table>
+                        <div style="border-top: 1px solid #000; font-size: 11px; padding-top: 8px; margin-top: 8px;">
+                            <b>SECRETARÍA:</b> {sec_s_ejec} | <b>SUBSECRETARÍA:</b> {sub_s_ejec} | <span style="float: right;"><b>DESTINO:</b> {str(dest_s_ejec).upper()}</span>
+                        </div>
+                    </div>
+                    <table class="tabla-datos">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; padding-left: 10px;">OBJETO / CUENTA</th>
+                                <th>PRESUPUESTO</th>
+                                <th>DEVENGADO</th>
+                                <th>EJECUTADO</th>
+                                <th>MODIF.</th>
+                                <th>SALDO</th>
+                            </tr>
+                        </thead>
+                        <tbody>{html_rows_ejec}</tbody>
+                    </table>
                     <div class="firmas-container">
                         <div class="firma-box">Responsable Presupuesto</div>
                         <div class="firma-box">Contaduría General</div>
@@ -2238,12 +2186,13 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                 </body>
                 </html>
                 """
-
                 st.download_button(
-                    label="📥 Descargar Reporte Oficial de Ejecución en HTML (Imprimible / PDF)",
-                    data=html_completo_ejec_oficial,
-                    file_name=f"Reporte_Ejecucion_Consolidado_{time.strftime('%Y%m%d')}.html",
+                    label="🖨️ GENERAR Y ABRIR REPORTE IMPRIMIBLE CON FIRMAS (PDF / HORIZONTAL)",
+                    data=html_imp_ejec,
+                    file_name=f"Reporte_Ejecucion_{str(dest_s_ejec).replace(' ', '_')}.html",
                     mime="text/html",
                     use_container_width=True,
                     type="primary"
                 )
+        else:
+            st.info("💡 Seleccioná Secretaría, Subsecretaría y Destino arriba para desplegar el reporte oficial escalonado.")

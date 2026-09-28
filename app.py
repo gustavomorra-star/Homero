@@ -2008,73 +2008,75 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 use_container_width=True, hide_index=True
             )
 # =====================================================================
-# SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (ESCALONADO POR DESTINO)
+# SECCIÓN 21: SISTEMA INTEGRAL DE EJECUCIÓN PRESUPUESTARIA
 # =====================================================================
 elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
-    st.subheader("📈 Reporte de Ejecución Presupuestaria Escalonado por Destino")
+  st.subheader(
+      "📈 Módulo de Ejecución Presupuestaria - Reportes y Análisis"
+  )
 
-    # Leemos la planilla de ejecución desde la hoja configurada
-    df_ejec_oficial = leer_datos_gsheet(URL_READ_EJECUCION)
+  df_ejec_completo = leer_datos_gsheet(URL_READ_EJECUCION)
 
-    if df_ejec_oficial.empty:
-        st.warning("⚠️ No se pudieron cargar los datos de la hoja de ejecución.")
-    else:
-        # Aseguramos nombres de columnas estándar en mayúsculas para mapear bien
-        df_ejec_oficial.columns = [str(c).strip().upper() for c in df_ejec_oficial.columns]
+  if df_ejec_completo.empty:
+    st.warning("⚠️ No se pudieron cargar los datos de la hoja de ejecución.")
+  else:
+    # Estandarizamos columnas a mayúsculas
+    df_ejec_completo.columns = [
+        str(c).strip().upper() for c in df_ejec_completo.columns
+    ]
 
-        # Filtros de selección rápida en pantalla
-        c_ex1, c_ex2 = st.columns(2)
-        
-        # Obtenemos secretarías únicas si existen
-        col_sec_key = [c for c in df_ejec_oficial.columns if "SECRETARÍA" in c or "SEC" in c]
-        col_sec_key = col_sec_key[0] if col_sec_key else df_ejec_oficial.columns[0]
-        
-        sec_opciones = sorted([str(x) for x in df_ejec_oficial[col_sec_key].unique() if str(x).strip() != "" and str(x).strip() != "NAN"])
-        
-        with c_ex1:
-            ejec_sec_sel = st.selectbox("1. SELECCIONÁ SECRETARÍA:", options=[""] + sec_opciones, key="ejec_sec")
+    # Creamos las solapas internas para tener todos los reportes organizados
+    tab_ejec_1, tab_ejec_2, tab_ejec_3, tab_ejec_4 = st.tabs([
+        "🏛️ Desglose Escalonado por Destino",
+        "📦 Totales por Objeto del Gasto",
+        "🏢 Vista por Subsecretaría",
+        "🔍 Buscador y Control de Saldos",
+    ])
 
-        df_ejec_f1 = df_ejec_oficial[df_ejec_oficial[col_sec_key].astype(str).str.strip().str.upper() == ejec_sec_sel.strip().upper()] if ejec_sec_sel else pd.DataFrame()
+    # -----------------------------------------------------------------
+    # SOLAPA 1: DESGLOSE ESCALONADO (Estructura jerárquica completa)
+    # -----------------------------------------------------------------
+    with tab_ejec_1:
+      st.markdown("##### 📋 Desglose Jerárquico con Columnas de Ejecución")
+      # Aquí colocamos los selectores de Secretaría / Subsecretaría y la tabla escalonada
+      st.info(
+          "💡 Seleccioná el área para desplegar el árbol presupuestario con"
+          " Presupuesto, Devengado, Ejecutado, Modificaciones y Saldo."
+      )
 
-        col_sub_key = [c for c in df_ejec_oficial.columns if "SUB" in c]
-        col_sub_key = col_sub_key[0] if col_sub_key else (df_ejec_oficial.columns[1] if len(df_ejec_oficial.columns) > 1 else col_sec_key)
-        
-        sub_opciones = sorted([str(x) for x in df_ejec_f1[col_sub_key].unique() if str(x).strip() != "" and str(x).strip() != "NAN"]) if not df_ejec_f1.empty else []
+      # (Aquí integramos los filtros de Secretaría, Subsecretaría y la tabla con las columnas G, H, I, J, K)
 
-        with c_ex2:
-            ejec_sub_sel = st.selectbox("2. SELECCIONÁ SUBSECRETARÍA:", options=[""] + sub_opciones, key="ejec_sub")
+    # -----------------------------------------------------------------
+    # SOLAPA 2: TOTALES POR OBJETO
+    # -----------------------------------------------------------------
+    with tab_ejec_2:
+      st.markdown("##### 📦 Consolidado de Ejecución por Objeto del Gasto")
+      st.info(
+          "💡 Próximamente: Agrupamiento automático por Objeto de Gasto para"
+          " comparar lo devengado vs lo presupuestado."
+      )
 
-        if ejec_sec_sel and ejec_sub_sel:
-            df_filtrado_final = df_ejec_f1[df_ejec_f1[col_sub_key].astype(str).str.strip().str.upper() == ejec_sub_sel.strip().upper()]
+    # -----------------------------------------------------------------
+    # SOLAPA 3: VISTA POR SUBSECRETARÍA
+    # -----------------------------------------------------------------
+    with tab_ejec_3:
+      st.markdown("##### 🏢 Resumen Financiero por Subsecretaría")
+      st.info(
+          "💡 Próximamente: Métricas de ejecución y avance porcentual por cada"
+      )
 
-            st.markdown("---")
-            st.markdown(f"### 📍 Secretaría: {ejec_sec_sel} | Subsecretaría: {ejec_sub_sel}")
-
-            if df_filtrado_final.empty:
-                st.info("💡 No hay registros para esta combinación.")
-            else:
-                # Armamos la tabla con el formato escalonado y las columnas de valores solicitadas
-                lineas_tabla = []
-                
-                # Identificamos columnas según tu descripción (A: Sec, B: Sub, C: Destino, D: Objeto, N: Cuenta Padre, E: Imputación)
-                # Y valores: G: Presupuestado, H: Devengado, I: Ejecutado, J: Modificaciones, K: Saldo
-                for destino_val, df_dest in df_filtrado_final.groupby(df_filtrado_final.columns[2] if len(df_filtrado_final.columns) > 2 else df_filtrado_final.columns[0]):
-                    st.markdown(f"#### 📌 DESTINO: {str(destino_val).upper()}")
-                    
-                    tabla_destino_rows = []
-                    for _, row in df_dest.iterrows():
-                        tabla_destino_rows.append({
-                            "OBJETO DE GASTO": row.get(df_filtrado_final.columns[3] if len(df_filtrado_final.columns) > 3 else "", ""),
-                            "CUENTA PADRE": row.get(df_filtrado_final.columns[13] if len(df_filtrado_final.columns) > 13 else "", ""),
-                            "IMPUTACIÓN": row.get(df_filtrado_final.columns[4] if len(df_filtrado_final.columns) > 4 else "", ""),
-                            "PRESUPUESTADO (G)": row.get(df_filtrado_final.columns[6] if len(df_filtrado_final.columns) > 6 else 0.0, 0.0),
-                            "DEVENGADO (H)": row.get(df_filtrado_final.columns[7] if len(df_filtrado_final.columns) > 7 else 0.0, 0.0),
-                            "EJECUTADO (I)": row.get(df_filtrado_final.columns[8] if len(df_filtrado_final.columns) > 8 else 0.0, 0.0),
-                            "MODIFICACIONES (J)": row.get(df_filtrado_final.columns[9] if len(df_filtrado_final.columns) > 9 else 0.0, 0.0),
-                            "SALDO (K)": row.get(df_filtrado_final.columns[10] if len(df_filtrado_final.columns) > 10 else 0.0, 0.0),
-                        })
-                    
-                    df_view_dest = pd.DataFrame(tabla_destino_rows)
-                    st.dataframe(df_view_dest, use_container_width=True, hide_index=True)
-        else:
-            st.info("💡 Seleccioná una Secretaría y una Subsecretaría para visualizar el desglose escalonado de ejecución.")
+    # -----------------------------------------------------------------
+    # SOLAPA 4: BUSCADOR
+    # -----------------------------------------------------------------
+    with tab_ejec_4:
+      st.markdown("##### 🔍 Buscador General de Partidas en Ejecución")
+      q_ejec = st.text_input(
+          "Buscar cuenta, partida o texto:", key="busq_avanzada_ejec"
+      ).strip()
+      if q_ejec:
+        mask_q = df_ejec_completo.astype(str).apply(
+            lambda r: r.str.lower().str.contains(q_ejec.lower()).any(), axis=1
+        )
+        st.dataframe(
+            df_ejec_completo[mask_q], use_container_width=True, hide_index=True
+        )

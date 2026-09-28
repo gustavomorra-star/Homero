@@ -191,13 +191,32 @@ MAPEO_GASTOS = {
     },
     
     "4. Bienes de Uso": {
-        "24.2.0.0.00.000 - Construcciones": ["24.2.1.2.00.000 - Const. de Dom. Priv. por terceros", "24.2.2.2.00.000 - Const. de Dom. Pub. por Terceros"],
-        "24.3.0.0.00.000 - Maquinaria y equipo": ["24.3.2.0.00.000 - Equipo de transporte"]
+		"24.1.0.0.00.000 - Bienes preexistentes": ["24.1.1.0.00.000 - Tierras y terrenos", "24.1.2.0.00.000 - Edificios e instalaciones", "24.1.3.0.00.000 - Otros Bienes preexistentes"],
+		"24.2.1.0.00.000 - Construcciones en Bienes de Dominio Privado": ["24.2.1.1.01.000 - Const. de Dom. Priv. por Adm. Ctral. (Libre), "24.2.1.1.02.000 - Const. de Dom. Priv. por Adm. Ctral (Afectado)", "24.2.1.2.01.000 - Const. de Dom. Priv. por Ad. Ctral. (libre)","24.2.1.2.02.000 - Const. de Dom. Priv. por Ad. Ctral. (Afectado)", "24.2.2.1.01.000 - Const. de Dom. Priv. por Ad. Ctral. (libre)","24.2.2.2.02.000 - Const. de Dom. Priv. por Ad. Ctral. (Afectado)", "24.2.3.0.00.000 - Forestación"],
+        "24.3.0.0.00.000 - Maquinaria y equipo": ["24.3.1.0.00.000 - Maquinaria y equipo de producción", "24.3.2.2.00.000 - Equipo de transporte, tracción y elevación", "24.3.3.0.00.000 - Sanitario y de Laboratorio", "24.3.4.0.00.000 - Equipo de comunicación y señalamiento", "24.3.5.0.00.000 - Equipo educacional y recreativo", "24.3.6.1.00.000 - Equipo para computación", "24.3.6.2.01.000 - Equipo para computación (Fondo HCD)", "24.3.6.2.02.000 - Equipo para computación (Fondo Provincial)", "24.3.7.1.00.000 - Equipo de oficina y mueble (F. Propio), "24.3.7.2.00.000 - Equipo de Oficina y Mueble (Fondos Provinciales)", "24.3.8.0.00.000 - Herramientas y repuestos mayores", "24.3.8.0.00.000 - Herramientas y repuestos mayores", "24.3.9.1.01.000 - Equipo y material de Sonido", "24.3.9.2.00.000 - Teléfonos celulares, Tablet y símil", "24.3.9.3.00.000 - Electrodomésticos", "24.3.9.4.00.000 - Equipos de y para Monitoreo"],
+		"24.4.0.0.00.000 - Equipo de Seguridad": ["N/N"],
+		"24.5.0.0.00.000 - Libros, revistas y otros elementos coleccionables": ["24.5.1.0.00.000 - Libros y Partituras"],
+		"24.6.0.0.00.000 - Obras de arte":["N/N"],
+		"24.7.0.0.00.000 - Semovientes": ["N/N"],
+		"24.8.0.0.00.000 - Activos intangibles": ["24.8.1.0.00.000 - Programas de Computación y Software", "24.8.9.0.00.000 - Otros Activos intangibles"]
+		
     },
     "5. Transferencias": {
-        "25.1.0.0.00.000 - Transferencias al sector privado": ["25.1.4.1.00.000 - Ayudas Sociales a Personas", "25.1.7.3.00.000 - Bomberos Voluntarios"],
-        "25.7.0.0.00.000 - Transferencias a instituciones provinciales y municipales": ["25.7.6.1.00.000 - Concejo Municipal", "25.7.9.1.00.000 - Transferencia S.A.M.C.O"]
-    },
+        "25.1.0.0.00.000 - Transferencias al sector privado para financiar gastos corrientes": ["25.1.1.0.00.000 - Jubilaciones y/o retiros", "25.1.2.0.00.000 -  Pensiones", "25.1.3.0.00.000 - Becas y Pasantías"], 
+		"25.1.4.0.00.000 - Ayudas Sociales a Personas": ["25.1.4.1.01.000 - Ayudas Sociales a Personas (Viáticos Salud)", "25.1.4.1.02.000 - Ayuda Soc. a Personas para gastos de Alquiler", "25.1.4.1.03.000 - Ayuda Soc. a Personas para pago de servicios", "25.1.4.1.04.000 - Ayuda Soc. a Personas para sepelios", "25.1.4.1.05.000 - Ayuda Soc. a Personas para Medicamentos y Prod. Farmacéuticos", "25.1.4.1.06.000 - Ayuda Soc. a personas para Gastos Corrientes", "25.1.4.1.07.000 - Ayuda Soc. a personas para eventos deportivos"],
+		"25.1.4.0.00.000 - Ayudas Sociales a Personas (b)": ["25.1.4.2.00.000 - Premios, recompensas y reconocimientos destacados", "25.1.4.3.00.000 - Promoción Social", "25.1.4.4.00.000 - Boleto Educativo"],
+		"25.1.5.0.00.000 - Transferencia a Instituciones de Enseñanaza": ["N/N"],
+		"25.1.5.1.00.000 - Fondo de Asistencia Educativa": ["25.1.5.1.01.000 - Instituciones Públicas", "25.1.5.1.02.000 - Instituciones Privadas"],
+		"25.1.6.0.00.000 - Transferencias para actividades científicas o académicas": ["25.1.6.0.00.000 - Transferencias para actividades científicas o académicas"],
+		"25.1.7.0.00.000 - Transferencias a Instituciones culturales y sociales sin fines de lucro": ["25.1.7.1.00.000 - Transferencias a Instituciones Culturales y/o religiosas", "25.1.7.2.00.000 - Transferencias a Instituciones Sociales", "25.1.7.4.00.000 - ADESU", "25.1.7.6.00.000 - Centro Comercial y de la Producción", "25.1.7.7.00.000 - Instituciones de Bien Público", "25.1.7.8.00.000 - Presupuesto Participativo"],,
+		"25.1.7.5.00.000 - Transferencias a Instituciones culturas y sociales sin fines de lucro (Vecinales)": ["25.1.7.5.01.000 - B. Centro", "25.1.7.5.02.000 - B. Sur", "25.1.7.5.03.000 - B. Sancor", "25.1.7.5.04.000 - B. Colón", "25.1.7.5.05.000 - B. Villa del Parque", "25.1.7.5.06.000 - B. Moreno", "25.1.7.5.07.000 - B. Cooperativo", "25.1.7.5.08.000 - B. Villa Autódromo", "25.1.7.5.09.000 - B. 9 de Julio"],
+		"25.1.7.9.00.000 - Otras Instituciones": ["25.1.7.9.01.000 - Comparasas", "25.1.7.9.02.000 - Instituciones Deportivas", "25.1.7.9.03.000 - Transferencia LAZOS"],
+		"25.1.8.0.00.000 - Transferencias a Cooperativas": ["N/N"],
+		"25.1.9.0.00.000 - Transferencias a empresas privadas": ["25.1.9.0.00.000 - Transferencias a empresas privadas"],
+		"25.2.0.0.00.000 - Transferencias al sector privado para financiar gastos de Capital": ["25.2.1.1.01.000 - Transf. Personas. Mej. Habitacional", "25.2.1.1.02.000 - Trans. Construcción Lote Propio", "25.2.1.2.00.000 - Transferencias a Personas para adquisición de Otros bienes tangibles", "25.2.1.3.00.000 - Transferencias a Personas para adquisición de Bienes Intangibles"],
+        "25.7.0.0.00.000 - Transferencias a instituciones provinciales y municipales para financiar gasto corriente": ["25.7.4.1.00.000 - Fondo de Asistencia Educativa", "25.7.6.1.00.000 - Concejo Municipal","25.7.6.2.00.000 - Patrimonio Cultural Sunchalense", "25.7.6.3.00.000 - Concejo de Inclusión y Discapacidad2, "25.7.6.4.00.000 - Comisión Niños y Adolescentes", "25.7.6.5.00.000 - Fondo Acción Vecinal", "25.7.6.6.00.000 - GIRSU", "25.7.6.7.00.000 - Instituto Municipal de la Vivienda", "25.7.9.1.00.000 - Transferencia S.A.M.C.O", "25.7.9.2.00.000 - Transferencia Policía de Santa Fe", "25.7.9.3.00.000 - Transferencia Policía Rural "Los Pumas", "25.7.9.5.00.000 - ENRESS", "25.7.9.6.00.000 - Fondo Departamento Castellanos"],
+        "25.8.0.0.00.000 - Transferencias a Instituciones provinciales y municipales para Financiar gastos de Capital": ["N/N"],
+	},
     "6. Activos Financieros": {
         "26.2.0.0.00.000 - Prestamos a corto plazo": ["26.2.1.6.01.000 - Préstamos Aportes Sociales Reintegrables"]
     },

@@ -393,9 +393,34 @@ with st.sidebar:
             "📋 FICHA TÉCNICA POR DESTINO",
             "🔄 COMPARATIVO E HISTÓRICO",
 			"📈 REPORTE DE EJECUCIÓN OFICIAL"
-        ]
+        ])
+	# =====================================================================
+# MENÚ LATERAL A LA IZQUIERDA (SIDEBAR)
+# =====================================================================
+with st.sidebar:
+    st.title("🍩 Homero")
+    st.caption("Municipalidad de Sunchales - 2027")
+    st.markdown("---")
+    
+    opcion_menu = st.radio("Navegación del Sistema:", [
+        "📝 FORMULARIO DE REGISTRO", 
+        "➕ GESTIÓN DE DESTINOS", 
+        "📥 REGISTRO DE RECURSOS", 
+        "📉 GENERAL (Base de Datos Sheet)", 
+        "🏛️ REPORTE OFICIAL POR DESTINO", 
+        # ... (tus otras opciones) ...
+        "📈 REPORTE DE EJECUCIÓN OFICIAL"
+    ])
+
+    # 🔄 PEGÁ ESTO ACÁ ABAJO EN LA BARRA LATERAL:
+    st.markdown("---")
+    if st.button("🔄 Sincronizar y Limpiar Caché", use_container_width=True):
+        if "db_local_backup" in st.session_state:
+            st.session_state["db_local_backup"] = {"destinos": [], "egresos": [], "recursos": []}
+        st.cache_data.clear()
+        st.success("¡Caché limpiada y datos actualizados desde Google Sheets!")
+        st.rerun()
 	
-    )
 
 # =====================================================================
 # SECCIÓN: REGISTRO DE RECURSOS (INGRESOS)

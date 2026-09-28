@@ -2034,7 +2034,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             except Exception:
                 return 0.0
 
-        # Mapeo exacto según tus requerimientos y estructura
+        # Mapeo exacto de columnas de estructura
         c_sec_k = cols_e[0] if len(cols_e) > 0 else "SECRETARIA"
         c_sub_k = cols_e[1] if len(cols_e) > 1 else "SUBSECRETARÍA"
         c_dest_k = cols_e[2] if len(cols_e) > 2 else "DESTINO"
@@ -2042,16 +2042,19 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
         c_partida = cols_e[4] if len(cols_e) > 4 else cols_e[5] # Columna E (Imputación)
         c_padre = cols_e[13] if len(cols_e) > 13 else cols_e[4] # Columna N (Cuenta Padre)
 
-        # Columnas de valores exactas según tus letras asignadas:
-        # G = Presupuesto (índice 6), H = Devengado (índice 7), I = Ejecutado (índice 8)
-        # J = Modificaciones (índice 9), K = Saldo (índice 10)
+        # Mapeo exacto de columnas de valores requeridas:
+        # G = Presupuesto (índice 6)
+        # H = Devengado (índice 7)
+        # I = Ejecutado (índice 8)
+        # J = Modificaciones (índice 9)
+        # K = Saldo (índice 10)
         c_pres = cols_e[6] if len(cols_e) > 6 else cols_e[6]
         c_dev = cols_e[7] if len(cols_e) > 7 else cols_e[6]
         c_ejec = cols_e[8] if len(cols_e) > 8 else cols_e[6]
         c_mod = cols_e[9] if len(cols_e) > 9 else cols_e[6]
         c_saldo = cols_e[10] if len(cols_e) > 10 else cols_e[6]
 
-        # FILTRADO ESTRICTO: D y N con datos válidos
+        # FILTRADO ESTRICTO: D, N y E con datos válidos
         df_validas = df_ejec_completo[
             df_ejec_completo[c_obj].notna() & 
             (df_ejec_completo[c_obj].astype(str).str.strip() != "") & 
@@ -2072,7 +2075,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
         ])
 
         with tab_ejec_1:
-            st.markdown("##### 📋 Vista Jerárquica de Egresos - Columnas Exactas (G, H, I, J, K)")
+            st.markdown("##### 📋 Vista Jerárquica de Egresos - Columnas (G, H, I, J, K)")
             cf1, cf2, col_f3 = st.columns(3)
             sec_ops = sorted([str(x) for x in df_validas[c_sec_k].unique() if str(x).strip() != ""])
 
@@ -2094,7 +2097,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                     dest_s_ejec = st.selectbox("3. DESTINO:", options=[""], key="ejec_of_dest")
 
             if sec_s_ejec and sub_s_ejec and dest_s_ejec:
-                df_f_oficial_ejec = df_ejec_f2[df_ejec_f2[c_dest_k].astype(str).str.strip().str.upper() == dest_s_ejec.strip().upper()].copy()
+                df_f_oficial_ejec = df_ejec_f2[df_ec_f2[c_dest_k].astype(str).str.strip().str.upper() == dest_s_ejec.strip().upper()].copy() if 'df_ec_f2' in locals() else df_ejec_f2[df_ejec_f2[c_dest_k].astype(str).str.strip().str.upper() == dest_s_ejec.strip().upper()].copy()
                 
                 df_f_oficial_ejec["_G_VAL"] = df_f_oficial_ejec[c_pres].apply(limpiar_monto_val)
                 df_f_oficial_ejec["_H_VAL"] = df_f_oficial_ejec[c_dev].apply(limpiar_monto_val)

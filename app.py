@@ -1912,129 +1912,150 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             )
 
         try:
-            df_raw_no_header = pd.read_csv(CSV_URL_SALDOS, header=None, on_bad_lines='skip')
+            # Leemos la planilla histórica con la misma lógica robusta del reporte de ejecución
+            df_hist_raw = pd.read_csv(CSV_URL_SALDOS, header=None, on_bad_lines='skip')
             
-            header_row_idx = 0
-            for idx, row in df_raw_no_header.iterrows():
+            header_idx = 0
+            for idx, row in df_hist_raw.iterrows():
                 row_str = " ".join([str(val) if pd.notna(val) else "" for val in row.values]).upper()
-                if "PRESUPUESTO" in row_str or "DEVENGADO" in row_str:
-                    header_row_idx = idx
+                if "PRESUPUESTO" in row_str or "DEVENGADO" in row_str or "IMPUTACIÓN" in row_str:
+                    header_idx = idx
                     break
 
-            df_2026 = pd.read_csv(CSV_URL_SALDOS, skiprows=header_row_idx, on_bad_lines='skip')
-            df_2026.columns = [str(c).strip().upper() for c in df_2026.columns]
+            df_hist = pd.read_csv(CSV_URL_SALDOS, skiprows=header_idx, on_bad_lines='skip')
+            df_hist.columns = [str(c).strip().upper() for c in df_hist.columns]
 
+            # Detectar columna de monto 2026 según el selector
             if "Inicial" in modo_comparacion:
-                col_monto_target = "PRESUPUESTO"
+                col_target_h = "PRESUPUESTO"
             elif "Efectivo" in modo_comparacion:
-                col_monto_target = "EJECUTADO"
+                col_target_h = "EJECUTADO"
             else:
-                col_monto_target = "DEVENGADO"
+                col_target_h = "DEVENGADO"
 
-            col_encontrada = None
-            for c in df_2026.columns:
-                if col_monto_target in c:
-                    col_encontrada = c
+            col_hist_monto = None
+            for c in df_hist.columns:
+                if col_target_h in c:
+                    col_hist_monto = c
                     break
+            if not col_hist_monto:
+                col_hist_monto = df_hist.columns[6] # Por defecto columna G
 
-            def parse_num_arg(val):
+            def limpiar_val_h(val):
                 if pd.isna(val): return 0.0
-                s = str(val).strip().replace("$", "").replace(" ", "")
-                if "," in s: s = s.replace(".", "").replace(",", ".")
-                return pd.to_numeric(s, errors="coerce")
+                s = str(val).replace("$", "").replace(" ", "").strip()
+                if not s or s.lower() == "nan": return 0.0
+                if "," in s and "." in s:
+                    s = s.replace(".", "").replace(",", ".")
+                elif "," in s:
+                    s = s.replace(",", ".")
+                try:
+                    return float(s)
+                except Exception:
+                    return 0.0
 
-            if col_encontrada:
-                df_2026["TOTAL_2026_CLEAN"] = df_2026[col_encontrada].apply(parse_num_arg).fillna(0.0)
-            else:
-                df_2026["TOTAL_2026_CLEAN"] = 0.0
+            df_hist["VALOR_2026"] = df_hist[col_hist_monto].apply(limpiar_val_h)
 
-            hay_datos_2026 = True
+            # Columnas clave en el histórico (asumiendo estructura idéntica a ejecución)
+            c_h_sec = df_hist.columns[0]
+            c_h_sub = df_hist.columns[1]
+            c_h_dest = df_hist.columns[2]
+            c_h_obj = df_hist.columns[3]
+            c_h_partida = df_hist.columns[4] if len(df_hist.columns) > 4 else df_hist.columns[3]
+            c_h_padre = df_hist.columns[13] if len(df_hist.columns) > 13 else df_hist.columns[4]
+
+            # Indexar histórico por partida exacta para un cruce ultra preciso
+            dict_hist_partida = {}
+            for _, r_h in df_hist.iterrows():
+                part_key = str(r_h.get(c_h_partida, "")).strip().upper()
+                if part_key and part_key != "NAN":
+                    dict_hist_partida[part_key] = dict_hist_partida.get(part_key, 0.0) + r_h["VALOR_2026"]
+
+            # Indexar 2027 desde el DataFrame general de egresos
+            dict_2027_partida = {}
+            for _, r_27 in df_egr_completo.iterrows():
+                p_key = str(r_27.get("cuenta_presupuestaria", "")).strip().upper()
+                m_27 = float(r_27.get("total", 0.0))
+                if p_key and p_key != "NAN":
+                    dict_2027_partida[p_key] = dict_2027_partida.get(p_key, 0.0) + m_27
+
+            # Filtrar filas válidas en el histórico para armar la estructura visual escalonada
+            df_h_validas = df_hist[
+                df_hist[c_h_obj].notna() & 
+                (df_hist[c_h_obj].astype(str).str.strip() != "") & 
+                (df_hist[c_h_obj].astype(str).str.upper() != "NAN")
+            ].copy()
+
+            hay_datos_h = True
         except Exception as e:
-            hay_datos_2026 = False
-            st.error(f"⚠️ No se pudo procesar la planilla histórica: {e}")
+            hay_datos_h = False
+            st.error(f"⚠️ Error al procesar la base histórica: {e}")
 
-        if hay_datos_2026 and not df_2026.empty:
+        if hay_datos_h and not df_h_validas.empty:
             st.markdown("---")
-            st.markdown(f"##### 📊 Desglose Analítico Comparativo (2027 vs 2026 [{col_monto_target}])")
+            st.markdown(f"##### 📊 Estructura Comparativa Oficial (2027 vs 2026 [{col_target_h}])")
 
-            # Intentar buscar la columna de cuenta/partida en el 2026 para alinear los datos
-            col_partida_2026 = None
-            for c in df_2026.columns:
-                if "PARTIDA" in c or "IMPUTACIÓN" in c or "CUENTA" in c or "INCISO" in c:
-                    col_partida_2026 = c
-                    break
-            if not col_partida_2026 and len(df_2026.columns) > 4:
-                col_partida_2026 = df_2026.columns[4] # Usualmente la columna E
-
-            # Mapear histórico por cuenta presupuestaria
-            dict_historico = {}
-            if col_partida_2026:
-                for _, r_h in df_2026.iterrows():
-                    part_key = str(r_h[col_partida_2026]).strip().upper()
-                    monto_h = float(r_h["TOTAL_2026_CLEAN"])
-                    dict_historico[part_key] = dict_historico.get(part_key, 0.0) + monto_h
-
-            # Construir tabla estructurada escalonada similar a ejecución
             f_plan_comparativo = []
-            
-            tot_gen_2027 = 0.0
-            tot_gen_2026 = 0.0
+            tot_2027_gral = 0.0
+            tot_2026_gral = 0.0
 
-            for (sec, sub, dest), df_grupo in df_egr_completo.groupby(["secretaria", "subsecretaria", "destino"]):
+            # Iterar exactamente igual que el reporte de ejecución oficial
+            for (sec, sub, dest), df_grupo in df_h_validas.groupby([c_h_sec, c_h_sub, c_h_dest]):
                 f_plan_comparativo.append({
                     "OBJETO / CUENTA / IMPUTACIÓN": f"<b>📍 [{sec} › {sub}] DESTINO: {dest}</b>",
-                    "PRESUPUESTO 2027": "", f"2026 ({col_monto_target})": "", "DIFERENCIA ($)": "", "% DIFERENCIA": ""
+                    "PRESUPUESTO 2027": "", f"2026 ({col_target_h})": "", "DIFERENCIA ($)": "", "% DIFERENCIA": ""
                 })
 
-                for obj, df_obj in df_grupo.groupby("objeto_gasto"):
-                    t_2027_obj = df_obj["total"].sum()
-                    t_2026_obj = sum(dict_historico.get(str(r["cuenta_presupuestaria"]).strip().upper(), 0.0) for _, r in df_obj.iterrows())
+                for obj, df_obj in df_grupo.groupby(c_h_obj):
+                    # Sumarizar grupo Objeto
+                    t_2027_obj = sum(dict_2027_partida.get(str(r.get(c_h_partida, "")).strip().upper(), 0.0) for _, r in df_obj.iterrows())
+                    t_2026_obj = df_obj["VALOR_2026"].sum()
                     dif_obj = t_2027_obj - t_2026_obj
                     pct_obj = (dif_obj / t_2026_obj * 100) if t_2026_obj > 0 else 0.0
 
                     f_plan_comparativo.append({
                         "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{obj}</b>",
                         "PRESUPUESTO 2027": f"<b>${t_2027_obj:,.2f}</b>",
-                        f"2026 ({col_monto_target})": f"<b>${t_2026_obj:,.2f}</b>",
+                        f"2026 ({col_target_h})": f"<b>${t_2026_obj:,.2f}</b>",
                         "DIFERENCIA ($)": f"<b>${dif_obj:,.2f}</b>",
                         "% DIFERENCIA": f"<b>{pct_obj:+.2f}%</b>"
                     })
 
-                    for pad, df_pad in df_obj.groupby("cuenta_padre"):
-                        t_2027_pad = df_pad["total"].sum()
-                        t_2026_pad = sum(dict_historico.get(str(r["cuenta_presupuestaria"]).strip().upper(), 0.0) for _, r in df_pad.iterrows())
+                    for pad, df_pad in df_obj.groupby(c_h_padre):
+                        t_2027_pad = sum(dict_2027_partida.get(str(r.get(c_h_partida, "")).strip().upper(), 0.0) for _, r in df_pad.iterrows())
+                        t_2026_pad = df_pad["VALOR_2026"].sum()
                         dif_pad = t_2027_pad - t_2026_pad
                         pct_pad = (dif_pad / t_2026_pad * 100) if t_2026_pad > 0 else 0.0
 
                         f_plan_comparativo.append({
                             "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>{pad}</b>",
                             "PRESUPUESTO 2027": f"<b>${t_2027_pad:,.2f}</b>",
-                            f"2026 ({col_monto_target})": f"<b>${t_2026_pad:,.2f}</b>",
+                            f"2026 ({col_target_h})": f"<b>${t_2026_pad:,.2f}</b>",
                             "DIFERENCIA ($)": f"<b>${dif_pad:,.2f}</b>",
                             "% DIFERENCIA": f"<b>{pct_pad:+.2f}%</b>"
                         })
 
-                        for _, r in df_pad.iterrows():
-                            v_2027 = float(r["total"])
-                            part_exacta = str(r["cuenta_presupuestaria"]).strip().upper()
-                            v_2026 = dict_historico.get(part_exacta, 0.0)
-                            
-                            tot_gen_2027 += v_2027
-                            tot_gen_2026 += v_2026
-                            
-                            dif_lin = v_2027 - v_2026
-                            pct_lin = (dif_lin / v_2026 * 100) if v_2026 > 0 else 0.0
+                        for _, r_ lin df_pad.iterrows():
+                            part_code = str(r_ lin.get(c_h_partida, "")).strip().upper()
+                            v_2026_lin = float(r_ lin.get("VALOR_2026", 0.0))
+                            v_2027_lin = dict_2027_partida.get(part_code, 0.0)
+
+                            tot_2027_gral += v_2027_lin
+                            tot_2026_gral += v_2026_lin
+
+                            dif_lin = v_2027_lin - v_2026_lin
+                            pct_lin = (dif_lin / v_2026_lin * 100) if v_2026_lin > 0 else 0.0
 
                             f_plan_comparativo.append({
-                                "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{r['cuenta_presupuestaria']}",
-                                "PRESUPUESTO 2027": f"${v_2027:,.2f}",
-                                f"2026 ({col_monto_target})": f"${v_2026:,.2f}",
+                                "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{part_code}",
+                                "PRESUPUESTO 2027": f"${v_2027_lin:,.2f}",
+                                f"2026 ({col_target_h})": f"${v_2026_lin:,.2f}",
                                 "DIFERENCIA ($)": f"${dif_lin:,.2f}",
                                 "% DIFERENCIA": f"{pct_lin:+.2f}%"
                             })
 
-            df_res_final = pd.DataFrame(f_plan_comparativo)
-            st.write(df_res_final.to_html(escape=False, index=False), unsafe_allow_html=True)
+            df_final_comp = pd.DataFrame(f_plan_comparativo)
+            st.write(df_final_comp.to_html(escape=False, index=False), unsafe_allow_html=True)
 # =====================================================================
 # SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (TODAS LAS SOLAPAS)
 # =====================================================================

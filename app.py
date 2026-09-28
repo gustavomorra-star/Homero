@@ -1912,7 +1912,6 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             )
 
         try:
-            # Leemos la planilla histórica con la misma lógica robusta del reporte de ejecución
             df_hist_raw = pd.read_csv(CSV_URL_SALDOS, header=None, on_bad_lines='skip')
             
             header_idx = 0
@@ -1925,7 +1924,6 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             df_hist = pd.read_csv(CSV_URL_SALDOS, skiprows=header_idx, on_bad_lines='skip')
             df_hist.columns = [str(c).strip().upper() for c in df_hist.columns]
 
-            # Detectar columna de monto 2026 según el selector
             if "Inicial" in modo_comparacion:
                 col_target_h = "PRESUPUESTO"
             elif "Efectivo" in modo_comparacion:
@@ -1939,7 +1937,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                     col_hist_monto = c
                     break
             if not col_hist_monto:
-                col_hist_monto = df_hist.columns[6] # Por defecto columna G
+                col_hist_monto = df_hist.columns[6]
 
             def limpiar_val_h(val):
                 if pd.isna(val): return 0.0
@@ -1956,7 +1954,6 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
 
             df_hist["VALOR_2026"] = df_hist[col_hist_monto].apply(limpiar_val_h)
 
-            # Columnas clave en el histórico (asumiendo estructura idéntica a ejecución)
             c_h_sec = df_hist.columns[0]
             c_h_sub = df_hist.columns[1]
             c_h_dest = df_hist.columns[2]
@@ -1964,14 +1961,6 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             c_h_partida = df_hist.columns[4] if len(df_hist.columns) > 4 else df_hist.columns[3]
             c_h_padre = df_hist.columns[13] if len(df_hist.columns) > 13 else df_hist.columns[4]
 
-            # Indexar histórico por partida exacta para un cruce ultra preciso
-            dict_hist_partida = {}
-            for _, r_h in df_hist.iterrows():
-                part_key = str(r_h.get(c_h_partida, "")).strip().upper()
-                if part_key and part_key != "NAN":
-                    dict_hist_partida[part_key] = dict_hist_partida.get(part_key, 0.0) + r_h["VALOR_2026"]
-
-            # Indexar 2027 desde el DataFrame general de egresos
             dict_2027_partida = {}
             for _, r_27 in df_egr_completo.iterrows():
                 p_key = str(r_27.get("cuenta_presupuestaria", "")).strip().upper()
@@ -1979,7 +1968,6 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 if p_key and p_key != "NAN":
                     dict_2027_partida[p_key] = dict_2027_partida.get(p_key, 0.0) + m_27
 
-            # Filtrar filas válidas en el histórico para armar la estructura visual escalonada
             df_h_validas = df_hist[
                 df_hist[c_h_obj].notna() & 
                 (df_hist[c_h_obj].astype(str).str.strip() != "") & 
@@ -1999,7 +1987,6 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             tot_2027_gral = 0.0
             tot_2026_gral = 0.0
 
-            # Iterar exactamente igual que el reporte de ejecución oficial
             for (sec, sub, dest), df_grupo in df_h_validas.groupby([c_h_sec, c_h_sub, c_h_dest]):
                 f_plan_comparativo.append({
                     "OBJETO / CUENTA / IMPUTACIÓN": f"<b>📍 [{sec} › {sub}] DESTINO: {dest}</b>",
@@ -2007,7 +1994,6 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 })
 
                 for obj, df_obj in df_grupo.groupby(c_h_obj):
-                    # Sumarizar grupo Objeto
                     t_2027_obj = sum(dict_2027_partida.get(str(r.get(c_h_partida, "")).strip().upper(), 0.0) for _, r in df_obj.iterrows())
                     t_2026_obj = df_obj["VALOR_2026"].sum()
                     dif_obj = t_2027_obj - t_2026_obj
@@ -2035,9 +2021,9 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                             "% DIFERENCIA": f"<b>{pct_pad:+.2f}%</b>"
                         })
 
-                        for _, r_ lin df_pad.iterrows():
-                            part_code = str(r_ lin.get(c_h_partida, "")).strip().upper()
-                            v_2026_lin = float(r_ lin.get("VALOR_2026", 0.0))
+                        for _, r in df_pad.iterrows():
+                            part_code = str(r.get(c_h_partida, "")).strip().upper()
+                            v_2026_lin = float(r.get("VALOR_2026", 0.0))
                             v_2027_lin = dict_2027_partida.get(part_code, 0.0)
 
                             tot_2027_gral += v_2027_lin

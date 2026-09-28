@@ -98,16 +98,19 @@ def guardar_fila_gsheet(pestana, nuevo_dict):
     if pestana in st.session_state["db_local_backup"]:
         st.session_state["db_local_backup"][pestana].append(nuevo_dict)
         
-    # Sincronización directa con el Google Sheet en la nube
+    # Sincronización con Google Sheets
     try:
         payload = {"pestana": pestana, **nuevo_dict}
-        resp = requests.post(URL_WEBHOOK_GSHEET, json=payload, timeout=5)
-        if resp.status_code == 200:
+        # allow_redirects=True permite seguir la redirección estándar de Google Apps Script
+        resp = requests.post(URL_WEBHOOK_GSHEET, json=payload, timeout=10, allow_redirects=True)
+        
+        # Google Apps Script suele retornar 200 u OK tras el ciclo de redirección
+        if resp.status_code in [200, 302]:
             st.success("✅ ¡Guardado localmente y sincronizado en Google Sheets!")
         else:
-            st.warning("⚠️ Guardado localmente, pero el servidor web de Google respondió con una alerta.")
+            st.warning(f"⚠️ El servidor respondió con código: {resp.status_code}")
     except Exception as e:
-        st.warning(f"⚠️ Guardado en la sesión. No se pudo conectar al Webhook: {e}")
+        st.warning(f"⚠️ Guardado en la sesión. Error de conexión: {e}")
 
 # =====================================================================
 # 2. CARGA PRINCIPAL DE DATOS Y MENÚ LATERAL

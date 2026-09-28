@@ -422,8 +422,8 @@ if opcion_menu == "📥 REGISTRO DE RECURSOS":
     st.markdown("---")
     
     recurso_completo = (r_origen != "") and (r_concepto != "") and (r_tipo != "") and (r_destino.strip() != "") and (r_valor > 0)
-
-    if st.button("💾 GUARDAR RECURSO EN GOOGLE SHEETS", type="primary", use_container_width=True, disabled=not recurso_completo):
+    
+if st.button("💾 GUARDAR RECURSO EN GOOGLE SHEETS", type="primary", use_container_width=True, disabled=not recurso_completo):
     nuevo_recurso = {
         "ORIGEN GENERAL": r_origen.upper(), 
         "PARTIDA / CUENTA PADRE": r_cuenta_padre.upper(), 
@@ -439,7 +439,7 @@ if opcion_menu == "📥 REGISTRO DE RECURSOS":
     keys_a_limpiar = ["rec_origen_map", "rec_padre_map", "rec_con_map", "rec_tipo_map", "rec_destino", "rec_valor", "rec_totales"]
     for k in keys_a_limpiar:
         if k in st.session_state:
-            del st.session_state[k]
+         del st.session_state[k]
             
     st.success("✅ ¡Recurso guardado correctamente en la base de datos!")
     st.balloons()

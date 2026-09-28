@@ -2008,7 +2008,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 use_container_width=True, hide_index=True
             )
 # =====================================================================
-# SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (FILTRADO ESTRICTO D y N)
+# SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (SOLO COLUMNAS DE VALORES)
 # =====================================================================
 elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
     st.subheader("📈 Módulo de Ejecución Presupuestaria - Reportes Oficiales")
@@ -2034,7 +2034,6 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             except Exception:
                 return 0.0
 
-        # Mapeo de columnas (A=0, B=1, C=2, D=3, E=4/Partida, N=13)
         c_sec_k = cols_e[0] if len(cols_e) > 0 else "SECRETARIA"
         c_sub_k = cols_e[1] if len(cols_e) > 1 else "SUBSECRETARÍA"
         c_dest_k = cols_e[2] if len(cols_e) > 2 else "DESTINO"
@@ -2044,7 +2043,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
         c_total = [c for c in cols_e if "TOTAL" in c or "MONTO" in c]
         c_total = c_total[0] if c_total else cols_e[6]
 
-        # FILTRADO ESTRICTO: Exigir que la Columna D (Objeto) Y la Columna N (Padre) tengan datos reales y válidos
+        # FILTRADO ESTRICTO: D y N con datos válidos
         df_validas = df_ejec_completo[
             df_ejec_completo[c_obj].notna() & 
             (df_ejec_completo[c_obj].astype(str).str.strip() != "") & 
@@ -2065,26 +2064,26 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
         ])
 
         with tab_ejec_1:
-            st.markdown("##### 📋 Vista Jerárquica Filtrada (Obj. D -> Padre N -> Imputación E)")
+            st.markdown("##### 📋 Vista Jerárquica - Valores de Ejecución")
             cf1, cf2, col_f3 = st.columns(3)
             sec_ops = sorted([str(x) for x in df_validas[c_sec_k].unique() if str(x).strip() != ""])
 
             with cf1:
-                sec_s_ejec = st.selectbox("1. SECRETARÍA (Col. A):", options=[""] + sec_ops, key="ejec_of_sec")
+                sec_s_ejec = st.selectbox("1. SECRETARÍA:", options=[""] + sec_ops, key="ejec_of_sec")
 
             df_ejec_f1 = df_validas[df_validas[c_sec_k].astype(str).str.strip().str.upper() == sec_s_ejec.strip().upper()] if sec_s_ejec else pd.DataFrame()
             sub_ops = sorted([str(x) for x in df_ejec_f1[c_sub_k].unique() if str(x).strip() != ""]) if not df_ejec_f1.empty else []
 
             with cf2:
-                sub_s_ejec = st.selectbox("2. SUBSECRETARÍA (Col. B):", options=[""] + sub_ops, key="ejec_of_sub")
+                sub_s_ejec = st.selectbox("2. SUBSECRETARÍA:", options=[""] + sub_ops, key="ejec_of_sub")
 
             with col_f3:
                 if sec_s_ejec and sub_s_ejec:
                     df_ejec_f2 = df_ejec_f1[df_ejec_f1[c_sub_k].astype(str).str.strip().str.upper() == sub_s_ejec.strip().upper()]
                     dest_ops = sorted([str(x) for x in df_ejec_f2[c_dest_k].unique() if str(x).strip() != ""])
-                    dest_s_ejec = st.selectbox("3. DESTINO (Col. C):", options=[""] + dest_ops, key="ejec_of_dest")
+                    dest_s_ejec = st.selectbox("3. DESTINO:", options=[""] + dest_ops, key="ejec_of_dest")
                 else:
-                    dest_s_ejec = st.selectbox("3. DESTINO (Col. C):", options=[""], key="ejec_of_dest")
+                    dest_s_ejec = st.selectbox("3. DESTINO:", options=[""], key="ejec_of_dest")
 
             if sec_s_ejec and sub_s_ejec and dest_s_ejec:
                 df_f_oficial_ejec = df_ejec_f2[df_ejec_f2[c_dest_k].astype(str).str.strip().str.upper() == dest_s_ejec.strip().upper()].copy()
@@ -2096,7 +2095,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                     <table style="width: 100%; border-collapse: collapse;">
                         <tr>
                             <td style="width: 25%; font-size: 11px; padding: 15px; border-right: 1px solid #000; text-align: left;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 9px; color: #777;">Ejecución Presupuestaria Actual</span></td>
-                            <td style="width: 50%; text-align: center; padding: 15px; border-right: 1px solid #000; vertical-align: middle;"><h2 style="margin: 0; font-size: 16px; font-weight: bold;">REPORTE DE EJECUCIÓN POR DESTINO</h2><h4 style="margin: 4px 0 0 0; font-size: 12px; font-weight: normal;">- Filtro Estricto D y N -</h4></td>
+                            <td style="width: 50%; text-align: center; padding: 15px; border-right: 1px solid #000; vertical-align: middle;"><h2 style="margin: 0; font-size: 16px; font-weight: bold;">REPORTE DE EJECUCIÓN POR DESTINO</h2><h4 style="margin: 4px 0 0 0; font-size: 12px; font-weight: normal;">- Solo Valores -</h4></td>
                             <td style="width: 25%; text-align: center; background-color: #f5f5f5; vertical-align: middle;"><div style="font-size: 12px; font-weight: bold; border-bottom: 1px solid #000; padding: 4px 0;">Total Ejecutado</div><div style="font-size: 16px; font-weight: bold;">${tot_p:,.2f}</div></td>
                         </tr>
                     </table>
@@ -2107,27 +2106,23 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                 """, unsafe_allow_html=True)
 
                 if df_f_oficial_ejec.empty:
-                    st.warning(f"⚠️ No se encontraron registros válidos con D y N completos para **{dest_s_ejec}**.")
+                    st.warning(f"⚠️ No se encontraron registros para **{dest_s_ejec}**.")
                 else:
                     f_plan_ejec = []
                     for obj, df_obj in df_f_oficial_ejec.groupby(c_obj):
                         tp_obj = df_obj["_TMP_VAL"].sum()
-                        f_plan_ejec.append({"ESTRUCTURA JERÁRQUICA": f"<b>{obj}</b>", "TOTAL ($)": f"<b>${tp_obj:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
+                        f_plan_ejec.append({"OBJETO / CUENTA / IMPUTACIÓN": f"<b>{obj}</b>", "TOTAL EJECUTADO ($)": f"<b>${tp_obj:,.2f}</b>"})
 
                         for pad, df_pad in df_obj.groupby(c_padre):
                             tp_pad = df_pad["_TMP_VAL"].sum()
-                            f_plan_ejec.append({"ESTRUCTURA JERÁRQUICA": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{pad}</b>", "TOTAL ($)": f"<b>${tp_pad:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
+                            f_plan_ejec.append({"OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{pad}</b>", "TOTAL EJECUTADO ($)": f"<b>${tp_pad:,.2f}</b>"})
 
                             for _, r in df_pad.iterrows():
                                 vp = limpiar_monto_val(r.get(c_total, 0))
                                 partida_val = str(r.get(c_partida, ""))
                                 f_plan_ejec.append({
-                                    "ESTRUCTURA JERÁRQUICA": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{partida_val}",
-                                    "TOTAL ($)": f"${vp:,.2f}",
-                                    "F.FIN": str(r.get("FUENTE_FIN", r.get("FUENTE", ""))),
-                                    "CLASE": str(r.get("CLASE", "")),
-                                    "TIPO": str(r.get("TIPO", "")),
-                                    "FINANCIAMIENTO": str(r.get("FINALIDAD", ""))
+                                    "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{partida_val}",
+                                    "TOTAL EJECUTADO ($)": f"${vp:,.2f}"
                                 })
 
                     st.markdown("<br>", unsafe_allow_html=True)
@@ -2153,7 +2148,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                 st.info("Escribí un criterio para buscar.")
 
         with tab_ejec_4:
-            st.markdown("##### 📄 Exportación Oficial con Jerarquía y Firmas")
+            st.markdown("##### 📄 Exportación Oficial (Solo Valores y Firmas)")
             st.info("💡 Hacé clic abajo para descargar el reporte consolidado listo para imprimir.")
 
             bloques_ejec_html = ""
@@ -2166,30 +2161,16 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                 for obj, df_obj in df_g_exp.groupby(c_obj):
                     tp_obj = sum(limpiar_monto_val(r.get(c_total, 0)) for _, r in df_obj.iterrows())
                     tot_p_dest += tp_obj
-                    rows_html_exp += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${tp_obj:,.2f}</td><td></td><td></td><td></td><td></td></tr>'
+                    rows_html_exp += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${tp_obj:,.2f}</td></tr>'
 
                     for pad, df_pad in df_obj.groupby(c_padre):
                         tp_pad = sum(limpiar_monto_val(r.get(c_total, 0)) for _, r in df_pad.iterrows())
-                        rows_html_exp += f'<tr style="font-weight: bold;"><td style="text-align: left; padding-left: 20px;">{pad}</td><td style="text-align: right;">${tp_pad:,.2f}</td><td></td><td></td><td></td><td></td></tr>'
+                        rows_html_exp += f'<tr style="font-weight: bold;"><td style="text-align: left; padding-left: 20px;">{pad}</td><td style="text-align: right;">${tp_pad:,.2f}</td></tr>'
 
                         for _, rw in df_pad.iterrows():
                             p_val = limpiar_monto_val(rw.get(c_total, 0))
                             partida_txt = str(rw.get(c_partida, ""))
-                            ff_val = str(rw.get("FUENTE_FIN", rw.get("FUENTE", "")))
-                            cl_val = str(rw.get("CLASE", ""))
-                            tp_val = str(rw.get("TIPO", ""))
-                            fin_val = str(rw.get("FINALIDAD", ""))
-
-                            rows_html_exp += f"""
-                            <tr>
-                                <td style="text-align: left; padding-left: 40px;">{partida_txt}</td>
-                                <td style="text-align: right;">${p_val:,.2f}</td>
-                                <td style="text-align: center;">{ff_val}</td>
-                                <td style="text-align: center;">{cl_val}</td>
-                                <td style="text-align: center;">{tp_val}</td>
-                                <td style="text-align: center;">{fin_val}</td>
-                            </tr>
-                            """
+                            rows_html_exp += f'<tr><td style="text-align: left; padding-left: 40px;">{partida_txt}</td><td style="text-align: right;">${p_val:,.2f}</td></tr>'
 
                 total_general_ejec += tot_p_dest
 
@@ -2210,12 +2191,8 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                     <table class="tabla-datos">
                         <thead>
                             <tr>
-                                <th>OBJETO DEL GASTO / CUENTA</th>
-                                <th style="text-align: right;">PRESUPUESTO</th>
-                                <th>F.FIN</th>
-                                <th>CLASE</th>
-                                <th>TIPO</th>
-                                <th>FINANCIAMIENTO</th>
+                                <th style="text-align: left; padding-left: 8px;">OBJETO / CUENTA / IMPUTACIÓN</th>
+                                <th style="text-align: right;">TOTAL EJECUTADO ($)</th>
                             </tr>
                         </thead>
                         <tbody>

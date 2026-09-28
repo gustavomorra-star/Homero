@@ -1694,7 +1694,6 @@ elif opcion_menu == "🛡️ CONTROL DE TECHOS PRESUPUESTARIOS":
                 techos_guardados[sec_n] = float(row["total"] * 1.1)
 
         st.markdown("##### ⚙️ Definir Techos Presupuestarios ($)")
-        
         with st.form(key="form_techos_persistentes"):
             sec_a_editar = st.selectbox("Seleccionar Secretaría:", df_sec_techos["secretaria"].unique())
             
@@ -1704,9 +1703,19 @@ elif opcion_menu == "🛡️ CONTROL DE TECHOS PRESUPUESTARIOS":
             btn_guardar_techo = st.form_submit_button("💾 Guardar Techo Permanente", use_container_width=True, type="primary")
             
             if btn_guardar_techo:
+                # 1. Actualizamos el diccionario local
                 techos_guardados[sec_a_editar] = nuevo_techo
                 guardar_techos_disco(techos_guardados)
-                st.success(f"¡Techo guardado de forma permanente para {sec_a_editar}!")
+                
+                # 2. Sincronizamos con Google Sheets a través del Webhook
+                dict_techo = {
+                    "secretaria": sec_a_editar,
+                    "techo": float(nuevo_techo)
+                }
+                guardar_fila_gsheet("techos", dict_techo)
+                
+                st.success(f"¡Techo guardado permanentemente para {sec_a_editar} y sincronizado en el Sheet!")
+                st.rerun()
 
         st.markdown("---")
         st.markdown("##### 📊 Estado de Cumplimiento por Secretaría")

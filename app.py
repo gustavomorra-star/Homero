@@ -2016,7 +2016,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 use_container_width=True, hide_index=True
             )
 # =====================================================================
-# SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (TODAS LAS VISTAS IMPRIMIBLES)
+# SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (TODAS LAS SOLAPAS)
 # =====================================================================
 elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
     st.subheader("📈 Módulo de Ejecución Presupuestaria - Reportes Oficiales")
@@ -2063,21 +2063,21 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             (df_ejec_completo[c_padre].astype(str).str.strip() != "") & 
             (df_ejec_completo[c_padre].astype(str).str.upper() != "NAN") &
             df_ejec_completo[c_partida].notna() & 
-            (df_ec_val := True) &
             (df_ejec_completo[c_partida].astype(str).str.strip() != "") & 
             (df_ejec_completo[c_partida].astype(str).str.upper() != "NAN")
         ].copy()
 
-        tab_ejec_1, tab_ejec_2, tab_ejec_3, tab_ejec_4, tab_ejec_5 = st.tabs([
+        tab_ejec_1, tab_ejec_2, tab_ejec_3, tab_ejec_4, tab_ejec_5, tab_ejec_6 = st.tabs([
             "📊 Resumen por Destino (Matriz)",
             "🏛️ Desglose Escalonado por Destino",
             "📦 Totales por Objeto del Gasto",
             "🔍 Buscador y Control de Saldos",
-            "📄 Exportación y Firmas (PDF)"
+            "📄 Exportación y Firmas (PDF)",
+            "🏛️ Reporte por Finalidad y Función"
         ])
 
         # -------------------------------------------------------------
-        # SOLAPA 1: MATRIZ DE DESTINOS VS OBJETOS (CON OPCIÓN DE DESCARGA)
+        # SOLAPA 1: MATRIZ DE DESTINOS VS OBJETOS
         # -------------------------------------------------------------
         with tab_ejec_1:
             st.markdown("##### 📊 Cuadro Resumen: Destinos vs. Objetos del Gasto")
@@ -2101,7 +2101,6 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
 
                 st.dataframe(df_pivote_fmt, use_container_width=True, hide_index=True)
 
-                # Generamos HTML imprimible para la Matriz
                 tot_matriz_gral = df_validas["_DEV_NUM"].sum()
                 rows_matriz_html = ""
                 for _, rw in df_pivote.iterrows():
@@ -2426,3 +2425,115 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                 use_container_width=True,
                 type="primary"
             )
+
+        # -------------------------------------------------------------
+        # SOLAPA 6: REPORTE POR FINALIDAD Y FUNCIÓN (CON IMPRESIÓN)
+        # -------------------------------------------------------------
+        with tab_ejec_6:
+            st.markdown("##### 🏛️ Reporte Consolidado por Finalidad y Función")
+            st.info("💡 Este reporte agrupa la ejecución de egresos según la finalidad y función presupuestaria, con opción de descarga e impresión formal.")
+
+            if not df_validas.empty and "FINALIDAD" in [c.upper() for c in df_validas.columns] or any("FINALIDAD" in c for c in df_validas.columns):
+                col_fin_detectada = [c for c in df_validas.columns if "FINALIDAD" in c.upper()][0]
+
+                df_validas["_DEV_NUM"] = df_validas[c_dev].apply(limpiar_monto_val)
+                df_validas["_PRES_NUM"] = df_validas[c_pres].apply(limpiar_monto_val)
+                df_validas["_EJEC_NUM"] = df_validas[c_ejec].apply(limpiar_monto_val)
+                df_validas["_MOD_NUM"] = df_validas[c_mod].apply(limpiar_monto_val)
+                df_validas["_SALDO_NUM"] = df_validas[c_saldo].apply(limpiar_monto_val)
+
+                df_fin_res = df_validas.groupby(col_fin_detectada).agg({
+                    "_PRES_NUM": "sum",
+                    "_DEV_NUM": "sum",
+                    "_EJEC_NUM": "sum",
+                    "_MOD_NUM": "sum",
+                    "_SALDO_NUM": "sum"
+                }).reset_index()
+
+                df_fin_res.columns = ["FINALIDAD / FUNCIÓN", "PRESUPUESTO", "DEVENGADO", "EJECUTADO", "MODIFICACIONES", "SALDO"]
+                
+                df_fin_vista = df_fin_res.copy()
+                for c_m in ["PRESUPUESTO", "DEVENGADO", "EJECUTADO", "MODIFICACIONES", "SALDO"]:
+                    df_fin_vista[c_m] = df_fin_vista[c_m].map(lambda x: f"${x:,.2f}")
+
+                st.dataframe(df_fin_vista, use_container_width=True, hide_index=True)
+
+                tot_gral_fin = df_fin_res["DEVENGADO"].sum()
+                rows_fin_html = ""
+                for _, r_f in df_fin_res.iterrows():
+                    rows_fin_html += f"""
+                    <tr>
+                        <td style="text-align: left; padding-left: 8px; font-weight: bold;">{r_f['FINALIDAD / FUNCIÓN']}</td>
+                        <td style="text-align: right;">${r_f['PRESUPUESTO']:,.2f}</td>
+                        <td style="text-align: right;">${r_f['DEVENGADO']:,.2f}</td>
+                        <td style="text-align: right;">${r_f['EJECUTADO']:,.2f}</td>
+                        <td style="text-align: right;">${r_f['MODIFICACIONES']:,.2f}</td>
+                        <td style="text-align: right;">${r_f['SALDO']:,.2f}</td>
+                    </tr>
+                    """
+
+                html_reporte_fin = f"""
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <style>
+                        @page {{ size: A4 landscape; margin: 12mm; }}
+                        body {{ font-family: Arial, sans-serif; color: #000; margin: 0 auto; width: 100%; max-width: 1050px; }}
+                        .m-box {{ border: 1px solid #000; padding: 10px; margin-bottom: 15px; background-color: #fff; }}
+                        .t-hdr {{ width: 100%; border-collapse: collapse; }}
+                        .t-hdr td {{ padding: 4px; vertical-align: middle; border: none; }}
+                        .b-tot {{ border: 1px solid #000; background-color: #f5f5f5; text-align: center; }}
+                        .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; margin-bottom: 25px; }}
+                        .tabla-datos th {{ border-bottom: 2px solid #000; padding: 6px 4px; font-weight: bold; background-color: #f2f2f2; }}
+                        .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 6px 4px; vertical-align: middle; }}
+                        .resumen-final {{ border: 2px solid #000; padding: 15px; margin-top: 20px; background-color: #fafafa; text-align: center; font-size: 14px; page-break-inside: avoid; }}
+                        .firmas-container {{ margin-top: 50px; width: 100%; page-break-inside: avoid; }}
+                        .firma-box {{ width: 30%; float: left; text-align: center; border-top: 1px solid #000; padding-top: 5px; margin: 0 1.5%; font-size: 11px; font-weight: bold; }}
+                    </style>
+                </head>
+                <body onload="window.print();">
+                    <div class="m-box">
+                        <table class="t-hdr">
+                            <tr>
+                                <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Ejecución de Egresos - Año 2026</span></td>
+                                <td style="width: 50%; text-align: center;"><b>REPORTE OFICIAL POR FINALIDAD Y FUNCIÓN</b><br><small>- Control Financiero -</small></td>
+                                <td style="width: 25%;" class="b-tot"><small>Total Devengado</small><br><b>${tot_gral_fin:,.2f}</b></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <table class="tabla-datos">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; padding-left: 8px;">FINALIDAD / FUNCIÓN</th>
+                                <th style="text-align: right;">PRESUPUESTO</th>
+                                <th style="text-align: right;">DEVENGADO</th>
+                                <th style="text-align: right;">EJECUTADO</th>
+                                <th style="text-align: right;">MODIFICACIONES</th>
+                                <th style="text-align: right;">SALDO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows_fin_html}
+                        </tbody>
+                    </table>
+                    <div class="resumen-final">
+                        <b>TOTAL GENERAL DEVENGADO MUNICIPAL:</b> ${tot_gral_fin:,.2f}
+                    </div>
+                    <div class="firmas-container">
+                        <div class="firma-box">Responsable Presupuesto</div>
+                        <div class="firma-box">Contaduría General</div>
+                        <div class="firma-box">Intendente / Secretario</div>
+                    </div>
+                </body>
+                </html>
+                """
+
+                st.download_button(
+                    label="📥 Descargar Reporte Oficial por Finalidad (PDF/HTML)",
+                    data=html_reporte_fin,
+                    file_name=f"Reporte_Finalidad_Funcion_{time.strftime('%Y%m%d')}.html",
+                    mime="text/html",
+                    use_container_width=True
+                )
+            else:
+                st.warning("⚠️ No se encontró la columna de finalidad en la planilla.")

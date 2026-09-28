@@ -570,19 +570,19 @@ if opcion_menu == "📝 FORMULARIO DE REGISTRO":
         f_finalidad = st.selectbox("FINALIDAD:", [""] + opciones_finalidad, format_func=lambda x: "--- Elegí Finalidad ---" if x == "" else x)
 
     campos_completos = (f_sec != "") and (f_sub != "") and (f_dest is not None and f_dest != "") and (f_obj != "") and (f_padre != "") and (f_presup != "") and (f_fuente != "") and (f_clase != "") and (f_tipo != "") and (f_finalidad != "")
-if st.button("💾 GUARDAR REGISTRO INMEDIATO", type="primary", use_container_width=True, disabled=not campos_completos) and f_total > 0:
-    nuevo_renglon = {
-        "secretaria": f_sec, "subsecretaria": f_sub, "destino": f_dest, 
-        "objeto_gasto": f_obj, "cuenta_padre": f_padre, "cuenta_presupuestaria": f_presup, 
-        "total": f_total, "fuente_fin": f_fuente, "clase": f_clase, "tipo": f_tipo, "finalidad": f_finalidad
-    }
-    guardar_fila_gsheet("egresos", nuevo_renglon)
+    if st.button("💾 GUARDAR REGISTRO INMEDIATO", type="primary", use_container_width=True, disabled=not campos_completos) and f_total > 0:
+        nuevo_renglon = {
+            "secretaria": f_sec, "subsecretaria": f_sub, "destino": f_dest, 
+            "objeto_gasto": f_obj, "cuenta_padre": f_padre, "cuenta_presupuestaria": f_presup, 
+            "total": f_total, "fuente_fin": f_fuente, "clase": f_clase, "tipo": f_tipo, "finalidad": f_finalidad
+        }
+        guardar_fila_gsheet("egresos", nuevo_renglon)
     
     # 🧹 LIMPIAR LAS KEYS DE REGISTRO
-    keys_reg = ["reg_sec", "reg_sub", "reg_dest", "reg_obj", "reg_padre", "reg_presup"]
-    for k in keys_reg:
-        if k in st.session_state:
-            del st.session_state[k]
+        keys_reg = ["reg_sec", "reg_sub", "reg_dest", "reg_obj", "reg_padre", "reg_presup"]
+        for k in keys_reg:
+            if k in st.session_state:
+                del st.session_state[k]
 
     st.success("✅ ¡Renglón presupuestario guardado de forma cooperativa!")
     st.balloons()

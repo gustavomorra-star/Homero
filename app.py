@@ -187,7 +187,7 @@ MAPEO_GASTOS = {
         "23.1.0.0.00.000 - Servicios básicos": ["23.1.1.0.00.000 - Energía Eléctrica","23.1.2.0.00.000 - Agua","23.2.3.0.00.000 - Gas","23.1.4.0.00.000 - Telefono, telex, telefax","23.1.5.0.00.000 - Correo y telégrafos"],
 	    "23.2.0.0.00.000 - Alquiler y derechos": ["23.2.1.0.00.000 - Alquiler de edificios y locales","23.2.2.0.00.000 - Alquiler de maquinaria, equipo y medios de transporte","23.2.3.0.00.000 - Alquiler de equipos de computación","23.2.4.0.00.000 - Alquiler de fotocopiadoras","23.2.5.0.00.000 - Alquiler de tierras y terrenos","23.2.6.0.00.000 - Derechos de bienes intangibles"],
 	    "23.2.9.1.00.000 - Otros alquileres no comprendidos precedentemente": ["23.2.9.1.00.000 - Alquiler de máquinas expendedoras de alimentos","23.2.9.2.00.000 - Alquiler de expendedoras de agua","23.2.9.3.00.000 - Alquiler de baños químicos","23.2.9.4.00.000 - Alquiler Estructuras Varias (Incluye Vallas Seguridad, Gradas, etc)"],
-        "23.3.0.0.00.000 - Mantenimiento, reparación y limpieza": ["23.3.1.0.00.000 - Mantenimiento y reparación de edificios y locales","23.3.2.0.00.000 - Mantenimiento y reparación de vehículos","23.3.3.0.00.000 - Mantenimiento y reparación de mauqinaria y equipo","23.3.4.0.00.000 - Mantenimiento y reparación de vías de comunicación","23.3.5.0.00.000]
+        "23.3.0.0.00.000 - Mantenimiento, reparación y limpieza": ["23.3.1.0.00.000 - Mantenimiento y reparación de edificios y locales","23.3.2.0.00.000 - Mantenimiento y reparación de vehículos","23.3.3.0.00.000 - Mantenimiento y reparación de mauqinaria y equipo","23.3.4.0.00.000 - Mantenimiento y reparación de vías de comunicación","23.3.5.0.00.000 - Limpieza, aseo y fumigación"]
     },
     
     "4. Bienes de Uso": {

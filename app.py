@@ -529,6 +529,10 @@ if opcion_menu == "📥 REGISTRO DE RECURSOS":
 if opcion_menu == "📝 FORMULARIO DE REGISTRO":
     st.subheader("📥 Cargar Nuevo Renglón Presupuestario")
 
+    # 🛡️ Inicialización previa de todas las variables para evitar NameError
+    f_sec, f_sub, f_dest = "", "", None
+    f_obj, f_padre, f_presup = "", "", ""
+
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("**📍 1. Ubicación Institucional**")
@@ -577,24 +581,25 @@ if opcion_menu == "📝 FORMULARIO DE REGISTRO":
     with col5:
         f_finalidad = st.selectbox("FINALIDAD:", [""] + opciones_finalidad, format_func=lambda x: "--- Elegí Finalidad ---" if x == "" else x)
 
-campos_completos = (f_sec != "") and (f_sub != "") and (f_dest is not None and f_dest != "") and (f_obj != "") and (f_padre != "") and (f_presup != "") and (f_fuente != "") and (f_clase != "") and (f_tipo != "") and (f_finalidad != "")
-if st.button("💾 GUARDAR REGISTRO INMEDIATO", type="primary", use_container_width=True, disabled=not campos_completos) and f_total > 0:
-    nuevo_renglon = {
-        "secretaria": f_sec, "subsecretaria": f_sub, "destino": f_dest, 
-        "objeto_gasto": f_obj, "cuenta_padre": f_padre, "cuenta_presupuestaria": f_presup, 
-        "total": f_total, "fuente_fin": f_fuente, "clase": f_clase, "tipo": f_tipo, "finalidad": f_finalidad
-    }
-    guardar_fila_gsheet("egresos", nuevo_renglon)
+    campos_completos = (f_sec != "") and (f_sub != "") and (f_dest is not None and f_dest != "") and (f_obj != "") and (f_padre != "") and (f_presup != "") and (f_fuente != "") and (f_clase != "") and (f_tipo != "") and (f_finalidad != "")
     
-    # 🧹 LIMPIAR LAS KEYS DE REGISTRO
-    keys_reg = ["reg_sec", "reg_sub", "reg_dest", "reg_obj", "reg_padre", "reg_presup"]
-    for k in keys_reg:
-        if k in st.session_state:
-            del st.session_state[k]
+    if st.button("💾 GUARDAR REGISTRO INMEDIATO", type="primary", use_container_width=True, disabled=not campos_completos) and f_total > 0:
+        nuevo_renglon = {
+            "secretaria": f_sec, "subsecretaria": f_sub, "destino": f_dest, 
+            "objeto_gasto": f_obj, "cuenta_padre": f_padre, "cuenta_presupuestaria": f_presup, 
+            "total": f_total, "fuente_fin": f_fuente, "clase": f_clase, "tipo": f_tipo, "finalidad": f_finalidad
+        }
+        guardar_fila_gsheet("egresos", nuevo_renglon)
+        
+        # 🧹 LIMPIAR LAS KEYS DE REGISTRO
+        keys_reg = ["reg_sec", "reg_sub", "reg_dest", "reg_obj", "reg_padre", "reg_presup"]
+        for k in keys_reg:
+            if k in st.session_state:
+                del st.session_state[k]
 
-    st.success("✅ ¡Renglón presupuestario guardado de forma cooperativa!")
-    st.balloons()
-    st.rerun()
+        st.success("✅ ¡Renglón presupuestario guardado de forma cooperativa!")
+        st.balloons()
+        st.rerun()
 
 # =====================================================================
 # SECCIÓN 2: GESTIÓN DE DESTINOS DINÁMICOS

@@ -2007,3 +2007,35 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 }),
                 use_container_width=True, hide_index=True
             )
+# =====================================================================
+# SECCIÓN 21: EJECUCIÓN PRESUPUESTARIA ACTUAL
+# =====================================================================
+elif opcion_menu == "📈 EJECUCIÓN PRESUPUESTARIA ACTUAL":
+  st.subheader("📈 Planilla de Ejecución Presupuestaria")
+
+  # Leemos los datos directamente de la hoja "EJECUCIÓN" usando su gid
+  df_ejecucion = leer_datos_gsheet(URL_READ_EJECUCION)
+
+  if not df_ejecucion.empty:
+    tot_ejec = (
+        df_ejecucion["total"].sum() if "total" in df_ejecucion.columns else 0.0
+    )
+    st.metric(label="💰 TOTAL EJECUTADO", value=f"${tot_ejec:,.2f}")
+
+    st.markdown("---")
+    st.dataframe(df_ejecucion, use_container_width=True, hide_index=True)
+
+    # Botón para descargar en CSV si lo necesitás
+    csv_ejec = df_ejecucion.to_csv(index=False).encode("utf-8-sig")
+    st.download_button(
+        label="📥 Descargar Planilla de Ejecución en CSV",
+        data=csv_ejec,
+        file_name="ejecucion_presupuestaria_actual.csv",
+        mime="text/csv",
+        use_container_width=True,
+    )
+  else:
+    st.warning(
+        "⚠️ No se pudieron cargar los datos de la hoja de ejecución. Verificá"
+        " que el enlace y la pestaña sean públicos."
+    )

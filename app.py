@@ -46,6 +46,7 @@ URL_READ_EGRESOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/exp
 URL_READ_DESTINOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1365567783"
 URL_READ_RECURSOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=269081959"
 URL_READ_TECHOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=671713267"
+URL_READ_EJECUCION = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=810226733"
 
 def construir_url_csv(param):
     param_str = str(param).strip()
@@ -390,8 +391,10 @@ with st.sidebar:
             "🏛️ CLASIFICACIÓN ECONÓMICA DEL GASTO",
             "🛡️ CONTROL DE TECHOS PRESUPUESTARIOS",
             "📋 FICHA TÉCNICA POR DESTINO",
-            "🔄 COMPARATIVO E HISTÓRICO"
+            "🔄 COMPARATIVO E HISTÓRICO",
+			"📈 EJECUCIÓN PRESUPUESTARIA ACTUAL"
         ]
+	
     )
 
 # =====================================================================

@@ -2056,6 +2056,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
 
             df_final_comp = pd.DataFrame(f_plan_comparativo)
             st.write(df_final_comp.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 # =====================================================================
 # SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (TODAS LAS SOLAPAS)
 # =====================================================================

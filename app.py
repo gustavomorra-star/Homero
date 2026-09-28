@@ -421,29 +421,37 @@ if opcion_menu == "📥 REGISTRO DE RECURSOS":
 
     st.markdown("---")
     
-recurso_completo = (r_origen != "") and (r_concepto != "") and (r_tipo != "") and (r_destino.strip() != "") and (r_valor > 0)
-    
-if st.button("💾 GUARDAR RECURSO EN GOOGLE SHEETS", type="primary", use_container_width=True, disabled=not recurso_completo):
-    nuevo_recurso = {
-        "ORIGEN GENERAL": r_origen.upper(), 
-        "PARTIDA / CUENTA PADRE": r_cuenta_padre.upper(), 
-        "CONCEPTO ESPECÍFICO": r_concepto.upper(), 
-        "VALOR": float(r_valor), 
-        "TOTALES": float(r_totales), 
-        "TIPO": r_tipo.upper(), 
-        "DESTINO": r_destino.strip().upper()
-    }
-    guardar_fila_gsheet("recursos", nuevo_recurso)
-    
-    # 🧹 LIMPIAR LAS KEYS PARA QUE LOS INPUTS SE RESETEEN
-    keys_a_limpiar = ["rec_origen_map", "rec_padre_map", "rec_con_map", "rec_tipo_map", "rec_destino", "rec_valor", "rec_totales"]
-    for k in keys_a_limpiar:
-        if k in st.session_state:
-            del st.session_state[k]
-            
-    st.success("✅ ¡Recurso guardado correctamente en la base de datos!")
-    st.balloons()
-    st.rerun()
+    # 🛡️ Blindaje de seguridad para evitar NameError
+    if 'r_origen' not in locals(): r_origen = ""
+    if 'r_cuenta_padre' not in locals(): r_cuenta_padre = ""
+    if 'r_concepto' not in locals(): r_concepto = ""
+    if 'r_tipo' not in locals(): r_tipo = ""
+    if 'r_destino' not in locals(): r_destino = ""
+    if 'r_valor' not in locals(): r_valor = 0.0
+
+    recurso_completo = (r_origen != "") and (r_concepto != "") and (r_tipo != "") and (r_destino.strip() != "") and (r_valor > 0)
+        
+    if st.button("💾 GUARDAR RECURSO EN GOOGLE SHEETS", type="primary", use_container_width=True, disabled=not recurso_completo):
+        nuevo_recurso = {
+            "ORIGEN GENERAL": r_origen.upper(), 
+            "PARTIDA / CUENTA PADRE": r_cuenta_padre.upper(), 
+            "CONCEPTO ESPECÍFICO": r_concepto.upper(), 
+            "VALOR": float(r_valor), 
+            "TOTALES": float(r_totales), 
+            "TIPO": r_tipo.upper(), 
+            "DESTINO": r_destino.strip().upper()
+        }
+        guardar_fila_gsheet("recursos", nuevo_recurso)
+        
+        # 🧹 LIMPIAR LAS KEYS PARA QUE LOS INPUTS SE RESETEEN
+        keys_a_limpiar = ["rec_origen_map", "rec_padre_map", "rec_con_map", "rec_tipo_map", "rec_destino", "rec_valor", "rec_totales"]
+        for k in keys_a_limpiar:
+            if k in st.session_state:
+                del st.session_state[k]
+                
+        st.success("✅ ¡Recurso guardado correctamente en la base de datos!")
+        st.balloons()
+        st.rerun()
 
     st.markdown("---")
     st.markdown("### 📋 Listado Consolidado de Recursos")

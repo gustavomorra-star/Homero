@@ -1897,7 +1897,7 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
 # SECCIÓN 20: COMPARATIVO E HISTÓRICO PRESUPUESTARIO
 # =====================================================================
 elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
-    st.subheader("🔄 Módulo Comparativo e Histórico Presupuestario (2026 vs 2027)")
+    st.subheader("🔄 Reporte Comparativo e Histórico Oficial (Desglose por Imputación)")
 
     if df_egr_completo.empty:
         st.info("💡 No hay registros contables cargados para el proyecto 2027.")
@@ -1954,83 +1954,87 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
             st.error(f"⚠️ No se pudo procesar la planilla histórica: {e}")
 
         if hay_datos_2026 and not df_2026.empty:
-            # Pestañas para separar ambas formas de comparativo
-            tab_comp_1, tab_comp_2 = st.tabs([
-                "📊 1. Comparativo Global por Objeto del Gasto", 
-                "🏛️ 2. Comparativo Detallado por Estructura e Imputación"
-            ])
+            st.markdown("---")
+            st.markdown(f"##### 📊 Desglose Analítico Comparativo (2027 vs 2026 [{col_monto_target}])")
 
-            # ---------------------------------------------------------
-            # VISTA 1: COMPARATIVO GLOBAL POR OBJETO
-            # ---------------------------------------------------------
-            with tab_comp_1:
-                st.markdown("##### 📦 Comparativo Exclusivo por Objeto del Gasto (Sin importar Secretaría)")
-                
-                # Totales 2027 por Objeto
-                obj_2027 = df_egr_completo.groupby("objeto_gasto")["total"].sum().reset_index()
-                obj_2027.columns = ["OBJETO DEL GASTO", "PRESUPUESTO 2027 ($)"]
-                obj_2027["OBJETO DEL GASTO"] = obj_2027["OBJETO DEL GASTO"].astype(str).str.strip()
+            # Intentar buscar la columna de cuenta/partida en el 2026 para alinear los datos
+            col_partida_2026 = None
+            for c in df_2026.columns:
+                if "PARTIDA" in c or "IMPUTACIÓN" in c or "CUENTA" in c or "INCISO" in c:
+                    col_partida_2026 = c
+                    break
+            if not col_partida_2026 and len(df_2026.columns) > 4:
+                col_partida_2026 = df_2026.columns[4] # Usualmente la columna E
 
-                # Intentar detectar la columna de objeto o concepto en 2026
-                col_obj_2026 = None
-                for c in df_2026.columns:
-                    if "OBJETO" in c or "GASTO" in c or "PARTIDA" in c:
-                        col_obj_2026 = c
-                        break
-                if not col_obj_2026 and len(df_2026.columns) > 3:
-                    col_obj_2026 = df_2026.columns[3]
+            # Mapear histórico por cuenta presupuestaria
+            dict_historico = {}
+            if col_partida_2026:
+                for _, r_h in df_2026.iterrows():
+                    part_key = str(r_h[col_partida_2026]).strip().upper()
+                    monto_h = float(r_h["TOTAL_2026_CLEAN"])
+                    dict_historico[part_key] = dict_historico.get(part_key, 0.0) + monto_h
 
-                if col_obj_2026:
-                    df_2026[col_obj_2026] = df_2026[col_obj_2026].astype(str).str.strip()
-                    obj_2026 = df_2026.groupby(col_obj_2026)["TOTAL_2026_CLEAN"].sum().reset_index()
-                    obj_2026.columns = ["OBJETO DEL GASTO", f"PRESUPUESTO 2026 ({col_monto_target}) ($)"]
+            # Construir tabla estructurada escalonada similar a ejecución
+            f_plan_comparativo = []
+            
+            tot_gen_2027 = 0.0
+            tot_gen_2026 = 0.0
 
-                    df_comp_obj = pd.merge(obj_2027, obj_2026, on="OBJETO DEL GASTO", how="outer").fillna(0.0)
-                    col_b_2026 = f"PRESUPUESTO 2026 ({col_monto_target}) ($)"
-                    
-                    df_comp_obj["DIFERENCIA ($)"] = df_comp_obj["PRESUPUESTO 2027 ($)"] - df_comp_obj[col_b_2026]
-                    df_comp_obj["% DIFERENCIA"] = df_comp_obj.apply(
-                        lambda r: ((r["DIFERENCIA ($)"] / r[col_b_2026]) * 100) if r[col_b_2026] > 0 else 0.0, axis=1
-                    )
+            for (sec, sub, dest), df_grupo in df_egr_completo.groupby(["secretaria", "subsecretaria", "destino"]):
+                f_plan_comparativo.append({
+                    "OBJETO / CUENTA / IMPUTACIÓN": f"<b>📍 [{sec} › {sub}] DESTINO: {dest}</b>",
+                    "PRESUPUESTO 2027": "", f"2026 ({col_monto_target})": "", "DIFERENCIA ($)": "", "% DIFERENCIA": ""
+                })
 
-                    st.dataframe(
-                        df_comp_obj.style.format({
-                            "PRESUPUESTO 2027 ($)": "${:,.2f}", col_b_2026: "${:,.2f}",
-                            "DIFERENCIA ($)": "${:,.2f}", "% DIFERENCIA": "{:+.2f}%"
-                        }),
-                        use_container_width=True, hide_index=True
-                    )
-                else:
-                    st.warning("No se pudo mapear automáticamente la columna de objetos en el histórico 2026.")
+                for obj, df_obj in df_grupo.groupby("objeto_gasto"):
+                    t_2027_obj = df_obj["total"].sum()
+                    t_2026_obj = sum(dict_historico.get(str(r["cuenta_presupuestaria"]).strip().upper(), 0.0) for _, r in df_obj.iterrows())
+                    dif_obj = t_2027_obj - t_2026_obj
+                    pct_obj = (dif_obj / t_2026_obj * 100) if t_2026_obj > 0 else 0.0
 
-            # ---------------------------------------------------------
-            # VISTA 2: COMPARATIVO DETALLADO (SECRETARÍA, SUBSECRETARÍA, CUENTAS)
-            # ---------------------------------------------------------
-            with tab_comp_2:
-                st.markdown("##### 🏛️ Desglose Completo por Secretaría, Subsecretaría, Objeto y Partida")
-                
-                # Agrupación base 2027
-                det_2027 = df_egr_completo.groupby(
-                    ["secretaria", "subsecretaria", "objeto_gasto", "cuenta_padre", "cuenta_presupuestaria"]
-                )["total"].sum().reset_index()
-                
-                det_2027.columns = [
-                    "SECRETARÍA", "SUBSECRETARÍA", "OBJETO DEL GASTO", 
-                    "CUENTA PADRE", "CUENTA IMPUTACIÓN", "PRESUPUESTO 2027 ($)"
-                ]
+                    f_plan_comparativo.append({
+                        "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{obj}</b>",
+                        "PRESUPUESTO 2027": f"<b>${t_2027_obj:,.2f}</b>",
+                        f"2026 ({col_monto_target})": f"<b>${t_2026_obj:,.2f}</b>",
+                        "DIFERENCIA ($)": f"<b>${dif_obj:,.2f}</b>",
+                        "% DIFERENCIA": f"<b>{pct_obj:+.2f}%</b>"
+                    })
 
-                # Normalizar textos para el cruce
-                for col_str in ["SECRETARÍA", "SUBSECRETARÍA", "CUENTA IMPUTACIÓN"]:
-                    det_2027[col_str] = det_2027[col_str].astype(str).str.strip().str.upper()
+                    for pad, df_pad in df_obj.groupby("cuenta_padre"):
+                        t_2027_pad = df_pad["total"].sum()
+                        t_2026_pad = sum(dict_historico.get(str(r["cuenta_presupuestaria"]).strip().upper(), 0.0) for _, r in df_pad.iterrows())
+                        dif_pad = t_2027_pad - t_2026_pad
+                        pct_pad = (dif_pad / t_2026_pad * 100) if t_2026_pad > 0 else 0.0
 
-                # Intentar cruzar con los datos históricos si poseen columnas de imputación
-                st.info("💡 A continuación se presenta el cuadro estructurado con el desglose presupuestario completo:")
-                
-                # Si el histórico tiene nivel de detalle por partida, se pueden alinear; de lo contrario se muestra el consolidado con las columnas solicitadas
-                st.dataframe(
-                    det_2027.style.format({"PRESUPUESTO 2027 ($)": "${:,.2f}"}),
-                    use_container_width=True, hide_index=True
-                )
+                        f_plan_comparativo.append({
+                            "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>{pad}</b>",
+                            "PRESUPUESTO 2027": f"<b>${t_2027_pad:,.2f}</b>",
+                            f"2026 ({col_monto_target})": f"<b>${t_2026_pad:,.2f}</b>",
+                            "DIFERENCIA ($)": f"<b>${dif_pad:,.2f}</b>",
+                            "% DIFERENCIA": f"<b>{pct_pad:+.2f}%</b>"
+                        })
+
+                        for _, r in df_pad.iterrows():
+                            v_2027 = float(r["total"])
+                            part_exacta = str(r["cuenta_presupuestaria"]).strip().upper()
+                            v_2026 = dict_historico.get(part_exacta, 0.0)
+                            
+                            tot_gen_2027 += v_2027
+                            tot_gen_2026 += v_2026
+                            
+                            dif_lin = v_2027 - v_2026
+                            pct_lin = (dif_lin / v_2026 * 100) if v_2026 > 0 else 0.0
+
+                            f_plan_comparativo.append({
+                                "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{r['cuenta_presupuestaria']}",
+                                "PRESUPUESTO 2027": f"${v_2027:,.2f}",
+                                f"2026 ({col_monto_target})": f"${v_2026:,.2f}",
+                                "DIFERENCIA ($)": f"${dif_lin:,.2f}",
+                                "% DIFERENCIA": f"{pct_lin:+.2f}%"
+                            })
+
+            df_res_final = pd.DataFrame(f_plan_comparativo)
+            st.write(df_res_final.to_html(escape=False, index=False), unsafe_allow_html=True)
 # =====================================================================
 # SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (TODAS LAS SOLAPAS)
 # =====================================================================

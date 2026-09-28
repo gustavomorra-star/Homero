@@ -440,7 +440,7 @@ if opcion_menu == "📥 REGISTRO DE RECURSOS":
     for k in keys_a_limpiar:
         if k in st.session_state:
             del st.session_state[k]
-
+            
     st.success("✅ ¡Recurso guardado correctamente en la base de datos!")
     st.balloons()
     st.rerun()

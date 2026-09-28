@@ -421,25 +421,25 @@ if opcion_menu == "📥 REGISTRO DE RECURSOS":
 
     st.markdown("---")
     
-    recurso_completo = (r_origen != "") and (r_concepto != "") and (r_tipo != "") and (r_destino.strip() != "") and (r_valor > 0)
+recurso_completo = (r_origen != "") and (r_concepto != "") and (r_tipo != "") and (r_destino.strip() != "") and (r_valor > 0)
     
-    if st.button("💾 GUARDAR RECURSO EN GOOGLE SHEETS", type="primary", use_container_width=True, disabled=not recurso_completo):
-        nuevo_recurso = {
-            "ORIGEN GENERAL": r_origen.upper(), 
-            "PARTIDA / CUENTA PADRE": r_cuenta_padre.upper(), 
-            "CONCEPTO ESPECÍFICO": r_concepto.upper(), 
-            "VALOR": float(r_valor), 
-            "TOTALES": float(r_totales), 
-            "TIPO": r_tipo.upper(), 
-            "DESTINO": r_destino.strip().upper()
-        }
-        guardar_fila_gsheet("recursos", nuevo_recurso)
+if st.button("💾 GUARDAR RECURSO EN GOOGLE SHEETS", type="primary", use_container_width=True, disabled=not recurso_completo):
+    nuevo_recurso = {
+        "ORIGEN GENERAL": r_origen.upper(), 
+        "PARTIDA / CUENTA PADRE": r_cuenta_padre.upper(), 
+        "CONCEPTO ESPECÍFICO": r_concepto.upper(), 
+        "VALOR": float(r_valor), 
+        "TOTALES": float(r_totales), 
+        "TIPO": r_tipo.upper(), 
+        "DESTINO": r_destino.strip().upper()
+    }
+    guardar_fila_gsheet("recursos", nuevo_recurso)
     
     # 🧹 LIMPIAR LAS KEYS PARA QUE LOS INPUTS SE RESETEEN
-        keys_a_limpiar = ["rec_origen_map", "rec_padre_map", "rec_con_map", "rec_tipo_map", "rec_destino", "rec_valor", "rec_totales"]
-        for k in keys_a_limpiar:
-            if k in st.session_state:
-                 del st.session_state[k]
+    keys_a_limpiar = ["rec_origen_map", "rec_padre_map", "rec_con_map", "rec_tipo_map", "rec_destino", "rec_valor", "rec_totales"]
+    for k in keys_a_limpiar:
+        if k in st.session_state:
+            del st.session_state[k]
             
     st.success("✅ ¡Recurso guardado correctamente en la base de datos!")
     st.balloons()
@@ -569,20 +569,20 @@ if opcion_menu == "📝 FORMULARIO DE REGISTRO":
     with col5:
         f_finalidad = st.selectbox("FINALIDAD:", [""] + opciones_finalidad, format_func=lambda x: "--- Elegí Finalidad ---" if x == "" else x)
 
-    campos_completos = (f_sec != "") and (f_sub != "") and (f_dest is not None and f_dest != "") and (f_obj != "") and (f_padre != "") and (f_presup != "") and (f_fuente != "") and (f_clase != "") and (f_tipo != "") and (f_finalidad != "")
-    if st.button("💾 GUARDAR REGISTRO INMEDIATO", type="primary", use_container_width=True, disabled=not campos_completos) and f_total > 0:
-        nuevo_renglon = {
-            "secretaria": f_sec, "subsecretaria": f_sub, "destino": f_dest, 
-            "objeto_gasto": f_obj, "cuenta_padre": f_padre, "cuenta_presupuestaria": f_presup, 
-            "total": f_total, "fuente_fin": f_fuente, "clase": f_clase, "tipo": f_tipo, "finalidad": f_finalidad
-        }
-        guardar_fila_gsheet("egresos", nuevo_renglon)
+campos_completos = (f_sec != "") and (f_sub != "") and (f_dest is not None and f_dest != "") and (f_obj != "") and (f_padre != "") and (f_presup != "") and (f_fuente != "") and (f_clase != "") and (f_tipo != "") and (f_finalidad != "")
+if st.button("💾 GUARDAR REGISTRO INMEDIATO", type="primary", use_container_width=True, disabled=not campos_completos) and f_total > 0:
+    nuevo_renglon = {
+        "secretaria": f_sec, "subsecretaria": f_sub, "destino": f_dest, 
+        "objeto_gasto": f_obj, "cuenta_padre": f_padre, "cuenta_presupuestaria": f_presup, 
+        "total": f_total, "fuente_fin": f_fuente, "clase": f_clase, "tipo": f_tipo, "finalidad": f_finalidad
+    }
+    guardar_fila_gsheet("egresos", nuevo_renglon)
     
     # 🧹 LIMPIAR LAS KEYS DE REGISTRO
-        keys_reg = ["reg_sec", "reg_sub", "reg_dest", "reg_obj", "reg_padre", "reg_presup"]
-        for k in keys_reg:
-            if k in st.session_state:
-                del st.session_state[k]
+    keys_reg = ["reg_sec", "reg_sub", "reg_dest", "reg_obj", "reg_padre", "reg_presup"]
+    for k in keys_reg:
+        if k in st.session_state:
+            del st.session_state[k]
 
     st.success("✅ ¡Renglón presupuestario guardado de forma cooperativa!")
     st.balloons()
@@ -599,13 +599,13 @@ elif opcion_menu == "➕ GESTIÓN DE DESTINOS":
         d_sec = st.selectbox("Asociar a SECRETARÍA:", opciones_secretarias, key="dest_sec")
         d_sub = st.selectbox("Asociar a SUBSECRETARÍA:", MAPEO_ESTRUCTURA[d_sec], key="dest_sub")
         d_nombre = st.text_input("Nombre del Destino:").strip().upper()
-        if st.button("✨ Registrar Destino", type="secondary", use_container_width=True) and d_nombre:
-            nuevo_destino = {"secretaria": d_sec, "subsecretaria": d_sub, "destino": d_nombre}
-            guardar_fila_gsheet("destinos", nuevo_destino)
+    if st.button("✨ Registrar Destino", type="secondary", use_container_width=True) and d_nombre:
+        nuevo_destino = {"secretaria": d_sec, "subsecretaria": d_sub, "destino": d_nombre}
+        guardar_fila_gsheet("destinos", nuevo_destino)
     
-            # Limpiar estado si usaras key, o simplemente forzar un reseteo limpio
-            st.success("🎯 Destino añadido correctamente al repositorio.")
-            st.rerun()
+        # Limpiar estado si usaras key, o simplemente forzar un reseteo limpio
+        st.success("🎯 Destino añadido correctamente al repositorio.")
+        st.rerun()
     with col_b:
         st.markdown("**📋 Listado de Destinos Activos**")
         df_dt_gsheet = leer_datos_gsheet(URL_READ_DESTINOS)

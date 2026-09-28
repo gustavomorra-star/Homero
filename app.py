@@ -2008,7 +2008,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 use_container_width=True, hide_index=True
             )
 # =====================================================================
-# SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (CABECERA Y AÑO 2026)
+# SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (MATRIZ + ESTRUCTURA INTACTA)
 # =====================================================================
 elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
     st.subheader("📈 Módulo de Ejecución Presupuestaria - Reportes Oficiales")
@@ -2059,7 +2059,8 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             (df_ejec_completo[c_partida].astype(str).str.upper() != "NAN")
         ].copy()
 
-        tab_ejec_1, tab_ejec_2, tab_ejec_3, tab_ejec_4 = st.tabs([
+        tab_ejec_1, tab_ejec_2, tab_ejec_3, tab_ejec_4, tab_ejec_5 = st.tabs([
+            "📊 Resumen por Destino (Matriz)",
             "🏛️ Desglose Escalonado por Destino",
             "📦 Totales por Objeto del Gasto",
             "🔍 Buscador y Control de Saldos",
@@ -2067,6 +2068,30 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
         ])
 
         with tab_ejec_1:
+            st.markdown("##### 📊 Cuadro Resumen: Destinos vs. Objetos del Gasto")
+            st.info("💡 Cada fila representa un **Destino** y cada columna un **Objeto del Gasto** con su respectivo total devengado.")
+
+            if not df_validas.empty:
+                df_validas["_DEV_NUM"] = df_validas[c_dev].apply(limpiar_monto_val)
+                
+                df_pivote = df_validas.pivot_table(
+                    index=c_dest_k, 
+                    columns=c_obj, 
+                    values="_DEV_NUM", 
+                    aggfunc="sum", 
+                    fill_value=0.0
+                ).reset_index()
+
+                cols_obj_piv = [c for c in df_pivote.columns if c != c_dest_k]
+                df_pivote_fmt = df_pivote.copy()
+                for col in cols_obj_piv:
+                    df_pivote_fmt[col] = df_pivote_fmt[col].map(lambda x: f"${x:,.2f}" if x > 0 else "$0.00")
+
+                st.dataframe(df_pivote_fmt, use_container_width=True, hide_index=True)
+            else:
+                st.warning("⚠️ No hay datos suficientes para generar la matriz.")
+
+        with tab_ejec_2:
             st.markdown("##### 📋 Vista Jerárquica de Egresos - Columnas (G, H, I, J, K)")
             cf1, cf2, col_f3 = st.columns(3)
             sec_ops = sorted([str(x) for x in df_validas[c_sec_k].unique() if str(x).strip() != ""])
@@ -2097,7 +2122,6 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                 df_f_oficial_ejec["_J_VAL"] = df_f_oficial_ejec[c_mod].apply(limpiar_monto_val)
                 df_f_oficial_ejec["_K_VAL"] = df_f_oficial_ejec[c_saldo].apply(limpiar_monto_val)
 
-                # Tomamos la suma de Devengado (Columna H) para el total superior de la tarjeta
                 tot_devengado_val = df_f_oficial_ejec["_H_VAL"].sum()
 
                 st.markdown(f"""
@@ -2170,7 +2194,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             else:
                 st.info("💡 Seleccioná Secretaría, Subsecretaría y Destino arriba para desplegar el reporte.")
 
-        with tab_ejec_2:
+        with tab_ejec_3:
             st.markdown("##### 📦 Consolidado de Egresos por Objeto del Gasto")
             df_validas["_H_VAL"] = df_validas[c_dev].apply(limpiar_monto_val)
             df_obj_res = df_validas.groupby(c_obj)["_H_VAL"].sum().reset_index()
@@ -2178,7 +2202,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             df_obj_res["DEVENGADO ($)"] = df_obj_res["DEVENGADO ($)"].map(lambda x: f"${x:,.2f}")
             st.dataframe(df_obj_res, use_container_width=True, hide_index=True)
 
-        with tab_ejec_3:
+        with tab_ejec_4:
             st.markdown("##### 🔍 Buscador General de Egresos")
             q_ejec = st.text_input("Buscar texto o partida:", key="busq_ejec_s3").strip()
             if q_ejec:
@@ -2187,7 +2211,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             else:
                 st.info("Escribí un criterio para buscar.")
 
-        with tab_ejec_4:
+        with tab_ejec_5:
             st.markdown("##### 📄 Exportación Oficial Consolidada de Egresos")
             st.info("💡 Hacé clic abajo para descargar el reporte oficial completo con sus columnas financieras y firmas.")
 

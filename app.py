@@ -170,15 +170,26 @@ MAPEO_GASTOS = {
             "21.8.9.0.00.000 - Anticipo Financiero"
         ]
     },
-    "2. Bienes de consumo": {
-        "22.1.0.0.00.000 - Productos alimenticios": ["22.1.1.0.00.000 - Alimentos para personas", "22.1.2.0.00.000 - Alimentos para animales"],
-        "22.5.0.0.00.000 - Productos químicos y combustibles": ["22.5.6.0.00.000 - Combustibles y lubricantes", "22.5.2.0.00.000 - Productos farmacéuticos"]
+   "2. Bienes de consumo": {
+        "22.1.0.0.00.000 - Productos alimenticios, agropecuarios y forestales": ["22.1.1.0.00.000 - Alimentos para personas", "22.1.2.0.00.000 - Alimentos para animales","22.1.3.0.00.000 - Productos pecuarios","22.1.4.0.00.000 - Productos agroforestales","22.1.5.0.00.000 - Madera, corcho y sus manufacturas"],
+	    "22.2.0.0.00.000 - Textiles y vestuarios": ["22.2.1.0.00.000 - Hilados y telas","22.2.2.0.00.000 - Prendas de vestir","22.2.3.0.00.000 - Confecciones textiles"],
+	    "22.3.0.0.00.000 - Productos de papel, cartón e impresos": ["22.3.1.0.00.000 - Papel de Escritorio y cartón","22.3.2.0.00.000 - Papel de computación","22.3.3.0.00.000 - Productos de artes gráficas","22.3.4.0.00.000 - Productos de papel y cartón","22.3.5.0.00.000 - Libros, revistas y periódicos","22.3.6.0.00.000 - Textos de enseñanza","22.3.7.0.00.000 - Especias timbradas y valores"],
+	    "22.4.0.0.00.000 - Productos de cuero y caucho": ["22.4.1.0.00.000 - Cueros y Pieles","22.4.2.0.00.000 - Artículos de Cuero","22.4.3.0.00.000 - Artículos de caucho","22.4.4.0.00.000 - Cubiertas y cámaras de aire"],
+        "22.5.0.0.00.000 - Productos químicos, combustibles y lubricantes": ["22.5.1.0.00.000 - Compuestos químicos","22.5.2.0.00.000 - Productos farmacéuticos y medicinales","22.5.3.0.00.000 - Abonos y fertilizantes","22.5.4.0.00.000 - Insecticidad, fumigantes y otros","22.5.5.0.00.000 - Tintas, Pinturas y Colorantes","22.5.6.0.00.000 - Combustibles y lubricantes","22.5.7.0.00.000 - Específicos veterinarios","22.5.8.0.00.000 - Productos de material plático","22.5.9.1.00.000 - Productos de Brea y materiales asfálticos"],
+	    "22.6.0.0.00.000 - Productos minerales no metálicos": ["22.6.1.0.00.000 - Productos de arcilla y de cerámica","22.6.2.0.00.000 - Productos de Vidrio","22.6.3.0.00.000 - Productos de Loza y porcelana","22.6.4.0.00.000 - Productos de Cemento, asbesto y yeso","22.6.5.0.00.000 - Productos de Cemento, Cal y Yeso"],
+	    "22.7.0.0.00.000 - Productos metálicos": ["22.7.1.0.00.000 - Productos Ferrosos","22.7.2.0.00.000 - Productos no ferrosos","22.7.3.0.00.000 - Material de Guerra","22.7.4.0.00.000 - Estructuras metálicas acabadas","22.7.5.0.00.000 - Herramientas menores"],
+	    "22.8.0.0.00.000 - Minerales": ["22.8.1.0.00.000 - Minerales metalíferos","22.8.2.0.00.000 - Petróleo crudo y gas natural","22.8.3.0.00.000 - Carbón mineral","22.8.4.0.00.000 - Piedra, Arcilla y Arena"],
+	    "22.9.0.0.00.000 - Otros bienes de consumo": ["22.9.1.0.00.000 - Elementos de limpieza","22.9.2.0.00.000 - Útiles de escritorio, oficina y enseñanza","22.9.3.0.00.000 - Útiles y materiales eléctricos","22.9.4.0.00.000 - Utencillos de cocina y comedor","22.9.5.0.00.000 - Útiles menores médico-quirúrgico y de laboratorio","22.9.6.0.00.000 - Repuestos y accesorios"],
+	    "22.9.7.0.00.000 - Equipos y Elementos de Seguridad": ["22.9.7.1.00.000 - Extintores y equipos contra incendios","22.9.7.2.00.000 - Señalización y Vallado","22.9.7.3.01.000 - Calzado, Guantes e Indumentarias","22.9.7.3.02.000 - Protección Respiratoria, Auditiva y Visual","22.9.7.3.03.000 - Cascos y Arnes"],
+	    "22.9.9.0.00.000 - Otros no especificados precedentemente": ["22.9.9.1.01.000 - Electromésticos","22.9.9.1.02.000 - Mobiliario de oficina","22.9.9.1.03.000 - Mobiliario de Cocina","22.9.9.1.04 - Mobiliarios Varios","22.9.9.2.00.000 - Equipos y Elementos Deportivos"]
     },
     "3. Servicios": {
-        "23.1.0.0.00.000 - Servicios básicos": ["23.1.1.0.00.000 - Energía Eléctrica","23.1.2.0.00.000 - Agua","23.1.3.0.00.000 - Gas","23.1.4.0.00.000 - Teléfono","23.1.5.0.00.000 - Correos y telégrafos"],
-        "23.2.0.0.00.000 - Alquileres y derechos": ["23.2.1.0.00.000 - Alquileres de edificios y locales","23.2.2.0.00.000 - Alquiler de maquinaria, equipos y medios de transporte","23.2.3.0.00.000 - Alquiler de equipos de computación","23.2.4.0.00.000 - Alquiler de fotocopiadoras","23.2.5.0.00.000 - Alquiler de tierras y terrenos","23.2.6.0.00.000 - Derechos de bienes intangibles","23.2.9.1.00.000 - Alquiler de máquinas expendedoras de alimantos","23.2.9.2.00.000 - Alquiler de expendedores de agua","23.2.9.3.00.000 - Alquiler de baños químicos","23.2.9.4.00.000 - Alquiler Estructuras Varias (Incluye Vallas de Seguridad, Gradas, etc.)"],
-        "23.3.0.0.00.000 - Mantenimiento y reparación": ["23.3.2.0.00.000 - Mantenimiento de vehículos", "23.3.9.1.00.000 - Espacios Verdes"]
+        "23.1.0.0.00.000 - Servicios básicos": ["23.1.1.0.00.000 - Energía Eléctrica","23.1.2.0.00.000 - Agua","23.2.3.0.00.000 - Gas","23.1.4.0.00.000 - Telefono, telex, telefax","23.1.5.0.00.000 - Correo y telégrafos],
+	    "23.2.0.0.00.000 - Alquiler y derechos": ["23.2.1.0.00.000 - Alquiler de edificios y locales","23.2.2.0.00.000 - Alquiler de maquinaria, equipo y medios de transporte","23.2.3.0.00.000 - Alquiler de equipos de computación","23.2.4.0.00.000 - Alquiler de fotocopiadoras","23.2.5.0.00.000 - Alquiler de tierras y terrenos","23.2.6.0.00.000 - Derechos de bienes intangibles"],
+	    "23.2.9.1.00.000 - Otros alquileres no comprendidos precedentemente": ["23.2.9.1.00.000 - Alquiler de máquinas expendedoras de alimentos","23.2.9.2.00.000 - Alquiler de expendedoras de agua","23.2.9.3.00.000 - Alquiler de baños químicos","23.2.9.4.00.000 - Alquiler Estructuras Varias (Incluye Vallas Seguridad, Gradas, etc)"],
+        "23.3.0.0.00.000 - Mantenimiento, reparación y limpieza": ["23.3.1.0.00.000 - Mantenimiento y reparación de edificios y locales","23.3.2.0.00.000 - Mantenimiento y reparación de vehículos","23.3.3.0.00.000 - Mantenimiento y reparación de mauqinaria y equipo","23.3.4.0.00.000 - Mantenimiento y reparación de vías de comunicación","23.3.5.0.00.000]
     },
+    
     "4. Bienes de Uso": {
         "24.2.0.0.00.000 - Construcciones": ["24.2.1.2.00.000 - Const. de Dom. Priv. por terceros", "24.2.2.2.00.000 - Const. de Dom. Pub. por Terceros"],
         "24.3.0.0.00.000 - Maquinaria y equipo": ["24.3.2.0.00.000 - Equipo de transporte"]

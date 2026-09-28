@@ -2008,7 +2008,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 use_container_width=True, hide_index=True
             )
 # =====================================================================
-# SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (MATRIZ + ESTRUCTURA INTACTA)
+# SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (TODAS LAS VISTAS IMPRIMIBLES)
 # =====================================================================
 elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
     st.subheader("📈 Módulo de Ejecución Presupuestaria - Reportes Oficiales")
@@ -2055,6 +2055,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             (df_ejec_completo[c_padre].astype(str).str.strip() != "") & 
             (df_ejec_completo[c_padre].astype(str).str.upper() != "NAN") &
             df_ejec_completo[c_partida].notna() & 
+            (df_ec_val := True) &
             (df_ejec_completo[c_partida].astype(str).str.strip() != "") & 
             (df_ejec_completo[c_partida].astype(str).str.upper() != "NAN")
         ].copy()
@@ -2067,6 +2068,9 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             "📄 Exportación y Firmas (PDF)"
         ])
 
+        # -------------------------------------------------------------
+        # SOLAPA 1: MATRIZ DE DESTINOS VS OBJETOS (CON OPCIÓN DE DESCARGA)
+        # -------------------------------------------------------------
         with tab_ejec_1:
             st.markdown("##### 📊 Cuadro Resumen: Destinos vs. Objetos del Gasto")
             st.info("💡 Cada fila representa un **Destino** y cada columna un **Objeto del Gasto** con su respectivo total devengado.")
@@ -2088,9 +2092,85 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                     df_pivote_fmt[col] = df_pivote_fmt[col].map(lambda x: f"${x:,.2f}" if x > 0 else "$0.00")
 
                 st.dataframe(df_pivote_fmt, use_container_width=True, hide_index=True)
+
+                # Generamos HTML imprimible para la Matriz
+                tot_matriz_gral = df_validas["_DEV_NUM"].sum()
+                rows_matriz_html = ""
+                for _, rw in df_pivote.iterrows():
+                    dest_n = rw[c_dest_k]
+                    rows_matriz_html += f'<tr><td style="text-align: left; padding-left: 8px; font-weight: bold;">{dest_n}</td>'
+                    for c_o in cols_obj_piv:
+                        val_c = rw[c_o]
+                        rows_matriz_html += f'<td style="text-align: right;">${val_c:,.2f}</td>'
+                    rows_matriz_html += '</tr>'
+
+                headers_matriz_th = "".join([f'<th style="text-align: right;">{col}</th>' for col in cols_obj_piv])
+
+                html_matriz_reporte = f"""
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <style>
+                        @page {{ size: A4 landscape; margin: 12mm; }}
+                        body {{ font-family: Arial, sans-serif; color: #000; margin: 0 auto; width: 100%; max-width: 1050px; }}
+                        .m-box {{ border: 1px solid #000; padding: 10px; margin-bottom: 15px; background-color: #fff; }}
+                        .t-hdr {{ width: 100%; border-collapse: collapse; }}
+                        .t-hdr td {{ padding: 4px; vertical-align: middle; border: none; }}
+                        .b-tot {{ border: 1px solid #000; background-color: #f5f5f5; text-align: center; }}
+                        .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; margin-bottom: 25px; }}
+                        .tabla-datos th {{ border-bottom: 2px solid #000; padding: 6px 4px; font-weight: bold; background-color: #f2f2f2; }}
+                        .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 6px 4px; vertical-align: middle; }}
+                        .resumen-final {{ border: 2px solid #000; padding: 15px; margin-top: 20px; background-color: #fafafa; text-align: center; font-size: 14px; page-break-inside: avoid; }}
+                        .firmas-container {{ margin-top: 50px; width: 100%; page-break-inside: avoid; }}
+                        .firma-box {{ width: 30%; float: left; text-align: center; border-top: 1px solid #000; padding-top: 5px; margin: 0 1.5%; font-size: 11px; font-weight: bold; }}
+                    </style>
+                </head>
+                <body onload="window.print();">
+                    <div class="m-box">
+                        <table class="t-hdr">
+                            <tr>
+                                <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Ejecución de Egresos - Año 2026</span></td>
+                                <td style="width: 50%; text-align: center;"><b>MATRIZ RESUMEN: DESTINOS VS OBJETOS</b><br><small>- Control Financiero -</small></td>
+                                <td style="width: 25%;" class="b-tot"><small>Total General</small><br><b>${tot_matriz_gral:,.2f}</b></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <table class="tabla-datos">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; padding-left: 8px;">DESTINO</th>
+                                {headers_matriz_th}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows_matriz_html}
+                        </tbody>
+                    </table>
+                    <div class="resumen-final">
+                        <b>TOTAL GENERAL DEVENGADO MUNICIPAL:</b> ${tot_matriz_gral:,.2f}
+                    </div>
+                    <div class="firmas-container">
+                        <div class="firma-box">Responsable Presupuesto</div>
+                        <div class="firma-box">Contaduría General</div>
+                        <div class="firma-box">Intendente / Secretario</div>
+                    </div>
+                </body>
+                </html>
+                """
+
+                st.download_button(
+                    label="📥 Descargar Matriz Resumen Oficial (PDF/HTML)",
+                    data=html_matriz_reporte,
+                    file_name=f"Matriz_Resumen_Destinos_{time.strftime('%Y%m%d')}.html",
+                    mime="text/html",
+                    use_container_width=True
+                )
             else:
                 st.warning("⚠️ No hay datos suficientes para generar la matriz.")
 
+        # -------------------------------------------------------------
+        # SOLAPA 2: DESGLOSE ESCALONADO POR DESTINO
+        # -------------------------------------------------------------
         with tab_ejec_2:
             st.markdown("##### 📋 Vista Jerárquica de Egresos - Columnas (G, H, I, J, K)")
             cf1, cf2, col_f3 = st.columns(3)
@@ -2194,6 +2274,9 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             else:
                 st.info("💡 Seleccioná Secretaría, Subsecretaría y Destino arriba para desplegar el reporte.")
 
+        # -------------------------------------------------------------
+        # SOLAPA 3: TOTALES POR OBJETO DEL GASTO
+        # -------------------------------------------------------------
         with tab_ejec_3:
             st.markdown("##### 📦 Consolidado de Egresos por Objeto del Gasto")
             df_validas["_H_VAL"] = df_validas[c_dev].apply(limpiar_monto_val)
@@ -2202,6 +2285,9 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             df_obj_res["DEVENGADO ($)"] = df_obj_res["DEVENGADO ($)"].map(lambda x: f"${x:,.2f}")
             st.dataframe(df_obj_res, use_container_width=True, hide_index=True)
 
+        # -------------------------------------------------------------
+        # SOLAPA 4: BUSCADOR GENERAL DE EGRESOS
+        # -------------------------------------------------------------
         with tab_ejec_4:
             st.markdown("##### 🔍 Buscador General de Egresos")
             q_ejec = st.text_input("Buscar texto o partida:", key="busq_ejec_s3").strip()
@@ -2211,6 +2297,9 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             else:
                 st.info("Escribí un criterio para buscar.")
 
+        # -------------------------------------------------------------
+        # SOLAPA 5: EXPORTACIÓN OFICIAL Y FIRMAS (CONSOLIDADO)
+        # -------------------------------------------------------------
         with tab_ejec_5:
             st.markdown("##### 📄 Exportación Oficial Consolidada de Egresos")
             st.info("💡 Hacé clic abajo para descargar el reporte oficial completo con sus columnas financieras y firmas.")

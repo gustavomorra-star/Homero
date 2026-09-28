@@ -2008,7 +2008,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
                 use_container_width=True, hide_index=True
             )
 # =====================================================================
-# SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (COLUMNAS G, H, I, J, K EXACTAS)
+# SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (CABECERA Y AÑO 2026)
 # =====================================================================
 elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
     st.subheader("📈 Módulo de Ejecución Presupuestaria - Reportes Oficiales")
@@ -2034,7 +2034,6 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             except Exception:
                 return 0.0
 
-        # Mapeo exacto de columnas de estructura
         c_sec_k = cols_e[0] if len(cols_e) > 0 else "SECRETARIA"
         c_sub_k = cols_e[1] if len(cols_e) > 1 else "SUBSECRETARÍA"
         c_dest_k = cols_e[2] if len(cols_e) > 2 else "DESTINO"
@@ -2042,19 +2041,12 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
         c_partida = cols_e[4] if len(cols_e) > 4 else cols_e[5] # Columna E (Imputación)
         c_padre = cols_e[13] if len(cols_e) > 13 else cols_e[4] # Columna N (Cuenta Padre)
 
-        # Mapeo exacto de columnas de valores requeridas:
-        # G = Presupuesto (índice 6)
-        # H = Devengado (índice 7)
-        # I = Ejecutado (índice 8)
-        # J = Modificaciones (índice 9)
-        # K = Saldo (índice 10)
         c_pres = cols_e[6] if len(cols_e) > 6 else cols_e[6]
         c_dev = cols_e[7] if len(cols_e) > 7 else cols_e[6]
         c_ejec = cols_e[8] if len(cols_e) > 8 else cols_e[6]
         c_mod = cols_e[9] if len(cols_e) > 9 else cols_e[6]
         c_saldo = cols_e[10] if len(cols_e) > 10 else cols_e[6]
 
-        # FILTRADO ESTRICTO: D, N y E con datos válidos
         df_validas = df_ejec_completo[
             df_ejec_completo[c_obj].notna() & 
             (df_ejec_completo[c_obj].astype(str).str.strip() != "") & 
@@ -2097,7 +2089,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                     dest_s_ejec = st.selectbox("3. DESTINO:", options=[""], key="ejec_of_dest")
 
             if sec_s_ejec and sub_s_ejec and dest_s_ejec:
-                df_f_oficial_ejec = df_ejec_f2[df_ec_f2[c_dest_k].astype(str).str.strip().str.upper() == dest_s_ejec.strip().upper()].copy() if 'df_ec_f2' in locals() else df_ejec_f2[df_ejec_f2[c_dest_k].astype(str).str.strip().str.upper() == dest_s_ejec.strip().upper()].copy()
+                df_f_oficial_ejec = df_ejec_f2[df_ejec_f2[c_dest_k].astype(str).str.strip().str.upper() == dest_s_ejec.strip().upper()].copy()
                 
                 df_f_oficial_ejec["_G_VAL"] = df_f_oficial_ejec[c_pres].apply(limpiar_monto_val)
                 df_f_oficial_ejec["_H_VAL"] = df_f_oficial_ejec[c_dev].apply(limpiar_monto_val)
@@ -2105,15 +2097,16 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                 df_f_oficial_ejec["_J_VAL"] = df_f_oficial_ejec[c_mod].apply(limpiar_monto_val)
                 df_f_oficial_ejec["_K_VAL"] = df_f_oficial_ejec[c_saldo].apply(limpiar_monto_val)
 
-                tot_ejec_val = df_f_oficial_ejec["_I_VAL"].sum()
+                # Tomamos la suma de Devengado (Columna H) para el total superior de la tarjeta
+                tot_devengado_val = df_f_oficial_ejec["_H_VAL"].sum()
 
                 st.markdown(f"""
                 <div style="border: 1px solid #000; padding: 0px; border-radius: 2px; background-color: #fff; font-family: Arial, sans-serif;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <tr>
-                            <td style="width: 25%; font-size: 11px; padding: 15px; border-right: 1px solid #000; text-align: left;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 9px; color: #777;">Ejecución de Egresos</span></td>
+                            <td style="width: 25%; font-size: 11px; padding: 15px; border-right: 1px solid #000; text-align: left;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 9px; color: #777;">Ejecución de Egresos - Año 2026</span></td>
                             <td style="width: 50%; text-align: center; padding: 15px; border-right: 1px solid #000; vertical-align: middle;"><h2 style="margin: 0; font-size: 16px; font-weight: bold;">REPORTE DE EJECUCIÓN POR DESTINO</h2><h4 style="margin: 4px 0 0 0; font-size: 12px; font-weight: normal;">- Control Financiero -</h4></td>
-                            <td style="width: 25%; text-align: center; background-color: #f5f5f5; vertical-align: middle;"><div style="font-size: 12px; font-weight: bold; border-bottom: 1px solid #000; padding: 4px 0;">Total Ejecutado</div><div style="font-size: 16px; font-weight: bold;">${tot_ejec_val:,.2f}</div></td>
+                            <td style="width: 25%; text-align: center; background-color: #f5f5f5; vertical-align: middle;"><div style="font-size: 12px; font-weight: bold; border-bottom: 1px solid #000; padding: 4px 0;">Total Devengado</div><div style="font-size: 16px; font-weight: bold;">${tot_devengado_val:,.2f}</div></td>
                         </tr>
                     </table>
                     <div style="border-top: 1px solid #000; font-size: 11px; padding: 6px 10px;">
@@ -2134,7 +2127,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                         tp_k = df_obj["_K_VAL"].sum()
                         f_plan_ejec.append({
                             "OBJETO / CUENTA / IMPUTACIÓN": f"<b>{obj}</b>",
-                            "PRESUPUESTADO (G)": f"<b>${tp_g:,.2f}</b>",
+                            "PRESUPUESTO (G)": f"<b>${tp_g:,.2f}</b>",
                             "DEVENGADO (H)": f"<b>${tp_h:,.2f}</b>",
                             "EJECUTADO (I)": f"<b>${tp_i:,.2f}</b>",
                             "MODIFICACIONES (J)": f"<b>${tp_j:,.2f}</b>",
@@ -2149,7 +2142,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                             pad_k = df_pad["_K_VAL"].sum()
                             f_plan_ejec.append({
                                 "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{pad}</b>",
-                                "PRESUPUESTADO (G)": f"<b>${pad_g:,.2f}</b>",
+                                "PRESUPUESTO (G)": f"<b>${pad_g:,.2f}</b>",
                                 "DEVENGADO (H)": f"<b>${pad_h:,.2f}</b>",
                                 "EJECUTADO (I)": f"<b>${pad_i:,.2f}</b>",
                                 "MODIFICACIONES (J)": f"<b>${pad_j:,.2f}</b>",
@@ -2165,7 +2158,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                                 partida_val = str(r.get(c_partida, ""))
                                 f_plan_ejec.append({
                                     "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{partida_val}",
-                                    "PRESUPUESTADO (G)": f"${vg:,.2f}",
+                                    "PRESUPUESTO (G)": f"${vg:,.2f}",
                                     "DEVENGADO (H)": f"${vh:,.2f}",
                                     "EJECUTADO (I)": f"${vi:,.2f}",
                                     "MODIFICACIONES (J)": f"${vj:,.2f}",
@@ -2179,10 +2172,10 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
 
         with tab_ejec_2:
             st.markdown("##### 📦 Consolidado de Egresos por Objeto del Gasto")
-            df_validas["_I_VAL"] = df_validas[c_ejec].apply(limpiar_monto_val)
-            df_obj_res = df_validas.groupby(c_obj)["_I_VAL"].sum().reset_index()
-            df_obj_res.columns = ["OBJETO DEL GASTO", "EJECUTADO ($)"]
-            df_obj_res["EJECUTADO ($)"] = df_obj_res["EJECUTADO ($)"].map(lambda x: f"${x:,.2f}")
+            df_validas["_H_VAL"] = df_validas[c_dev].apply(limpiar_monto_val)
+            df_obj_res = df_validas.groupby(c_obj)["_H_VAL"].sum().reset_index()
+            df_obj_res.columns = ["OBJETO DEL GASTO", "DEVENGADO ($)"]
+            df_obj_res["DEVENGADO ($)"] = df_obj_res["DEVENGADO ($)"].map(lambda x: f"${x:,.2f}")
             st.dataframe(df_obj_res, use_container_width=True, hide_index=True)
 
         with tab_ejec_3:
@@ -2199,11 +2192,11 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             st.info("💡 Hacé clic abajo para descargar el reporte oficial completo con sus columnas financieras y firmas.")
 
             bloques_ejec_html = ""
-            total_general_ejec = 0.0
+            total_general_devengado = 0.0
 
             for (s_exp, sub_e, d_exp), df_g_exp in df_validas.groupby([c_sec_k, c_sub_k, c_dest_k]):
                 rows_html_exp = ""
-                tot_p_dest = 0.0
+                tot_dev_dest = 0.0
 
                 for obj, df_obj in df_g_exp.groupby(c_obj):
                     tp_g = sum(limpiar_monto_val(r.get(c_pres, 0)) for _, r in df_obj.iterrows())
@@ -2211,7 +2204,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                     tp_i = sum(limpiar_monto_val(r.get(c_ejec, 0)) for _, r in df_obj.iterrows())
                     tp_j = sum(limpiar_monto_val(r.get(c_mod, 0)) for _, r in df_obj.iterrows())
                     tp_k = sum(limpiar_monto_val(r.get(c_saldo, 0)) for _, r in df_obj.iterrows())
-                    tot_p_dest += tp_i
+                    tot_dev_dest += tp_h
 
                     rows_html_exp += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${tp_g:,.2f}</td><td style="text-align: right;">${tp_h:,.2f}</td><td style="text-align: right;">${tp_i:,.2f}</td><td style="text-align: right;">${tp_j:,.2f}</td><td style="text-align: right;">${tp_k:,.2f}</td></tr>'
 
@@ -2234,16 +2227,16 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
 
                             rows_html_exp += f'<tr><td style="text-align: left; padding-left: 40px;">{partida_txt}</td><td style="text-align: right;">${vg:,.2f}</td><td style="text-align: right;">${vh:,.2f}</td><td style="text-align: right;">${vi:,.2f}</td><td style="text-align: right;">${vj:,.2f}</td><td style="text-align: right;">${vk:,.2f}</td></tr>'
 
-                total_general_ejec += tot_p_dest
+                total_general_devengado += tot_dev_dest
 
                 bloques_ejec_html += f"""
                 <div class="bloque-destino">
                     <div class="m-box">
                         <table class="t-hdr">
                             <tr>
-                                <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Ejecución de Egresos</span></td>
+                                <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Ejecución de Egresos - Año 2026</span></td>
                                 <td style="width: 50%; text-align: center;"><b>REPORTE OFICIAL DE EJECUCIÓN</b><br><small>- Egresos -</small></td>
-                                <td style="width: 25%;" class="b-tot"><small>Total Ejecutado</small><br><b>${tot_p_dest:,.2f}</b></td>
+                                <td style="width: 25%;" class="b-tot"><small>Total Devengado</small><br><b>${tot_dev_dest:,.2f}</b></td>
                             </tr>
                         </table>
                         <div style="border-top: 1px solid #000; font-size: 11px; padding-top: 6px; margin-top: 6px;">
@@ -2254,7 +2247,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                         <thead>
                             <tr>
                                 <th style="text-align: left; padding-left: 8px;">OBJETO / CUENTA / IMPUTACIÓN</th>
-                                <th style="text-align: right;">PRESUPUESTADO</th>
+                                <th style="text-align: right;">PRESUPUESTO</th>
                                 <th style="text-align: right;">DEVENGADO</th>
                                 <th style="text-align: right;">EJECUTADO</th>
                                 <th style="text-align: right;">MODIFICACIONES</th>
@@ -2293,7 +2286,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
             <body onload="window.print();">
                 {bloques_ejec_html}
                 <div class="resumen-final">
-                    <b>TOTAL GENERAL EJECUTADO MUNICIPAL:</b> ${total_general_ejec:,.2f}
+                    <b>TOTAL GENERAL DEVENGADO MUNICIPAL:</b> ${total_general_devengado:,.2f}
                 </div>
                 <div class="firmas-container">
                     <div class="firma-box">Responsable Presupuesto</div>

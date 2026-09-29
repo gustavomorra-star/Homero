@@ -2251,11 +2251,11 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                     
                     f_plan_ejec.append({
                         "OBJETO / CUENTA / IMPUTACIÓN": f"<b>{obj}</b>",
-                        "PRESUPUESTO (G)": f"<b>${tp_g:,.2f}</b>",
-                        "DEVENGADO (H)": f"<b>${tp_h:,.2f}</b>",
-                        "EJECUTADO (I)": f"<b>${tp_i:,.2f}</b>",
-                        "MODIFICACIONES (J)": f"<b>${tp_j:,.2f}</b>",
-                        "SALDO (K)": f"<b>${tp_k:,.2f}</b>"
+                        "PRESUPUESTO ": f"<b>${tp_g:,.2f}</b>",
+                        "DEVENGADO ": f"<b>${tp_h:,.2f}</b>",
+                        "EJECUTADO ": f"<b>${tp_i:,.2f}</b>",
+                        "MODIFICACIONES ": f"<b>${tp_j:,.2f}</b>",
+                        "SALDO ": f"<b>${tp_k:,.2f}</b>"
                     })
                     rows_html_esc += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${tp_g:,.2f}</td><td style="text-align: right;">${tp_h:,.2f}</td><td style="text-align: right;">${tp_i:,.2f}</td><td style="text-align: right;">${tp_j:,.2f}</td><td style="text-align: right;">${tp_k:,.2f}</td></tr>'
 

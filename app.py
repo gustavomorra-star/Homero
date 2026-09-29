@@ -1894,7 +1894,7 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
         )
 
 # =============================================================
-# SECCIÓN: COMPARATIVO E HISTÓRICO (CON VISTA PREVIA Y FIRMAS)
+# SECCIÓN 20: COMPARATIVO E HISTÓRICO (CON VISTA PREVIA Y FIRMAS)
 # =============================================================
 elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     st.markdown("##### 📈 Reporte Comparativo e Histórico Global")
@@ -1907,33 +1907,45 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     with col_comp3:
         metrica_comp = st.selectbox("Métrica a Comparar:", options=["DEVENGADO", "PRESUPUESTO"], key="comp_metrica")
 
-    # Intentamos rescatar cualquier DataFrame disponible en la sesión de Streamlit de forma robusta
+    # 1. RECUPERACIÓN ROBUSTA DESDE SESSION_STATE O VARIABLES GLOBALES
     df_f1_comparativo = pd.DataFrame()
     df_f2_comparativo = pd.DataFrame()
 
-    if 'df' in locals() and isinstance(df, pd.DataFrame) and not df.empty:
-        df_f1_comparativo = df.copy()
-    elif 'df_validas' in locals() and isinstance(df_validas, pd.DataFrame) and not df_validas.empty:
-        df_f1_comparativo = df_validas.copy()
+    # Buscamos en el session_state si guardaste los dataframes ahí
+    for clave_st in ['df_validas', 'df_datos', 'df_presupuesto', 'df']:
+        if clave_st in st.session_state and isinstance(st.session_state[clave_st], pd.DataFrame) and not st.session_state[clave_st].empty:
+            df_f1_comparativo = st.session_state[clave_st].copy()
+            break
 
-    if 'df_anio2' in locals() and isinstance(df_anio2, pd.DataFrame) and not df_anio2.empty:
-        df_f2_comparativo = df_anio2.copy()
-    elif 'df_validas_anio2' in locals() and isinstance(df_validas_anio2, pd.DataFrame) and not df_validas_anio2.empty:
-        df_f2_comparativo = df_validas_anio2.copy()
-    else:
-        df_f2_comparativo = df_f1_comparativo.copy() # Respaldo si no hay segundo df separado
+    # Si no están en session_state, probamos con las variables locales del script
+    if df_f1_comparativo.empty:
+        if 'df_validas' in locals() and isinstance(df_validas, pd.DataFrame) and not df_validas.empty:
+            df_f1_comparativo = df_validas.copy()
+        elif 'df' in locals() and isinstance(df, pd.DataFrame) and not df.empty:
+            df_f1_comparativo = df.copy()
 
-    # Identificamos columnas de manera automática si las variables globales no están definidas
+    # Hacemos lo mismo para el año a comparar (anio 2)
+    for clave_st_2 in ['df_validas_anio2', 'df_anio2', 'df_2']:
+        if clave_st_2 in st.session_state and isinstance(st.session_state[clave_st_2], pd.DataFrame) and not st.session_state[clave_st_2].empty:
+            df_f2_comparativo = st.session_state[clave_st_2].copy()
+            break
+
+    if df_f2_comparativo.empty:
+        if 'df_validas_anio2' in locals() and isinstance(df_validas_anio2, pd.DataFrame) and not df_validas_anio2.empty:
+            df_f2_comparativo = df_validas_anio2.copy()
+        else:
+            df_f2_comparativo = df_f1_comparativo.copy() # Respaldo si no hay segundo df
+
+    # Identificamos columnas clave de forma dinámica
     c_obj_real = c_obj if 'c_obj' in locals() and c_obj in df_f1_comparativo.columns else (df_f1_comparativo.columns[0] if not df_f1_comparativo.empty else "")
     
-    # Buscar nombres comunes de columnas de devengado/presupuesto si las variables no existen
     col_dev_real = c_dev if 'c_dev' in locals() and c_dev in df_f1_comparativo.columns else next((col for col in df_f1_comparativo.columns if 'DEVENGADO' in str(col).upper() or 'DEV' in str(col).upper()), df_f1_comparativo.columns[1] if len(df_f1_comparativo.columns) > 1 else "")
     col_pres_real = c_pres if 'c_pres' in locals() and c_pres in df_f1_comparativo.columns else next((col for col in df_f1_comparativo.columns if 'PRESUPUESTO' in str(col).upper() or 'PRES' in str(col).upper()), col_dev_real)
 
     col_metrica_anio1 = col_dev_real if metrica_comp == "DEVENGADO" else col_pres_real
     col_metrica_anio2 = col_metrica_anio1 
 
-    # Función de limpieza rápida y segura para montos
+    # Función de limpieza segura de montos
     def limpiar_monto_seguro(val):
         if pd.isnull(val):
             return 0.0

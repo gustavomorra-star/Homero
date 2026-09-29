@@ -1894,162 +1894,162 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
         )
 
 # =============================================================
-# SECCIÓN 20: COMPARATIVO E HISTÓRICO (CON VISTA PREVIA Y FIRMAS)
+# SECCIÓN: COMPARATIVO E HISTÓRICO (CON VISTA PREVIA Y FIRMAS)
 # =============================================================
-    elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
-        st.markdown("##### 📈 Reporte Comparativo e Histórico Global")
+elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
+    st.markdown("##### 📈 Reporte Comparativo e Histórico Global")
+    
+    col_comp1, col_comp2, col_comp3 = st.columns(3)
+    with col_comp1:
+        anio_base = st.selectbox("Año Base (1):", options=[2026, 2025], key="comp_anio_1")
+    with col_comp2:
+        anio_comparar = st.selectbox("Año a Comparar (2):", options=[2027, 2026], index=0, key="comp_anio_2")
+    with col_comp3:
+        metrica_comp = st.selectbox("Métrica a Comparar:", options=["DEVENGADO", "PRESUPUESTO"], key="comp_metrica")
+
+    # Determinamos el DataFrame base disponible de forma segura
+    df_base_app = df_validas if 'df_validas' in locals() and not df_validas.empty else (df if 'df' in locals() else pd.DataFrame())
+
+    # Columnas de mapeo seguro
+    col_dev_real = c_dev if 'c_dev' in locals() else "DEVENGADO"
+    col_pres_real = c_pres if 'c_pres' in locals() else "PRESUPUESTO"
+    c_obj_real = c_obj if 'c_obj' in locals() else (df_base_app.columns[0] if not df_base_app.empty else "")
+
+    col_metrica_anio1 = col_dev_real if metrica_comp == "DEVENGADO" else col_pres_real
+    col_metrica_anio2 = col_metrica_anio1 
+
+    # Trabajamos sobre los DataFrames generales
+    df_f1_comparativo = df_base_app.copy()
+    df_f2_comparativo = df_validas_anio2.copy() if 'df_validas_anio2' in locals() else df_base_app.copy()
+
+    # Función de limpieza rápida y segura para montos
+    fn_limpieza = limpiar_monto_val if 'limpiar_monto_val' in globals() else (lambda x: float(str(x).replace('$', '').replace('.', '').replace(',', '.')) if pd.notnull(x) else 0.0)
+
+    if not df_f1_comparativo.empty and col_metrica_anio1 in df_f1_comparativo.columns:
+        df_f1_comparativo["_VAL_COMP"] = df_f1_comparativo[col_metrica_anio1].apply(fn_limpieza)
+    else:
+        df_f1_comparativo["_VAL_COMP"] = 0.0
+
+    if not df_f2_comparativo.empty and col_metrica_anio2 in df_f2_comparativo.columns:
+        df_f2_comparativo["_VAL_COMP"] = df_f2_comparativo[col_metrica_anio2].apply(fn_limpieza)
+    else:
+        df_f2_comparativo["_VAL_COMP"] = 0.0
+
+    total_val_anio1 = df_f1_comparativo["_VAL_COMP"].sum()
+    total_val_anio2 = df_f2_comparativo["_VAL_COMP"].sum()
+    variacion_global = total_val_anio2 - total_val_anio1
+    porcentaje_var = (variacion_global / total_val_anio1 * 100) if total_val_anio1 > 0 else 0.0
+
+    f_plan_comp = []
+    rows_html_comp = ""
+
+    # Agrupación cruzada por objeto/cuenta a nivel general
+    objs_1 = df_f1_comparativo[c_obj_real].dropna().astype(str).unique() if c_obj_real in df_f1_comparativo.columns else []
+    objs_2 = df_f2_comparativo[c_obj_real].dropna().astype(str).unique() if c_obj_real in df_f2_comparativo.columns else []
+    objetos_unicos = sorted(list(set(objs_1).union(set(objs_2))))
+
+    for obj in objetos_unicos:
+        sub_df_1 = df_f1_comparativo[df_f1_comparativo[c_obj_real].astype(str).str.strip() == obj.strip()] if c_obj_real in df_f1_comparativo.columns else pd.DataFrame()
+        sub_df_2 = df_f2_comparativo[df_f2_comparativo[c_obj_real].astype(str).str.strip() == obj.strip()] if c_obj_real in df_f2_comparativo.columns else pd.DataFrame()
+
+        val_1 = sub_df_1["_VAL_COMP"].sum() if not sub_df_1.empty else 0.0
+        val_2 = sub_df_2["_VAL_COMP"].sum() if not sub_df_2.empty else 0.0
+        dif = val_2 - val_1
+
+        f_plan_comp.append({
+            "OBJETO / CUENTA": f"<b>{obj}</b>",
+            f"{metrica_comp} ({anio_base})": f"<b>${val_1:,.2f}</b>",
+            f"{metrica_comp} ({anio_comparar})": f"<b>${val_2:,.2f}</b>",
+            "DIFERENCIA": f"<b>${dif:,.2f}</b>"
+        })
         
-        col_comp1, col_comp2, col_comp3 = st.columns(3)
-        with col_comp1:
-            anio_base = st.selectbox("Año Base (1):", options=[2026, 2025], key="comp_anio_1")
-        with col_comp2:
-            anio_comparar = st.selectbox("Año a Comparar (2):", options=[2027, 2026], index=0, key="comp_anio_2")
-        with col_comp3:
-            metrica_comp = st.selectbox("Métrica a Comparar:", options=["DEVENGADO", "PRESUPUESTO"], key="comp_metrica")
+        rows_html_comp += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${val_1:,.2f}</td><td style="text-align: right;">${val_2:,.2f}</td><td style="text-align: right;">${dif:,.2f}</td></tr>'
 
-        # Determinamos el DataFrame base disponible de forma segura
-        df_base_app = df_validas if 'df_validas' in locals() and not df_validas.empty else (df if 'df' in locals() else pd.DataFrame())
+    # 1. VISTA PREVIA ESTÉTICA EN LA APP
+    st.markdown(f"""
+    <div style="border: 1px solid #000; padding: 0px; border-radius: 2px; background-color: #fff; font-family: Arial, sans-serif;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 25%; font-size: 11px; padding: 15px; border-right: 1px solid #000; text-align: left;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 9px; color: #777;">Comparativo e Histórico - {metrica_comp}</span></td>
+                <td style="width: 50%; text-align: center; padding: 15px; border-right: 1px solid #000; vertical-align: middle;"><h2 style="margin: 0; font-size: 15px; font-weight: bold;">REPORTE COMPARATIVO DE {metrica_comp}</h2><h4 style="margin: 4px 0 0 0; font-size: 11px; font-weight: normal;">{anio_base} vs {anio_comparar}</h4></td>
+                <td style="width: 25%; text-align: center; background-color: #f5f5f5; vertical-align: middle;"><div style="font-size: 11px; font-weight: bold; border-bottom: 1px solid #000; padding: 3px 0;">Variación Global</div><div style="font-size: 14px; font-weight: bold; color: {'#008000' if variacion_global >= 0 else '#cc0000'};">${variacion_global:,.2f} ({porcentaje_var:+.1f}%)</div></td>
+            </tr>
+        </table>
+    </div>
+    """, unsafe_allow_html=True)
 
-        # Columnas de mapeo seguro
-        col_dev_real = c_dev if 'c_dev' in locals() else "DEVENGADO"
-        col_pres_real = c_pres if 'c_pres' in locals() else "PRESUPUESTO"
-        c_obj_real = c_obj if 'c_obj' in locals() else (df_base_app.columns[0] if not df_base_app.empty else "")
+    st.markdown("<br>", unsafe_allow_html=True)
+    if f_plan_comp:
+        st.write(pd.DataFrame(f_plan_comp).to_html(escape=False, index=False), unsafe_allow_html=True)
+    else:
+        st.warning("No hay registros cargados para mostrar en la vista comparativa.")
 
-        col_metrica_anio1 = col_dev_real if metrica_comp == "DEVENGADO" else col_pres_real
-        col_metrica_anio2 = col_metrica_anio1 
-
-        # Trabajamos sobre los DataFrames generales
-        df_f1_comparativo = df_base_app.copy()
-        df_f2_comparativo = df_validas_anio2.copy() if 'df_validas_anio2' in locals() else df_base_app.copy()
-
-        # Función de limpieza rápida y segura para montos
-        fn_limpieza = limpiar_monto_val if 'limpiar_monto_val' in globals() else (lambda x: float(str(x).replace('$', '').replace('.', '').replace(',', '.')) if pd.notnull(x) else 0.0)
-
-        if not df_f1_comparativo.empty and col_metrica_anio1 in df_f1_comparativo.columns:
-            df_f1_comparativo["_VAL_COMP"] = df_f1_comparativo[col_metrica_anio1].apply(fn_limpieza)
-        else:
-            df_f1_comparativo["_VAL_COMP"] = 0.0
-
-        if not df_f2_comparativo.empty and col_metrica_anio2 in df_f2_comparativo.columns:
-            df_f2_comparativo["_VAL_COMP"] = df_f2_comparativo[col_metrica_anio2].apply(fn_limpieza)
-        else:
-            df_f2_comparativo["_VAL_COMP"] = 0.0
-
-        total_val_anio1 = df_f1_comparativo["_VAL_COMP"].sum()
-        total_val_anio2 = df_f2_comparativo["_VAL_COMP"].sum()
-        variacion_global = total_val_anio2 - total_val_anio1
-        porcentaje_var = (variacion_global / total_val_anio1 * 100) if total_val_anio1 > 0 else 0.0
-
-        f_plan_comp = []
-        rows_html_comp = ""
-
-        # Agrupación cruzada por objeto/cuenta a nivel general
-        objs_1 = df_f1_comparativo[c_obj_real].dropna().astype(str).unique() if c_obj_real in df_f1_comparativo.columns else []
-        objs_2 = df_f2_comparativo[c_obj_real].dropna().astype(str).unique() if c_obj_real in df_f2_comparativo.columns else []
-        objetos_unicos = sorted(list(set(objs_1).union(set(objs_2))))
-
-        for obj in objetos_unicos:
-            sub_df_1 = df_f1_comparativo[df_f1_comparativo[c_obj_real].astype(str).str.strip() == obj.strip()] if c_obj_real in df_f1_comparativo.columns else pd.DataFrame()
-            sub_df_2 = df_f2_comparativo[df_f2_comparativo[c_obj_real].astype(str).str.strip() == obj.strip()] if c_obj_real in df_f2_comparativo.columns else pd.DataFrame()
-
-            val_1 = sub_df_1["_VAL_COMP"].sum() if not sub_df_1.empty else 0.0
-            val_2 = sub_df_2["_VAL_COMP"].sum() if not sub_df_2.empty else 0.0
-            dif = val_2 - val_1
-
-            f_plan_comp.append({
-                "OBJETO / CUENTA": f"<b>{obj}</b>",
-                f"{metrica_comp} ({anio_base})": f"<b>${val_1:,.2f}</b>",
-                f"{metrica_comp} ({anio_comparar})": f"<b>${val_2:,.2f}</b>",
-                "DIFERENCIA": f"<b>${dif:,.2f}</b>"
-            })
-            
-            rows_html_comp += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${val_1:,.2f}</td><td style="text-align: right;">${val_2:,.2f}</td><td style="text-align: right;">${dif:,.2f}</td></tr>'
-
-        # 1. VISTA PREVIA ESTÉTICA EN LA APP
-        st.markdown(f"""
-        <div style="border: 1px solid #000; padding: 0px; border-radius: 2px; background-color: #fff; font-family: Arial, sans-serif;">
-            <table style="width: 100%; border-collapse: collapse;">
+    # HTML estructurado para impresión limpia y descarga (incluye diseño formal y firmas)
+    html_reporte_comparativo = f"""
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            @page {{ size: A4 landscape; margin: 12mm; }}
+            body {{ font-family: Arial, sans-serif; color: #000; margin: 0 auto; width: 100%; max-width: 1050px; }}
+            .m-box {{ border: 1px solid #000; padding: 10px; margin-bottom: 15px; background-color: #fff; }}
+            .t-hdr {{ width: 100%; border-collapse: collapse; }}
+            .t-hdr td {{ padding: 4px; vertical-align: middle; border: none; }}
+            .b-tot {{ border: 1px solid #000; background-color: #f5f5f5; text-align: center; }}
+            .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; margin-bottom: 25px; }}
+            .tabla-datos th {{ border-bottom: 2px solid #000; padding: 6px 4px; font-weight: bold; background-color: #f2f2f2; text-align: right; }}
+            .tabla-datos th:first-child {{ text-align: left !important; padding-left: 8px; }}
+            .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 6px 4px; vertical-align: middle; text-align: right; }}
+            .tabla-datos td:first-child {{ text-align: left !important; padding-left: 8px; }}
+            .resumen-final {{ border: 2px solid #000; padding: 15px; margin-top: 20px; background-color: #fafafa; text-align: center; font-size: 13px; page-break-inside: avoid; }}
+            .firmas-container {{ margin-top: 50px; width: 100%; page-break-inside: avoid; }}
+            .firma-box {{ width: 30%; float: left; text-align: center; border-top: 1px solid #000; padding-top: 5px; margin: 0 1.5%; font-size: 11px; font-weight: bold; }}
+        </style>
+    </head>
+    <body onload="window.print();">
+        <div class="m-box">
+            <table class="t-hdr">
                 <tr>
-                    <td style="width: 25%; font-size: 11px; padding: 15px; border-right: 1px solid #000; text-align: left;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 9px; color: #777;">Comparativo e Histórico - {metrica_comp}</span></td>
-                    <td style="width: 50%; text-align: center; padding: 15px; border-right: 1px solid #000; vertical-align: middle;"><h2 style="margin: 0; font-size: 15px; font-weight: bold;">REPORTE COMPARATIVO DE {metrica_comp}</h2><h4 style="margin: 4px 0 0 0; font-size: 11px; font-weight: normal;">{anio_base} vs {anio_comparar}</h4></td>
-                    <td style="width: 25%; text-align: center; background-color: #f5f5f5; vertical-align: middle;"><div style="font-size: 11px; font-weight: bold; border-bottom: 1px solid #000; padding: 3px 0;">Variación Global</div><div style="font-size: 14px; font-weight: bold; color: {'#008000' if variacion_global >= 0 else '#cc0000'};">${variacion_global:,.2f} ({porcentaje_var:+.1f}%)</div></td>
+                    <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Comparativo e Histórico</span></td>
+                    <td style="width: 50%; text-align: center;"><b>REPORTE COMPARATIVO DE {metrica_comp} ({anio_base} vs {anio_comparar})</b><br><small>- Análisis Global -</small></td>
+                    <td style="width: 25%;" class="b-tot"><small>Total {anio_comparar}</small><br><b>${total_val_anio2:,.2f}</b></td>
                 </tr>
             </table>
         </div>
-        """, unsafe_allow_html=True)
+        <table class="tabla-datos">
+            <thead>
+                <tr>
+                    <th style="text-align: left; padding-left: 8px;">OBJETO / CUENTA</th>
+                    <th>{metrica_comp} ({anio_base})</th>
+                    <th>{metrica_comp} ({anio_comparar})</th>
+                    <th>DIFERENCIA</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows_html_comp}
+            </tbody>
+        </table>
+        <div class="resumen-final">
+            <b>TOTALES GENERALES ({metrica_comp}):</b> {anio_base}: ${total_val_anio1:,.2f} &nbsp;|&nbsp; {anio_comparar}: ${total_val_anio2:,.2f} &nbsp;|&nbsp; <b>Variación: ${variacion_global:,.2f} ({porcentaje_var:+.1f}%)</b>
+        </div>
+        <div class="firmas-container">
+            <div class="firma-box">Responsable Presupuesto</div>
+            <div class="firma-box">Contaduría General</div>
+            <div class="firma-box">Intendente / Secretario</div>
+        </div>
+    </body>
+    </html>
+    """
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        if f_plan_comp:
-            st.write(pd.DataFrame(f_plan_comp).to_html(escape=False, index=False), unsafe_allow_html=True)
-        else:
-            st.warning("No hay registros cargados para mostrar en la vista comparativa.")
-
-        # HTML estructurado para impresión limpia y descarga (incluye diseño formal y firmas)
-        html_reporte_comparativo = f"""
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                @page {{ size: A4 landscape; margin: 12mm; }}
-                body {{ font-family: Arial, sans-serif; color: #000; margin: 0 auto; width: 100%; max-width: 1050px; }}
-                .m-box {{ border: 1px solid #000; padding: 10px; margin-bottom: 15px; background-color: #fff; }}
-                .t-hdr {{ width: 100%; border-collapse: collapse; }}
-                .t-hdr td {{ padding: 4px; vertical-align: middle; border: none; }}
-                .b-tot {{ border: 1px solid #000; background-color: #f5f5f5; text-align: center; }}
-                .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; margin-bottom: 25px; }}
-                .tabla-datos th {{ border-bottom: 2px solid #000; padding: 6px 4px; font-weight: bold; background-color: #f2f2f2; text-align: right; }}
-                .tabla-datos th:first-child {{ text-align: left !important; padding-left: 8px; }}
-                .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 6px 4px; vertical-align: middle; text-align: right; }}
-                .tabla-datos td:first-child {{ text-align: left !important; padding-left: 8px; }}
-                .resumen-final {{ border: 2px solid #000; padding: 15px; margin-top: 20px; background-color: #fafafa; text-align: center; font-size: 13px; page-break-inside: avoid; }}
-                .firmas-container {{ margin-top: 50px; width: 100%; page-break-inside: avoid; }}
-                .firma-box {{ width: 30%; float: left; text-align: center; border-top: 1px solid #000; padding-top: 5px; margin: 0 1.5%; font-size: 11px; font-weight: bold; }}
-            </style>
-        </head>
-        <body onload="window.print();">
-            <div class="m-box">
-                <table class="t-hdr">
-                    <tr>
-                        <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Comparativo e Histórico</span></td>
-                        <td style="width: 50%; text-align: center;"><b>REPORTE COMPARATIVO DE {metrica_comp} ({anio_base} vs {anio_comparar})</b><br><small>- Análisis Global -</small></td>
-                        <td style="width: 25%;" class="b-tot"><small>Total {anio_comparar}</small><br><b>${total_val_anio2:,.2f}</b></td>
-                    </tr>
-                </table>
-            </div>
-            <table class="tabla-datos">
-                <thead>
-                    <tr>
-                        <th style="text-align: left; padding-left: 8px;">OBJETO / CUENTA</th>
-                        <th>{metrica_comp} ({anio_base})</th>
-                        <th>{metrica_comp} ({anio_comparar})</th>
-                        <th>DIFERENCIA</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows_html_comp}
-                </tbody>
-            </table>
-            <div class="resumen-final">
-                <b>TOTALES GENERALES ({metrica_comp}):</b> {anio_base}: ${total_val_anio1:,.2f} &nbsp;|&nbsp; {anio_comparar}: ${total_val_anio2:,.2f} &nbsp;|&nbsp; <b>Variación: ${variacion_global:,.2f} ({porcentaje_var:+.1f}%)</b>
-            </div>
-            <div class="firmas-container">
-                <div class="firma-box">Responsable Presupuesto</div>
-                <div class="firma-box">Contaduría General</div>
-                <div class="firma-box">Intendente / Secretario</div>
-            </div>
-        </body>
-        </html>
-        """
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.download_button(
-            label=f"📥 Descargar Reporte Comparativo e Histórico de {metrica_comp} (HTML/PDF)",
-            data=html_reporte_comparativo,
-            file_name=f"Comparativo_Historico_{metrica_comp}_{anio_base}_vs_{anio_comparar}_{time.strftime('%Y%m%d')}.html",
-            mime="text/html",
-            use_container_width=True,
-            type="primary"
-        )
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.download_button(
+        label=f"📥 Descargar Reporte Comparativo e Histórico de {metrica_comp} (HTML/PDF)",
+        data=html_reporte_comparativo,
+        file_name=f"Comparativo_Historico_{metrica_comp}_{anio_base}_vs_{anio_comparar}_{time.strftime('%Y%m%d')}.html",
+        mime="text/html",
+        use_container_width=True,
+        type="primary"
+    )
 # =====================================================================
 # SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (TODAS LAS SOLAPAS)
 # =====================================================================

@@ -242,7 +242,7 @@ MAPEO_GASTOS = {
 
     },
     "7. Servicio de la deuda": {
-        "27.1.0.0.00.000 - Servicio de la deuda interna": ["27.1.1.0.00.000 - Intereses de la deuda a Corto Plazo"]
+        "27.1.0.0.00.000 - Servicio de la deuda interna": ["27.1.1.0.00.000 - Intereses de la deuda a Corto Plazo"],
         "27.1.0.0.00.000 - Servicio de la deuda interna": ["27.1.1.0.00.000 - Intereses de la deuda a Corto Plazo","27.1.2.0.00.000 - Amortización de la deuda interna a corto plazo","27.1.3.0.00.000 - Comisiones y otros gastos de la deuda interna a corto plazo","27.1.7.0.00.000 Amortización de la deuda interna a largo plazo"],
 		"27.4.0.0.00.000 - Disminucion de prestamos a corto plazo": ["27.4.5.0.00.000 - Disminución de préstamos recibidos de provincia y municipios"],
 		"27.5.0.0.00.000 - Disminucion de prestamos a largo plazo": ["27.5.5.0.00.000 - Disminución de préstamos a largo plazo recibidos de provincia y municipalidades"],

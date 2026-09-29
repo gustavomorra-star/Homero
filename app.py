@@ -1150,8 +1150,8 @@ elif opcion_menu == "📄 EXPORTACIÓN Y FIRMAS":
 
             <div class="firmas-container">
                 <div class="firma-box">Responsable Presupuesto</div>
-                <div class="firma-box">Contaduría General</div>
-                <div class="firma-box">Intendente / Secretario</div>
+                <div class="firma-box">Sec. Hacienda</div>
+                <div class="firma-box">Intendente</div>
             </div>
         </body>
         </html>
@@ -1375,7 +1375,7 @@ elif opcion_menu == "🏢 VISTA POR SECRETARÍA Y SUBSECRETARÍA":
 
                 <div class="firmas-container">
                     <div class="firma-box">Responsable Presupuesto</div>
-                    <div class="firma-box">Contaduría General</div>
+                    <div class="firma-box">Sec. Hacienda</div>
                     <div class="firma-box">Intendente / Secretario</div>
                 </div>
             </body>
@@ -1589,7 +1589,7 @@ elif opcion_menu == "📦 TOTALES POR OBJETO DEL GASTO":
 
             <div class="firmas-container">
                 <div class="firma-box">Responsable Presupuesto</div>
-                <div class="firma-box">Contaduría General</div>
+                <div class="firma-box">Sec. Hacienda</div>
                 <div class="firma-box">Intendente / Secretario</div>
             </div>
         </body>
@@ -1693,7 +1693,7 @@ elif opcion_menu == "📊 MATRIZ SUBSECRETARÍA VS OBJETOS":
 
             <div class="firmas-container">
                 <div class="firma-box">Responsable Presupuesto</div>
-                <div class="firma-box">Contaduría General</div>
+                <div class="firma-box">Sec. Hacienda</div>
                 <div class="firma-box">Intendente / Secretario</div>
             </div>
         </body>
@@ -2075,8 +2075,8 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
         </div>
         <div class="firmas-container">
             <div class="firma-box">Responsable Presupuesto</div>
-            <div class="firma-box">Contaduría General</div>
-            <div class="firma-box">Intendente / Secretario</div>
+            <div class="firma-box">Sec. Hacienda</div>
+            <div class="firma-box">Intendente</div>
         </div>
     </body>
     </html>
@@ -2234,8 +2234,8 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                     </div>
                     <div class="firmas-container">
                         <div class="firma-box">Responsable Presupuesto</div>
-                        <div class="firma-box">Contaduría General</div>
-                        <div class="firma-box">Intendente / Secretario</div>
+                        <div class="firma-box">Sec. Hacienda</div>
+                        <div class="firma-box">Intendente</div>
                     </div>
                 </body>
                 </html>
@@ -2415,8 +2415,8 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                     </div>
                     <div class="firmas-container">
                         <div class="firma-box">Responsable Presupuesto</div>
-                        <div class="firma-box">Contaduría General</div>
-                        <div class="firma-box">Intendente / Secretario</div>
+                        <div class="firma-box">Sec. Hacienda</div>
+                        <div class="firma-box">Intendente</div>
                     </div>
                 </body>
                 </html>
@@ -2562,8 +2562,8 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                 </div>
                 <div class="firmas-container">
                     <div class="firma-box">Responsable Presupuesto</div>
-                    <div class="firma-box">Contaduría General</div>
-                    <div class="firma-box">Intendente / Secretario</div>
+                    <div class="firma-box">Sec. Hacienda</div>
+                    <div class="firma-box">Intendente</div>
                 </div>
             </body>
             </html>
@@ -2673,8 +2673,8 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                     </div>
                     <div class="firmas-container">
                         <div class="firma-box">Responsable Presupuesto</div>
-                        <div class="firma-box">Contaduría General</div>
-                        <div class="firma-box">Intendente / Secretario</div>
+                        <div class="firma-box">Sec. Hacienda</div>
+                        <div class="firma-box">Intendente</div>
                     </div>
                 </body>
                 </html>

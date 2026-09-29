@@ -1893,9 +1893,10 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
             type="primary"
         )
 
-# -------------------------------------------------------------
-        # SECCIÓN: REPORTE COMPARATIVO E HISTÓRICO GLOBAL (CON VISTA PREVIA Y FIRMAS)
-        # -------------------------------------------------------------
+# =============================================================
+# SECCIÓN 20: COMPARATIVO E HISTÓRICO (CON VISTA PREVIA Y FIRMAS)
+# =============================================================
+    elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
         st.markdown("##### 📈 Reporte Comparativo e Histórico Global")
         
         col_comp1, col_comp2, col_comp3 = st.columns(3)
@@ -1906,21 +1907,33 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
         with col_comp3:
             metrica_comp = st.selectbox("Métrica a Comparar:", options=["DEVENGADO", "PRESUPUESTO"], key="comp_metrica")
 
-        # Aseguramos el mapeo correcto de las columnas según tus variables globales de nombres de columnas
-        # (Si en tu app se llaman diferente, podés reemplazar 'c_dev' y 'c_pres' por los strings de las columnas reales)
+        # Determinamos el DataFrame base disponible de forma segura
+        df_base_app = df_validas if 'df_validas' in locals() and not df_validas.empty else (df if 'df' in locals() else pd.DataFrame())
+
+        # Columnas de mapeo seguro
         col_dev_real = c_dev if 'c_dev' in locals() else "DEVENGADO"
         col_pres_real = c_pres if 'c_pres' in locals() else "PRESUPUESTO"
+        c_obj_real = c_obj if 'c_obj' in locals() else (df_base_app.columns[0] if not df_base_app.empty else "")
 
         col_metrica_anio1 = col_dev_real if metrica_comp == "DEVENGADO" else col_pres_real
         col_metrica_anio2 = col_metrica_anio1 
 
-        # Trabajamos sobre los DataFrames generales sin filtro de destino
-        df_f1_comparativo = df_validas.copy()
-        df_f2_comparativo = df_validas_anio2.copy() if 'df_validas_anio2' in locals() else df_validas.copy()
+        # Trabajamos sobre los DataFrames generales
+        df_f1_comparativo = df_base_app.copy()
+        df_f2_comparativo = df_validas_anio2.copy() if 'df_validas_anio2' in locals() else df_base_app.copy()
 
-        # Normalización de valores según la métrica seleccionada
-        df_f1_comparativo["_VAL_COMP"] = df_f1_comparativo[col_metrica_anio1].apply(limpiar_monto_val)
-        df_f2_comparativo["_VAL_COMP"] = df_f2_comparativo[col_metrica_anio2].apply(limpiar_monto_val)
+        # Función de limpieza rápida y segura para montos
+        fn_limpieza = limpiar_monto_val if 'limpiar_monto_val' in globals() else (lambda x: float(str(x).replace('$', '').replace('.', '').replace(',', '.')) if pd.notnull(x) else 0.0)
+
+        if not df_f1_comparativo.empty and col_metrica_anio1 in df_f1_comparativo.columns:
+            df_f1_comparativo["_VAL_COMP"] = df_f1_comparativo[col_metrica_anio1].apply(fn_limpieza)
+        else:
+            df_f1_comparativo["_VAL_COMP"] = 0.0
+
+        if not df_f2_comparativo.empty and col_metrica_anio2 in df_f2_comparativo.columns:
+            df_f2_comparativo["_VAL_COMP"] = df_f2_comparativo[col_metrica_anio2].apply(fn_limpieza)
+        else:
+            df_f2_comparativo["_VAL_COMP"] = 0.0
 
         total_val_anio1 = df_f1_comparativo["_VAL_COMP"].sum()
         total_val_anio2 = df_f2_comparativo["_VAL_COMP"].sum()
@@ -1930,19 +1943,17 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
         f_plan_comp = []
         rows_html_comp = ""
 
-        # Columna de objetos / cuentas
-        c_obj_real = c_obj if 'c_obj' in locals() else list(df_validas.columns)[0]
-
         # Agrupación cruzada por objeto/cuenta a nivel general
-        objetos_unicos = sorted(list(set(df_f1_comparativo[c_obj_real].dropna().astype(str).unique()).union(
-                                  set(df_f2_comparativo[c_obj_real].dropna().astype(str).unique()))))
+        objs_1 = df_f1_comparativo[c_obj_real].dropna().astype(str).unique() if c_obj_real in df_f1_comparativo.columns else []
+        objs_2 = df_f2_comparativo[c_obj_real].dropna().astype(str).unique() if c_obj_real in df_f2_comparativo.columns else []
+        objetos_unicos = sorted(list(set(objs_1).union(set(objs_2))))
 
         for obj in objetos_unicos:
-            sub_df_1 = df_f1_comparativo[df_f1_comparativo[c_obj_real].astype(str).str.strip() == obj.strip()]
-            sub_df_2 = df_f2_comparativo[df_f2_comparativo[c_obj_real].astype(str).str.strip() == obj.strip()]
+            sub_df_1 = df_f1_comparativo[df_f1_comparativo[c_obj_real].astype(str).str.strip() == obj.strip()] if c_obj_real in df_f1_comparativo.columns else pd.DataFrame()
+            sub_df_2 = df_f2_comparativo[df_f2_comparativo[c_obj_real].astype(str).str.strip() == obj.strip()] if c_obj_real in df_f2_comparativo.columns else pd.DataFrame()
 
-            val_1 = sub_df_1["_VAL_COMP"].sum()
-            val_2 = sub_df_2["_VAL_COMP"].sum()
+            val_1 = sub_df_1["_VAL_COMP"].sum() if not sub_df_1.empty else 0.0
+            val_2 = sub_df_2["_VAL_COMP"].sum() if not sub_df_2.empty else 0.0
             dif = val_2 - val_1
 
             f_plan_comp.append({
@@ -1959,7 +1970,7 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
         <div style="border: 1px solid #000; padding: 0px; border-radius: 2px; background-color: #fff; font-family: Arial, sans-serif;">
             <table style="width: 100%; border-collapse: collapse;">
                 <tr>
-                    <td style="width: 25%; font-size: 11px; padding: 15px; border-right: 1px solid #000; text-align: left;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 9px; color: #777;">Comparativa Global - {metrica_comp}</span></td>
+                    <td style="width: 25%; font-size: 11px; padding: 15px; border-right: 1px solid #000; text-align: left;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 9px; color: #777;">Comparativo e Histórico - {metrica_comp}</span></td>
                     <td style="width: 50%; text-align: center; padding: 15px; border-right: 1px solid #000; vertical-align: middle;"><h2 style="margin: 0; font-size: 15px; font-weight: bold;">REPORTE COMPARATIVO DE {metrica_comp}</h2><h4 style="margin: 4px 0 0 0; font-size: 11px; font-weight: normal;">{anio_base} vs {anio_comparar}</h4></td>
                     <td style="width: 25%; text-align: center; background-color: #f5f5f5; vertical-align: middle;"><div style="font-size: 11px; font-weight: bold; border-bottom: 1px solid #000; padding: 3px 0;">Variación Global</div><div style="font-size: 14px; font-weight: bold; color: {'#008000' if variacion_global >= 0 else '#cc0000'};">${variacion_global:,.2f} ({porcentaje_var:+.1f}%)</div></td>
                 </tr>
@@ -1968,7 +1979,10 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
         """, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
-        st.write(pd.DataFrame(f_plan_comp).to_html(escape=False, index=False), unsafe_allow_html=True)
+        if f_plan_comp:
+            st.write(pd.DataFrame(f_plan_comp).to_html(escape=False, index=False), unsafe_allow_html=True)
+        else:
+            st.warning("No hay registros cargados para mostrar en la vista comparativa.")
 
         # HTML estructurado para impresión limpia y descarga (incluye diseño formal y firmas)
         html_reporte_comparativo = f"""
@@ -1996,7 +2010,7 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
             <div class="m-box">
                 <table class="t-hdr">
                     <tr>
-                        <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Reporte Comparativo Global</span></td>
+                        <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Comparativo e Histórico</span></td>
                         <td style="width: 50%; text-align: center;"><b>REPORTE COMPARATIVO DE {metrica_comp} ({anio_base} vs {anio_comparar})</b><br><small>- Análisis Global -</small></td>
                         <td style="width: 25%;" class="b-tot"><small>Total {anio_comparar}</small><br><b>${total_val_anio2:,.2f}</b></td>
                     </tr>
@@ -2029,9 +2043,9 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.download_button(
-            label=f"📥 Descargar Reporte Comparativo de {metrica_comp} (HTML/PDF)",
+            label=f"📥 Descargar Reporte Comparativo e Histórico de {metrica_comp} (HTML/PDF)",
             data=html_reporte_comparativo,
-            file_name=f"Comparativo_Global_{metrica_comp}_{anio_base}_vs_{anio_comparar}_{time.strftime('%Y%m%d')}.html",
+            file_name=f"Comparativo_Historico_{metrica_comp}_{anio_base}_vs_{anio_comparar}_{time.strftime('%Y%m%d')}.html",
             mime="text/html",
             use_container_width=True,
             type="primary"

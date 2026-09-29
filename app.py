@@ -64,7 +64,8 @@ def construir_url_csv(param):
 def leer_datos_gsheet(param_url_o_gid):
     url = construir_url_csv(param_url_o_gid)
     try:
-        resp = requests.get(url, timeout=10)
+        # Aumentamos el timeout a 30 segundos para evitar cortes con planillas grandes
+        resp = requests.get(url, timeout=30)
         if resp.status_code == 200:
             df = pd.read_csv(io.StringIO(resp.text))
 

@@ -229,10 +229,23 @@ MAPEO_GASTOS = {
         "25.8.0.0.00.000 - Transferencias a Instituciones provinciales y municipales para Financiar gastos de Capital": ["N/N"],
 	},
     "6. Activos Financieros": {
-        "26.2.0.0.00.000 - Prestamos a corto plazo": ["26.2.1.6.01.000 - Préstamos Aportes Sociales Reintegrables"]
+        "26.1.0.0.00.000 - Aportes de capital": ["26.1.1.0.00.000 - Aportes de Capital a empresas privadas","26.1.2.0.00.000 - Aportes de Capital a empresas públicas no financieras","26.1.3.0.00.000 - Aportes de Capital a Instituciones Públicas Financieras"],
+		"26.2.0.0.00.000 - Prestamos a Corto plazo al Sector Privado": ["Préstamos a Microemprendedores","26.2.1.2.00.000 - Préstamos a Emprendedores","26.2..3.00.00 - Préstamos a empresas","26.2.1.4.00.000 - Préstamos a Pymes"],
+		"26.2.1.5.00.000 - Préstamos a Intituciones": ["26.2.1.5.01.000 - Préstamos a Intituciones Públicas No Financieras","26.2.1.5.02.000 - Préstamos a Intituciones Públicas Financieras","26.2.1.5.03.000 - Préstamos a Intituciones Privadas No Financieras","26.2.1.5.04.000 - Préstamos a Intituciones Privadas Financieras"],
+		"26.2.1.6.00.000 - Préstamo a Personas": ["26.2.1.6.01.001 - Préstamos Aporte Social Reintegrable para Salud","26.2.1.6.01.002 - Préstamo Aporte Social Reintegrable para Alquiler","26.2.1.6.01.003 - Préstamo Aporte Social Reintegrable para Sepelio","26.2.1.6.01.004 - Préstamo Aporte Social Reintegrable para Servicios Básicos","26.2.1.6.01.005 - Préstamo Aporte Social Reintegrable (Otros)","26.2.1.6.02.000 - Préstamos Empleados"],
+		"26.3.0.0.00.000 - Prestamos a largo plazo": ["26.3.1.1.00.000 - Préstamos a Personas","26.3.1.2.00.000 - Préstamos a  Emprendedores","26.3.1.3.00.000 - Préstamos a Empresas","26.3.1.4.00.000 - Préstamo a Pymes","26.3.1.5.01.000 - Préstamo a Intituciones Públicas No Financieras","26.3.1.5.02.000 - Préstamo a Intituciones Públicas Financieras","26.3.1.5.03.000 - Préstamo a Intituciones Privadas No Financieras","26.3.1.5.04.000 - Préstamo a Intituciones Privadas Financieras"],
+		"26.4.0.0.00.000 - Titulos y valores": ["26.4.1.0.00.000 - Títulos y Valores a Corto Plazo","26.4.2.0.00.000 - Títulos y Valores a Largo Plazo"],
+		"26.5.0.0.00.000 - Incremento de disponibilidades": ["26.5.1.0.00.000 - Incremento de Caja y Bancos","26.5.2.0.00.000 - Incremento de Inversiones financieras temporarias"],
+		"26.6.0.0.00.000 - Incremento de cuentas a cobrar": ["26.6.1.0.00.000 - Incremento de Ctas. Comerciales a cobrar a corto plazo","26.6.2.0.00.000 - Incremento de Otras Ctas. a cobrar a corto plazo","26.6.3.0.00.000 - Incremento de Ctas. a cobrar comerciales a largo plazo","26.6.4.0.00.000 - Incremento de otros documentos a cobrar a largo plazo"],
+		"26.7.0.0.00.000 - Incremento de documentos a cobrar": ["26.7.1.0.00.000 - Incremento de documentos comerciales a cobrar a corto plazo","26.7.2.0.00.000 - Incremento de otros documentos a cobrar a corto plazo","26.7.3.0.00.000 - Incremento de documentos comerciales a cobrar a largo plazo","26.7.4.0.00.000 - Incremento de otros documentos a cobrar a largo plazo"],
+
     },
     "7. Servicio de la deuda": {
-        "27.1.0.0.00.000 - Servicio de la deuda interna": ["27.1.1.0.00.000 - Intereses de la deuda a Corto Plazo"]
+        "27.1.0.0.00.000 - Servicio de la deuda interna": ["27.1.1.0.00.000 - Intereses de la deuda a Corto Plazo","27.1.2.0.00.000 - Amortización de la deuda interna a corto plazo","27.1.3.0.00.000 - Comisiones y otros gastos de la deuda interna a corto plazo","27.1.7.0.00.000 Amortización de la deuda interna a largo plazo"],
+		"27.4.0.0.00.000 - Disminucion de prestamos a corto plazo": ["27.4.5.0.00.000 - Disminución de préstamos recibidos de provincia y municipios"],
+		"27.5.0.0.00.000 - Disminucion de prestamos a largo plazo": ["27.5.5.0.00.000 - Disminución de préstamos a largo plazo recibidos de provincia y municipalidades"],
+		"27.6.0.0.00.000 - Disminucion de cuentas y documentos a pagar": ["27.6.1.0.00.000 - Disminución de cuentas a pagar comerciales a corto plazo","27.6.2.0.00.000 - Disminución de otras cuentas a pagar a corto plazo"],
+
     },
     "8. Otros Gastos": {
         "28.0.0.0.00.000 - Otros gastos": ["28.1.0.0.00.000 - Intereses"]

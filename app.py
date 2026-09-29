@@ -1907,31 +1907,51 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     with col_comp3:
         metrica_comp = st.selectbox("Métrica a Comparar:", options=["DEVENGADO", "PRESUPUESTO"], key="comp_metrica")
 
-    # Determinamos el DataFrame base disponible de forma segura
-    df_base_app = df_validas if 'df_validas' in locals() and not df_validas.empty else (df if 'df' in locals() else pd.DataFrame())
+    # Intentamos rescatar cualquier DataFrame disponible en la sesión de Streamlit de forma robusta
+    df_f1_comparativo = pd.DataFrame()
+    df_f2_comparativo = pd.DataFrame()
 
-    # Columnas de mapeo seguro
-    col_dev_real = c_dev if 'c_dev' in locals() else "DEVENGADO"
-    col_pres_real = c_pres if 'c_pres' in locals() else "PRESUPUESTO"
-    c_obj_real = c_obj if 'c_obj' in locals() else (df_base_app.columns[0] if not df_base_app.empty else "")
+    if 'df' in locals() and isinstance(df, pd.DataFrame) and not df.empty:
+        df_f1_comparativo = df.copy()
+    elif 'df_validas' in locals() and isinstance(df_validas, pd.DataFrame) and not df_validas.empty:
+        df_f1_comparativo = df_validas.copy()
+
+    if 'df_anio2' in locals() and isinstance(df_anio2, pd.DataFrame) and not df_anio2.empty:
+        df_f2_comparativo = df_anio2.copy()
+    elif 'df_validas_anio2' in locals() and isinstance(df_validas_anio2, pd.DataFrame) and not df_validas_anio2.empty:
+        df_f2_comparativo = df_validas_anio2.copy()
+    else:
+        df_f2_comparativo = df_f1_comparativo.copy() # Respaldo si no hay segundo df separado
+
+    # Identificamos columnas de manera automática si las variables globales no están definidas
+    c_obj_real = c_obj if 'c_obj' in locals() and c_obj in df_f1_comparativo.columns else (df_f1_comparativo.columns[0] if not df_f1_comparativo.empty else "")
+    
+    # Buscar nombres comunes de columnas de devengado/presupuesto si las variables no existen
+    col_dev_real = c_dev if 'c_dev' in locals() and c_dev in df_f1_comparativo.columns else next((col for col in df_f1_comparativo.columns if 'DEVENGADO' in str(col).upper() or 'DEV' in str(col).upper()), df_f1_comparativo.columns[1] if len(df_f1_comparativo.columns) > 1 else "")
+    col_pres_real = c_pres if 'c_pres' in locals() and c_pres in df_f1_comparativo.columns else next((col for col in df_f1_comparativo.columns if 'PRESUPUESTO' in str(col).upper() or 'PRES' in str(col).upper()), col_dev_real)
 
     col_metrica_anio1 = col_dev_real if metrica_comp == "DEVENGADO" else col_pres_real
     col_metrica_anio2 = col_metrica_anio1 
 
-    # Trabajamos sobre los DataFrames generales
-    df_f1_comparativo = df_base_app.copy()
-    df_f2_comparativo = df_validas_anio2.copy() if 'df_validas_anio2' in locals() else df_base_app.copy()
-
     # Función de limpieza rápida y segura para montos
-    fn_limpieza = limpiar_monto_val if 'limpiar_monto_val' in globals() else (lambda x: float(str(x).replace('$', '').replace('.', '').replace(',', '.')) if pd.notnull(x) else 0.0)
+    def limpiar_monto_seguro(val):
+        if pd.isnull(val):
+            return 0.0
+        if isinstance(val, (int, float)):
+            return float(val)
+        val_str = str(val).replace('$', '').replace('.', '').replace(',', '.').strip()
+        try:
+            return float(val_str)
+        except:
+            return 0.0
 
     if not df_f1_comparativo.empty and col_metrica_anio1 in df_f1_comparativo.columns:
-        df_f1_comparativo["_VAL_COMP"] = df_f1_comparativo[col_metrica_anio1].apply(fn_limpieza)
+        df_f1_comparativo["_VAL_COMP"] = df_f1_comparativo[col_metrica_anio1].apply(limpiar_monto_seguro)
     else:
         df_f1_comparativo["_VAL_COMP"] = 0.0
 
     if not df_f2_comparativo.empty and col_metrica_anio2 in df_f2_comparativo.columns:
-        df_f2_comparativo["_VAL_COMP"] = df_f2_comparativo[col_metrica_anio2].apply(fn_limpieza)
+        df_f2_comparativo["_VAL_COMP"] = df_f2_comparativo[col_metrica_anio2].apply(limpiar_monto_seguro)
     else:
         df_f2_comparativo["_VAL_COMP"] = 0.0
 
@@ -1943,27 +1963,27 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     f_plan_comp = []
     rows_html_comp = ""
 
-    # Agrupación cruzada por objeto/cuenta a nivel general
-    objs_1 = df_f1_comparativo[c_obj_real].dropna().astype(str).unique() if c_obj_real in df_f1_comparativo.columns else []
-    objs_2 = df_f2_comparativo[c_obj_real].dropna().astype(str).unique() if c_obj_real in df_f2_comparativo.columns else []
-    objetos_unicos = sorted(list(set(objs_1).union(set(objs_2))))
+    if not df_f1_comparativo.empty and c_obj_real in df_f1_comparativo.columns:
+        objs_1 = df_f1_comparativo[c_obj_real].dropna().astype(str).unique()
+        objs_2 = df_f2_comparativo[c_obj_real].dropna().astype(str).unique() if (not df_f2_comparativo.empty and c_obj_real in df_f2_comparativo.columns) else []
+        objetos_unicos = sorted(list(set(objs_1).union(set(objs_2))))
 
-    for obj in objetos_unicos:
-        sub_df_1 = df_f1_comparativo[df_f1_comparativo[c_obj_real].astype(str).str.strip() == obj.strip()] if c_obj_real in df_f1_comparativo.columns else pd.DataFrame()
-        sub_df_2 = df_f2_comparativo[df_f2_comparativo[c_obj_real].astype(str).str.strip() == obj.strip()] if c_obj_real in df_f2_comparativo.columns else pd.DataFrame()
+        for obj in objetos_unicos:
+            sub_df_1 = df_f1_comparativo[df_f1_comparativo[c_obj_real].astype(str).str.strip() == obj.strip()]
+            sub_df_2 = df_f2_comparativo[df_f2_comparativo[c_obj_real].astype(str).str.strip() == obj.strip()] if not df_f2_comparativo.empty else pd.DataFrame()
 
-        val_1 = sub_df_1["_VAL_COMP"].sum() if not sub_df_1.empty else 0.0
-        val_2 = sub_df_2["_VAL_COMP"].sum() if not sub_df_2.empty else 0.0
-        dif = val_2 - val_1
+            val_1 = sub_df_1["_VAL_COMP"].sum() if not sub_df_1.empty else 0.0
+            val_2 = sub_df_2["_VAL_COMP"].sum() if not sub_df_2.empty else 0.0
+            dif = val_2 - val_1
 
-        f_plan_comp.append({
-            "OBJETO / CUENTA": f"<b>{obj}</b>",
-            f"{metrica_comp} ({anio_base})": f"<b>${val_1:,.2f}</b>",
-            f"{metrica_comp} ({anio_comparar})": f"<b>${val_2:,.2f}</b>",
-            "DIFERENCIA": f"<b>${dif:,.2f}</b>"
-        })
-        
-        rows_html_comp += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${val_1:,.2f}</td><td style="text-align: right;">${val_2:,.2f}</td><td style="text-align: right;">${dif:,.2f}</td></tr>'
+            f_plan_comp.append({
+                "OBJETO / CUENTA": f"<b>{obj}</b>",
+                f"{metrica_comp} ({anio_base})": f"<b>${val_1:,.2f}</b>",
+                f"{metrica_comp} ({anio_comparar})": f"<b>${val_2:,.2f}</b>",
+                "DIFERENCIA": f"<b>${dif:,.2f}</b>"
+            })
+            
+            rows_html_comp += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${val_1:,.2f}</td><td style="text-align: right;">${val_2:,.2f}</td><td style="text-align: right;">${dif:,.2f}</td></tr>'
 
     # 1. VISTA PREVIA ESTÉTICA EN LA APP
     st.markdown(f"""
@@ -1982,9 +2002,9 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     if f_plan_comp:
         st.write(pd.DataFrame(f_plan_comp).to_html(escape=False, index=False), unsafe_allow_html=True)
     else:
-        st.warning("No hay registros cargados para mostrar en la vista comparativa.")
+        st.warning("No hay registros cargados o las columnas no coinciden para mostrar en la vista comparativa.")
 
-    # HTML estructurado para impresión limpia y descarga (incluye diseño formal y firmas)
+    # HTML estructurado para impresión limpia y descarga
     html_reporte_comparativo = f"""
     <html>
     <head>
@@ -2050,6 +2070,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
         use_container_width=True,
         type="primary"
     )
+
 # =====================================================================
 # SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (TODAS LAS SOLAPAS)
 # =====================================================================

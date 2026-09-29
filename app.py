@@ -1897,7 +1897,7 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
 # SECCIÓN: COMPARATIVO E HISTÓRICO (CON VISTA PREVIA Y FIRMAS)
 # =============================================================
 elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
-    st.markdown("##### 📈 Reporte Comparativo e Histórico Global")
+    st.markdown("##### 📈 Reporte Comparativo e Histórico por Destino")
     
     col_comp1, col_comp2, col_comp3 = st.columns(3)
     with col_comp1:
@@ -1907,31 +1907,20 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     with col_comp3:
         metrica_comp = st.selectbox("Métrica a Comparar:", options=["DEVENGADO", "PRESUPUESTO"], key="comp_metrica")
 
-    # 🔍 FORZAMOS LA LECTURA DIRECTA DE LA FUENTE GLOBAL O SESSION_STATE
-    # (Reemplazá 'tu_variable_principal_aqui' si tu DataFrame principal se llama distinto)
-    try:
-        df_f1_comparativo = tu_variable_principal_aqui.copy() if 'tu_variable_principal_aqui' in globals() else st.session_state.get('df_validas', pd.DataFrame())
-    except:
-        df_f1_comparativo = pd.DataFrame()
+    # Tomamos directamente los DataFrames válidos que ya usa tu app en las otras solapas
+    df_f1_comparativo = df_validas.copy() if 'df_validas' in locals() and not df_validas.empty else (df.copy() if 'df' in locals() else pd.DataFrame())
+    df_f2_comparativo = df_validas_anio2.copy() if 'df_validas_anio2' in locals() and not df_validas_anio2.empty else df_f1_comparativo.copy()
 
     if df_f1_comparativo.empty:
-        # Intento de rescate universal buscando cualquier DF disponible en globals
-        for var_nombre, var_valor in list(globals().items()):
-            if isinstance(var_valor, pd.DataFrame) and not var_valor.empty and len(var_valor.columns) > 2:
-                df_f1_comparativo = var_valor.copy()
-                break
-
-    df_f2_comparativo = df_f1_comparativo.copy() # Copia segura para operar
-
-    # Depuración visual rápida en pantalla para saber qué columnas detectó
-    if df_f1_comparativo.empty:
-        st.error("⚠️ El DataFrame global está vacío. Asegurate de cargar los datos del Sheet primero en la solapa correspondiente.")
+        st.warning("⚠️ No se encontraron registros válidos cargados en el sistema.")
         st.stop()
 
-    # Columnas automáticas basadas en las que ya usa tu app
-    c_obj_real = c_obj if 'c_obj' in globals() and c_obj in df_f1_comparativo.columns else df_f1_comparativo.columns[0]
-    col_dev_real = c_dev if 'c_dev' in globals() and c_dev in df_f1_comparativo.columns else next((c for c in df_f1_comparativo.columns if 'DEV' in str(c).upper()), df_f1_comparativo.columns[1])
-    col_pres_real = c_pres if 'c_pres' in globals() and c_pres in df_f1_comparativo.columns else next((c for c in df_f1_comparativo.columns if 'PRES' in str(c).upper()), col_dev_real)
+    # Identificamos la columna de Destino de forma exacta con la que usa tu solapa de Ficha Técnica
+    col_destino_real = c_dest if 'c_dest' in locals() and c_dest in df_f1_comparativo.columns else next((c for c in df_f1_comparativo.columns if 'DESTINO' in str(c).upper()), df_f1_comparativo.columns[0])
+
+    # Columnas de métricas aseguradas según tus variables globales
+    col_dev_real = c_dev if 'c_dev' in locals() and c_dev in df_f1_comparativo.columns else "DEVENGADO"
+    col_pres_real = c_pres if 'c_pres' in locals() and c_pres in df_f1_comparativo.columns else "PRESUPUESTO"
 
     col_metrica_anio1 = col_dev_real if metrica_comp == "DEVENGADO" else col_pres_real
     col_metrica_anio2 = col_metrica_anio1
@@ -1945,8 +1934,16 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
         except:
             return 0.0
 
-    df_f1_comparativo["_VAL_COMP"] = df_f1_comparativo[col_metrica_anio1].apply(limpiar_monto_seguro)
-    df_f2_comparativo["_VAL_COMP"] = df_f2_comparativo[col_metrica_anio2].apply(limpiar_monto_seguro)
+    # Aplicamos la limpieza asegurando que existan las columnas
+    if col_metrica_anio1 in df_f1_comparativo.columns:
+        df_f1_comparativo["_VAL_COMP"] = df_f1_comparativo[col_metrica_anio1].apply(limpiar_monto_seguro)
+    else:
+        df_f1_comparativo["_VAL_COMP"] = 0.0
+
+    if col_metrica_anio2 in df_f2_comparativo.columns:
+        df_f2_comparativo["_VAL_COMP"] = df_f2_comparativo[col_metrica_anio2].apply(limpiar_monto_seguro)
+    else:
+        df_f2_comparativo["_VAL_COMP"] = 0.0
 
     total_val_anio1 = df_f1_comparativo["_VAL_COMP"].sum()
     total_val_anio2 = df_f2_comparativo["_VAL_COMP"].sum()
@@ -1956,32 +1953,35 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     f_plan_comp = []
     rows_html_comp = ""
 
-    objetos_unicos = df_f1_comparativo[c_obj_real].dropna().astype(str).unique()
+    # Agrupamos estrictamente por DESTINO
+    destinos_1 = df_f1_comparativo[col_destino_real].dropna().astype(str).unique() if col_destino_real in df_f1_comparativo.columns else []
+    destinos_2 = df_f2_comparativo[col_destino_real].dropna().astype(str).unique() if (not df_f2_comparativo.empty and col_destino_real in df_f2_comparativo.columns) else []
+    destinos_unicos = sorted(list(set(destinos_1).union(set(destinos_2))))
 
-    for obj in objetos_unicos:
-        sub_df_1 = df_f1_comparativo[df_f1_comparativo[c_obj_real].astype(str).str.strip() == obj.strip()]
-        sub_df_2 = df_f2_comparativo[df_f2_comparativo[c_obj_real].astype(str).str.strip() == obj.strip()]
+    for dest in destinos_unicos:
+        sub_df_1 = df_f1_comparativo[df_f1_comparativo[col_destino_real].astype(str).str.strip() == dest.strip()] if col_destino_real in df_f1_comparativo.columns else pd.DataFrame()
+        sub_df_2 = df_f2_comparativo[df_f2_comparativo[col_destino_real].astype(str).str.strip() == dest.strip()] if (not df_f2_comparativo.empty and col_destino_real in df_f2_comparativo.columns) else pd.DataFrame()
 
-        val_1 = sub_df_1["_VAL_COMP"].sum()
-        val_2 = sub_df_2["_VAL_COMP"].sum()
+        val_1 = sub_df_1["_VAL_COMP"].sum() if not sub_df_1.empty else 0.0
+        val_2 = sub_df_2["_VAL_COMP"].sum() if not sub_df_2.empty else 0.0
         dif = val_2 - val_1
 
         f_plan_comp.append({
-            "OBJETO / CUENTA": f"<b>{obj}</b>",
+            "DESTINO": f"<b>{dest}</b>",
             f"{metrica_comp} ({anio_base})": f"<b>${val_1:,.2f}</b>",
             f"{metrica_comp} ({anio_comparar})": f"<b>${val_2:,.2f}</b>",
             "DIFERENCIA": f"<b>${dif:,.2f}</b>"
         })
         
-        rows_html_comp += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${val_1:,.2f}</td><td style="text-align: right;">${val_2:,.2f}</td><td style="text-align: right;">${dif:,.2f}</td></tr>'
+        rows_html_comp += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{dest}</td><td style="text-align: right;">${val_1:,.2f}</td><td style="text-align: right;">${val_2:,.2f}</td><td style="text-align: right;">${dif:,.2f}</td></tr>'
 
     # 1. VISTA PREVIA ESTÉTICA EN LA APP
     st.markdown(f"""
     <div style="border: 1px solid #000; padding: 0px; border-radius: 2px; background-color: #fff; font-family: Arial, sans-serif;">
         <table style="width: 100%; border-collapse: collapse;">
             <tr>
-                <td style="width: 25%; font-size: 11px; padding: 15px; border-right: 1px solid #000; text-align: left;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 9px; color: #777;">Comparativo e Histórico - {metrica_comp}</span></td>
-                <td style="width: 50%; text-align: center; padding: 15px; border-right: 1px solid #000; vertical-align: middle;"><h2 style="margin: 0; font-size: 15px; font-weight: bold;">REPORTE COMPARATIVO DE {metrica_comp}</h2><h4 style="margin: 4px 0 0 0; font-size: 11px; font-weight: normal;">{anio_base} vs {anio_comparar}</h4></td>
+                <td style="width: 25%; font-size: 11px; padding: 15px; border-right: 1px solid #000; text-align: left;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 9px; color: #777;">Comparativo por Destino - {metrica_comp}</span></td>
+                <td style="width: 50%; text-align: center; padding: 15px; border-right: 1px solid #000; vertical-align: middle;"><h2 style="margin: 0; font-size: 15px; font-weight: bold;">REPORTE COMPARATIVO POR DESTINO</h2><h4 style="margin: 4px 0 0 0; font-size: 11px; font-weight: normal;">{anio_base} vs {anio_comparar} ({metrica_comp})</h4></td>
                 <td style="width: 25%; text-align: center; background-color: #f5f5f5; vertical-align: middle;"><div style="font-size: 11px; font-weight: bold; border-bottom: 1px solid #000; padding: 3px 0;">Variación Global</div><div style="font-size: 14px; font-weight: bold; color: {'#008000' if variacion_global >= 0 else '#cc0000'};">${variacion_global:,.2f} ({porcentaje_var:+.1f}%)</div></td>
             </tr>
         </table>
@@ -1992,7 +1992,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     if f_plan_comp:
         st.write(pd.DataFrame(f_plan_comp).to_html(escape=False, index=False), unsafe_allow_html=True)
     else:
-        st.warning("No hay registros cargados para mostrar en la vista comparativa.")
+        st.warning("No hay registros cargados para mostrar en la vista comparativa por destino.")
 
     # HTML estructurado para impresión limpia y descarga
     html_reporte_comparativo = f"""
@@ -2020,8 +2020,8 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
         <div class="m-box">
             <table class="t-hdr">
                 <tr>
-                    <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Comparativo e Histórico</span></td>
-                    <td style="width: 50%; text-align: center;"><b>REPORTE COMPARATIVO DE {metrica_comp} ({anio_base} vs {anio_comparar})</b><br><small>- Análisis Global -</small></td>
+                    <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Comparativo por Destino</span></td>
+                    <td style="width: 50%; text-align: center;"><b>REPORTE COMPARATIVO POR DESTINO DE {metrica_comp} ({anio_base} vs {anio_comparar})</b><br><small>- Análisis por Destino -</small></td>
                     <td style="width: 25%;" class="b-tot"><small>Total {anio_comparar}</small><br><b>${total_val_anio2:,.2f}</b></td>
                 </tr>
             </table>
@@ -2029,7 +2029,7 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
         <table class="tabla-datos">
             <thead>
                 <tr>
-                    <th style="text-align: left; padding-left: 8px;">OBJETO / CUENTA</th>
+                    <th style="text-align: left; padding-left: 8px;">DESTINO</th>
                     <th>{metrica_comp} ({anio_base})</th>
                     <th>{metrica_comp} ({anio_comparar})</th>
                     <th>DIFERENCIA</th>
@@ -2053,14 +2053,13 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.download_button(
-        label=f"📥 Descargar Reporte Comparativo e Histórico de {metrica_comp} (HTML/PDF)",
+        label=f"📥 Descargar Reporte Comparativo por Destino de {metrica_comp} (HTML/PDF)",
         data=html_reporte_comparativo,
-        file_name=f"Comparativo_Historico_{metrica_comp}_{anio_base}_vs_{anio_comparar}_{time.strftime('%Y%m%d')}.html",
+        file_name=f"Comparativo_Destino_{metrica_comp}_{anio_base}_vs_{anio_comparar}_{time.strftime('%Y%m%d')}.html",
         mime="text/html",
         use_container_width=True,
         type="primary"
     )
-
 # =====================================================================
 # SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (TODAS LAS SOLAPAS)
 # =====================================================================

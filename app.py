@@ -229,7 +229,7 @@ MAPEO_GASTOS = {
         "25.8.0.0.00.000 - Transferencias a Instituciones provinciales y municipales para Financiar gastos de Capital": ["N/N"],
 	},
     "6. Activos Financieros": {
-        "26.2.0.0.00.000 - Prestamos a corto plazo": ["26.2.1.6.01.000 - Préstamos Aportes Sociales Reintegrables"]
+        "26.2.0.0.00.000 - Prestamos a corto plazo": ["26.2.1.6.01.000 - Préstamos Aportes Sociales Reintegrables"],
         "26.1.0.0.00.000 - Aportes de capital": ["26.1.1.0.00.000 - Aportes de Capital a empresas privadas","26.1.2.0.00.000 - Aportes de Capital a empresas públicas no financieras","26.1.3.0.00.000 - Aportes de Capital a Instituciones Públicas Financieras"],
 		"26.2.0.0.00.000 - Prestamos a Corto plazo al Sector Privado": ["Préstamos a Microemprendedores","26.2.1.2.00.000 - Préstamos a Emprendedores","26.2..3.00.00 - Préstamos a empresas","26.2.1.4.00.000 - Préstamos a Pymes"],
 		"26.2.1.5.00.000 - Préstamos a Intituciones": ["26.2.1.5.01.000 - Préstamos a Intituciones Públicas No Financieras","26.2.1.5.02.000 - Préstamos a Intituciones Públicas Financieras","26.2.1.5.03.000 - Préstamos a Intituciones Privadas No Financieras","26.2.1.5.04.000 - Préstamos a Intituciones Privadas Financieras"],

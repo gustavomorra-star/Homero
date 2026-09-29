@@ -1979,23 +1979,34 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     # 2. Preparamos un DataFrame unificado por Destino agrupando correctamente cada fuente
     def procesar_fuente_anio(df, col_valor, filtro_valido_idx):
         if df.empty: return pd.DataFrame(columns=["_DEST", "_VAL"])
+        
+        cols_actuales = df.columns.tolist()
+        c_dest_actual = cols_actuales[2] if len(cols_actuales) > 2 else "DESTINO"
+        col_filtro = cols_actuales[filtro_valido_idx] if len(cols_actuales) > filtro_valido_idx else cols_actuales[3]
+
         df_f = df[
-            df[cols_ejec[filtro_valido_idx]].notna() & 
-            (df[cols_ejec[filtro_valido_idx]].astype(str).str.strip() != "") & 
-            (df[cols_ejec[filtro_valido_idx]].astype(str).str.upper() != "NAN")
+            df[col_filtro].notna() & 
+            (df[col_filtro].astype(str).str.strip() != "") & 
+            (df[col_filtro].astype(str).str.upper() != "NAN")
         ].copy()
         
-        df_f["_DEST"] = df_f[c_dest_comp].astype(str).str.strip().str.upper()
+        df_f["_DEST"] = df_f[c_dest_actual].astype(str).str.strip().str.upper()
         df_f["_VAL"] = df_f[col_valor].apply(limpiar_monto_comp)
         return df_f.groupby("_DEST")["_VAL"].sum().reset_index()
 
     # --- DATOS PARA EL AÑO BASE (1) ---
     if anio_base == 2027:
-        col_val_base_col = col_presupuesto_egr if metrica_comp == "PRESUPUESTO" else col_presupuesto_egr
-        df_base_grouped = procesar_fuente_anio(df_egresos_raw, col_val_base_col, 3)
+        df_base_grouped = procesar_fuente_anio(df_egresos_raw, col_presupuesto_egr, 3)
     else: # 2026 o 2025 (Ejecución)
         col_val_base_col = col_devengado_ejec if metrica_comp == "DEVENGADO" else col_presupuesto_ejec
         df_base_grouped = procesar_fuente_anio(df_ejecucion_raw, col_val_base_col, 3)
+
+    # --- DATOS PARA EL AÑO A COMPARAR (2) ---
+    if anio_comparar == 2027:
+        df_comp_grouped = procesar_fuente_anio(df_egresos_raw, col_presupuesto_egr, 3)
+    else: # 2026
+        col_val_comp_col = col_devengado_ejec if metrica_comp == "DEVENGADO" else col_presupuesto_ejec
+        df_comp_grouped = procesar_fuente_anio(df_ejecucion_raw, col_val_comp_col, 3)
 
     # --- DATOS PARA EL AÑO A COMPARAR (2) ---
     if anio_comparar == 2027:

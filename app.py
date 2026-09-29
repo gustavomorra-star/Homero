@@ -1945,39 +1945,69 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
         except:
             return 0.0
 
-    # Cargamos la fuente de datos oficial de la ejecución del Sheet
-    df_raw_comp = leer_datos_gsheet(URL_READ_EJECUCION)
-    if df_raw_comp.empty:
-        df_raw_comp = df_egr_completo.copy() if not df_egr_completo.empty else pd.DataFrame()
+    # 1. Cargamos las fuentes diferenciadas por año:
+    # - Año 2027 (o futuro): Usa la hoja de Egresos general (df_egr_completo)
+    # - Año 2026 (o anterior): Usa la hoja de Ejecución (URL_READ_EJECUCION)
+    df_ejecucion_raw = leer_datos_gsheet(URL_READ_EJECUCION)
+    if df_ejecucion_raw.empty:
+        df_ejecucion_raw = df_egr_completo.copy()
 
-    if df_raw_comp.empty:
+    df_egresos_raw = df_egr_completo.copy()
+
+    if df_ejecucion_raw.empty and df_egresos_raw.empty:
         st.warning("⚠️ No se encontraron registros cargados en el sistema para realizar la comparación.")
         st.stop()
 
-    df_raw_comp.columns = [str(c).strip().upper() for c in df_raw_comp.columns]
-    cols_c = df_raw_comp.columns.tolist()
+    # Normalizamos columnas de ejecución
+    df_ejecucion_raw.columns = [str(c).strip().upper() for c in df_ejecucion_raw.columns]
+    cols_ejec = df_ejecucion_raw.columns.tolist()
 
-    # Mapeo exacto de columnas según tu estructura de 11 columnas o la hoja de ejecución
-    c_dest_comp = cols_c[2] if len(cols_c) > 2 else "DESTINO"
+    # Normalizamos columnas de egresos
+    df_egresos_raw.columns = [str(c).strip().upper() for c in df_egresos_raw.columns]
+    cols_egr = df_egresos_raw.columns.tolist()
 
-    # Asignamos columnas distintas para cada año/métrica si la estructura las provee,
-    # o separamos por las columnas de Presupuesto (Col G) vs Devengado (Col H) o Total
-    if metrica_comp == "DEVENGADO":
-        col_val_base = cols_c[7] if len(cols_c) > 7 else (cols_c[6] if len(cols_c) > 6 else "TOTAL")
-        col_val_comp = cols_c[6] if len(cols_c) > 6 else col_val_base # Columna de presupuesto o histórica secundaria
-    else:
-        col_val_base = cols_c[6] if len(cols_c) > 6 else "TOTAL"
-        col_val_comp = cols_c[7] if len(cols_c) > 7 else col_val_base
+    c_dest_comp = cols_ejec[2] if len(cols_ejec) > 2 else "DESTINO"
 
-    df_f_comparativo = df_raw_comp[
-        df_raw_comp[cols_c[3]].notna() & 
-        (df_raw_comp[cols_c[3]].astype(str).str.strip() != "") & 
-        (df_raw_comp[cols_c[3]].astype(str).str.upper() != "NAN")
-    ].copy()
+    # Definimos qué columna buscar según la métrica elegida ("DEVENGADO" o "PRESUPUESTO")
+    # En ejecución/egresos solemos tener Presupuesto en una columna y Devengado en otra.
+    # Ajustá los índices [6] y [7] si tus columnas varían, o usa los nombres exactos si los conocés.
+    col_presupuesto_ejec = cols_ejec[6] if len(cols_ejec) > 6 else "TOTAL"
+    col_devengado_ejec = cols_ejec[7] if len(cols_ejec) > 7 else col_presupuesto_ejec
 
-    df_f_comparativo["_DEST"] = df_f_comparativo[c_dest_comp].astype(str).str.strip().str.upper()
-    df_f_comparativo["_VAL_1"] = df_f_comparativo[col_val_base].apply(limpiar_monto_comp)
-    df_f_comparativo["_VAL_2"] = df_f_comparativo[col_val_comp].apply(limpiar_monto_comp)
+    col_presupuesto_egr = cols_egr[6] if len(cols_egr) > 6 else "TOTAL"
+
+    # 2. Preparamos un DataFrame unificado por Destino agrupando correctamente cada fuente
+    def procesar_fuente_anio(df, col_valor, filtro_valido_idx):
+        if df.empty: return pd.DataFrame(columns=["_DEST", "_VAL"])
+        df_f = df[
+            df[cols_ejec[filtro_valido_idx]].notna() & 
+            (df[cols_ejec[filtro_valido_idx]].astype(str).str.strip() != "") & 
+            (df[cols_ejec[filtro_valido_idx]].astype(str).str.upper() != "NAN")
+        ].copy()
+        
+        df_f["_DEST"] = df_f[c_dest_comp].astype(str).str.strip().str.upper()
+        df_f["_VAL"] = df_f[col_valor].apply(limpiar_monto_comp)
+        return df_f.groupby("_DEST")["_VAL"].sum().reset_index()
+
+    # --- DATOS PARA EL AÑO BASE (1) ---
+    if anio_base == 2027:
+        col_val_base_col = col_presupuesto_egr if metrica_comp == "PRESUPUESTO" else col_presupuesto_egr
+        df_base_grouped = procesar_fuente_anio(df_egresos_raw, col_val_base_col, 3)
+    else: # 2026 o 2025 (Ejecución)
+        col_val_base_col = col_devengado_ejec if metrica_comp == "DEVENGADO" else col_presupuesto_ejec
+        df_base_grouped = procesar_fuente_anio(df_ejecucion_raw, col_val_base_col, 3)
+
+    # --- DATOS PARA EL AÑO A COMPARAR (2) ---
+    if anio_comparar == 2027:
+        col_val_comp_col = col_presupuesto_egr if metrica_comp == "PRESUPUESTO" else col_presupuesto_egr
+        df_comp_grouped = procesar_fuente_anio(df_egresos_raw, col_val_comp_col, 3)
+    else: # 2026
+        col_val_comp_col = col_devengado_ejec if metrica_comp == "DEVENGADO" else col_presupuesto_ejec
+        df_comp_grouped = procesar_fuente_anio(df_ejecucion_raw, col_val_comp_col, 3)
+
+    # Fusionamos ambos años por Destino para la comparativa final
+    df_f_comparativo = pd.merge(df_base_grouped, df_comp_grouped, on="_DEST", how="outer", suffixes=("_1", "_2")).fillna(0.0)
+    df_f_comparativo = df_f_comparativo[df_f_comparativo["_DEST"].notna() & (df_f_comparativo["_DEST"] != "NAN") & (df_f_comparativo["_DEST"] != "")]
 
     total_val_anio1 = df_f_comparativo["_VAL_1"].sum()
     total_val_anio2 = df_f_comparativo["_VAL_2"].sum()
@@ -1993,8 +2023,8 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
         if not dest or dest == "NAN": continue
 
         sub_df = df_f_comparativo[df_f_comparativo["_DEST"] == dest]
-        val_1 = sub_df["_VAL_1"].sum()
-        val_2 = sub_df["_VAL_2"].sum()
+        val_1 = sub_df["_VAL_1"].values[0] if not sub_df.empty else 0.0
+        val_2 = sub_df["_VAL_2"].values[0] if not sub_df.empty else 0.0
         dif = val_2 - val_1
 
         f_plan_comp.append({

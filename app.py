@@ -2207,7 +2207,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
         # SOLAPA 2: DESGLOSE ESCALONADO POR DESTINO
         # -------------------------------------------------------------
         with tab_ejec_2:
-            st.markdown("##### 📋 Vista Jerárquica de Egresos - Columnas (G, H, I, J, K)")
+            st.markdown("##### 🏛️ Desglose Escalonado por Destino (Con Exportación e Impresión Oficial)")
             cf1, cf2, col_f3 = st.columns(3)
             sec_ops = sorted([str(x) for x in df_validas[c_sec_k].unique() if str(x).strip() != ""])
 
@@ -2239,12 +2239,68 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
 
                 tot_devengado_val = df_f_oficial_ejec["_H_VAL"].sum()
 
+                # Generar estructura para la tabla jerárquica
+                f_plan_ejec = []
+                rows_html_esc = ""
+                for obj, df_obj in df_f_oficial_ejec.groupby(c_obj):
+                    tp_g = df_obj["_G_VAL"].sum()
+                    tp_h = df_obj["_H_VAL"].sum()
+                    tp_i = df_obj["_I_VAL"].sum()
+                    tp_j = df_obj["_J_VAL"].sum()
+                    tp_k = df_obj["_K_VAL"].sum()
+                    
+                    f_plan_ejec.append({
+                        "OBJETO / CUENTA / IMPUTACIÓN": f"<b>{obj}</b>",
+                        "PRESUPUESTO (G)": f"<b>${tp_g:,.2f}</b>",
+                        "DEVENGADO (H)": f"<b>${tp_h:,.2f}</b>",
+                        "EJECUTADO (I)": f"<b>${tp_i:,.2f}</b>",
+                        "MODIFICACIONES (J)": f"<b>${tp_j:,.2f}</b>",
+                        "SALDO (K)": f"<b>${tp_k:,.2f}</b>"
+                    })
+                    rows_html_esc += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${tp_g:,.2f}</td><td style="text-align: right;">${tp_h:,.2f}</td><td style="text-align: right;">${tp_i:,.2f}</td><td style="text-align: right;">${tp_j:,.2f}</td><td style="text-align: right;">${tp_k:,.2f}</td></tr>'
+
+                    for pad, df_pad in df_obj.groupby(c_padre):
+                        pad_g = df_pad["_G_VAL"].sum()
+                        pad_h = df_pad["_H_VAL"].sum()
+                        pad_i = df_pad["_I_VAL"].sum()
+                        pad_j = df_pad["_J_VAL"].sum()
+                        pad_k = df_pad["_K_VAL"].sum()
+                        
+                        f_plan_ejec.append({
+                            "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{pad}</b>",
+                            "PRESUPUESTO (G)": f"<b>${pad_g:,.2f}</b>",
+                            "DEVENGADO (H)": f"<b>${pad_h:,.2f}</b>",
+                            "EJECUTADO (I)": f"<b>${pad_i:,.2f}</b>",
+                            "MODIFICACIONES (J)": f"<b>${pad_j:,.2f}</b>",
+                            "SALDO (K)": f"<b>${pad_k:,.2f}</b>"
+                        })
+                        rows_html_esc += f'<tr style="font-weight: bold;"><td style="text-align: left; padding-left: 20px;">{pad}</td><td style="text-align: right;">${pad_g:,.2f}</td><td style="text-align: right;">${pad_h:,.2f}</td><td style="text-align: right;">${pad_i:,.2f}</td><td style="text-align: right;">${pad_j:,.2f}</td><td style="text-align: right;">${pad_k:,.2f}</td></tr>'
+
+                        for _, r in df_pad.iterrows():
+                            vg = limpiar_monto_val(r.get(c_pres, 0))
+                            vh = limpiar_monto_val(r.get(c_dev, 0))
+                            vi = limpiar_monto_val(r.get(c_ejec, 0))
+                            vj = limpiar_monto_val(r.get(c_mod, 0))
+                            vk = limpiar_monto_val(r.get(c_saldo, 0))
+                            partida_val = str(r.get(c_partida, ""))
+                            
+                            f_plan_ejec.append({
+                                "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{partida_val}",
+                                "PRESUPUESTO (G)": f"${vg:,.2f}",
+                                "DEVENGADO (H)": f"${vh:,.2f}",
+                                "EJECUTADO (I)": f"${vi:,.2f}",
+                                "MODIFICACIONES (J)": f"${vj:,.2f}",
+                                "SALDO (K)": f"${vk:,.2f}"
+                            })
+                            rows_html_esc += f'<tr><td style="text-align: left; padding-left: 40px;">{partida_val}</td><td style="text-align: right;">${vg:,.2f}</td><td style="text-align: right;">${vh:,.2f}</td><td style="text-align: right;">${vi:,.2f}</td><td style="text-align: right;">${vj:,.2f}</td><td style="text-align: right;">${vk:,.2f}</td></tr>'
+
+                # Vista Previa Estética en la App
                 st.markdown(f"""
                 <div style="border: 1px solid #000; padding: 0px; border-radius: 2px; background-color: #fff; font-family: Arial, sans-serif;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <tr>
                             <td style="width: 25%; font-size: 11px; padding: 15px; border-right: 1px solid #000; text-align: left;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 9px; color: #777;">Ejecución de Egresos - Año 2026</span></td>
-                            <td style="width: 50%; text-align: center; padding: 15px; border-right: 1px solid #000; vertical-align: middle;"><h2 style="margin: 0; font-size: 16px; font-weight: bold;">REPORTE DE EJECUCIÓN POR DESTINO</h2><h4 style="margin: 4px 0 0 0; font-size: 12px; font-weight: normal;">- Control Financiero -</h4></td>
+                            <td style="width: 50%; text-align: center; padding: 15px; border-right: 1px solid #000; vertical-align: middle;"><h2 style="margin: 0; font-size: 16px; font-weight: bold;">REPORTE DE EJECUCIÓN POR DESTINO</h2><h4 style="margin: 4px 0 0 0; font-size: 12px; font-weight: normal;">- Desglose Escalonado -</h4></td>
                             <td style="width: 25%; text-align: center; background-color: #f5f5f5; vertical-align: middle;"><div style="font-size: 12px; font-weight: bold; border-bottom: 1px solid #000; padding: 4px 0;">Total Devengado</div><div style="font-size: 16px; font-weight: bold;">${tot_devengado_val:,.2f}</div></td>
                         </tr>
                     </table>
@@ -2254,61 +2310,82 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                 </div>
                 """, unsafe_allow_html=True)
 
-                if df_f_oficial_ejec.empty:
-                    st.warning(f"⚠️ No se encontraron registros para **{dest_s_ejec}**.")
-                else:
-                    f_plan_ejec = []
-                    for obj, df_obj in df_f_oficial_ejec.groupby(c_obj):
-                        tp_g = df_obj["_G_VAL"].sum()
-                        tp_h = df_obj["_H_VAL"].sum()
-                        tp_i = df_obj["_I_VAL"].sum()
-                        tp_j = df_obj["_J_VAL"].sum()
-                        tp_k = df_obj["_K_VAL"].sum()
-                        f_plan_ejec.append({
-                            "OBJETO / CUENTA / IMPUTACIÓN": f"<b>{obj}</b>",
-                            "PRESUPUESTO (G)": f"<b>${tp_g:,.2f}</b>",
-                            "DEVENGADO (H)": f"<b>${tp_h:,.2f}</b>",
-                            "EJECUTADO (I)": f"<b>${tp_i:,.2f}</b>",
-                            "MODIFICACIONES (J)": f"<b>${tp_j:,.2f}</b>",
-                            "SALDO (K)": f"<b>${tp_k:,.2f}</b>"
-                        })
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.write(pd.DataFrame(f_plan_ejec).to_html(escape=False, index=False), unsafe_allow_html=True)
 
-                        for pad, df_pad in df_obj.groupby(c_padre):
-                            pad_g = df_pad["_G_VAL"].sum()
-                            pad_h = df_pad["_H_VAL"].sum()
-                            pad_i = df_pad["_I_VAL"].sum()
-                            pad_j = df_pad["_J_VAL"].sum()
-                            pad_k = df_pad["_K_VAL"].sum()
-                            f_plan_ejec.append({
-                                "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{pad}</b>",
-                                "PRESUPUESTO (G)": f"<b>${pad_g:,.2f}</b>",
-                                "DEVENGADO (H)": f"<b>${pad_h:,.2f}</b>",
-                                "EJECUTADO (I)": f"<b>${pad_i:,.2f}</b>",
-                                "MODIFICACIONES (J)": f"<b>${pad_j:,.2f}</b>",
-                                "SALDO (K)": f"<b>${pad_k:,.2f}</b>"
-                            })
+                # HTML Completo para impresión y descarga con formato formal idéntico
+                html_reporte_escalonado = f"""
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <style>
+                        @page {{ size: A4 landscape; margin: 12mm; }}
+                        body {{ font-family: Arial, sans-serif; color: #000; margin: 0 auto; width: 100%; max-width: 1050px; }}
+                        .m-box {{ border: 1px solid #000; padding: 10px; margin-bottom: 15px; background-color: #fff; }}
+                        .t-hdr {{ width: 100%; border-collapse: collapse; }}
+                        .t-hdr td {{ padding: 4px; vertical-align: middle; border: none; }}
+                        .b-tot {{ border: 1px solid #000; background-color: #f5f5f5; text-align: center; }}
+                        .tabla-datos {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; margin-bottom: 25px; }}
+                        .tabla-datos th {{ border-bottom: 2px solid #000; padding: 6px 4px; font-weight: bold; background-color: #f2f2f2; text-align: right; }}
+                        .tabla-datos th:first-child {{ text-align: left !important; padding-left: 8px; }}
+                        .tabla-datos td {{ border-bottom: 1px solid #e0e0e0; padding: 6px 4px; vertical-align: middle; text-align: right; }}
+                        .tabla-datos td:first-child {{ text-align: left !important; padding-left: 8px; }}
+                        .resumen-final {{ border: 2px solid #000; padding: 15px; margin-top: 20px; background-color: #fafafa; text-align: center; font-size: 14px; page-break-inside: avoid; }}
+                        .firmas-container {{ margin-top: 50px; width: 100%; page-break-inside: avoid; }}
+                        .firma-box {{ width: 30%; float: left; text-align: center; border-top: 1px solid #000; padding-top: 5px; margin: 0 1.5%; font-size: 11px; font-weight: bold; }}
+                    </style>
+                </head>
+                <body onload="window.print();">
+                    <div class="m-box">
+                        <table class="t-hdr">
+                            <tr>
+                                <td style="width: 25%; text-align: left; font-size: 10px;"><b>Municipalidad de Sunchales</b><br><span style="font-size: 8px; color: #555;">Ejecución de Egresos - Año 2026</span></td>
+                                <td style="width: 50%; text-align: center;"><b>REPORTE DE EJECUCIÓN POR DESTINO (ESCALONADO)</b><br><small>- Control Financiero -</small></td>
+                                <td style="width: 25%;" class="b-tot"><small>Total Devengado</small><br><b>${tot_devengado_val:,.2f}</b></td>
+                            </tr>
+                        </table>
+                        <div style="border-top: 1px solid #000; font-size: 11px; padding-top: 6px; margin-top: 6px;">
+                            <b>SECRETARÍA:</b> {sec_s_ejec} | <b>SUBSECRETARÍA:</b> {sub_s_ejec} | <span style="float: right;"><b>DESTINO:</b> {str(dest_s_ejec).upper()}</span>
+                        </div>
+                    </div>
+                    <table class="tabla-datos">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; padding-left: 8px;">OBJETO / CUENTA / IMPUTACIÓN</th>
+                                <th>PRESUPUESTO (G)</th>
+                                <th>DEVENGADO (H)</th>
+                                <th>EJECUTADO (I)</th>
+                                <th>MODIFICACIONES (J)</th>
+                                <th>SALDO (K)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows_html_esc}
+                        </tbody>
+                    </table>
+                    <div class="resumen-final">
+                        <b>TOTAL DEVENGADO DESTINO ({str(dest_s_ejec).upper()}):</b> ${tot_devengado_val:,.2f}
+                    </div>
+                    <div class="firmas-container">
+                        <div class="firma-box">Responsable Presupuesto</div>
+                        <div class="firma-box">Contaduría General</div>
+                        <div class="firma-box">Intendente / Secretario</div>
+                    </div>
+                </body>
+                </html>
+                """
 
-                            for _, r in df_pad.iterrows():
-                                vg = limpiar_monto_val(r.get(c_pres, 0))
-                                vh = limpiar_monto_val(r.get(c_dev, 0))
-                                vi = limpiar_monto_val(r.get(c_ejec, 0))
-                                vj = limpiar_monto_val(r.get(c_mod, 0))
-                                vk = limpiar_monto_val(r.get(c_saldo, 0))
-                                partida_val = str(r.get(c_partida, ""))
-                                f_plan_ejec.append({
-                                    "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{partida_val}",
-                                    "PRESUPUESTO (G)": f"${vg:,.2f}",
-                                    "DEVENGADO (H)": f"${vh:,.2f}",
-                                    "EJECUTADO (I)": f"${vi:,.2f}",
-                                    "MODIFICACIONES (J)": f"${vj:,.2f}",
-                                    "SALDO (K)": f"${vk:,.2f}"
-                                })
-
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    st.write(pd.DataFrame(f_plan_ejec).to_html(escape=False, index=False), unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.download_button(
+                    label="📥 Descargar Reporte Escalonado Oficial por Destino (HTML/PDF)",
+                    data=html_reporte_escalonado,
+                    file_name=f"Desglose_Escalonado_{str(dest_s_ejec).replace(' ', '_')}_{time.strftime('%Y%m%d')}.html",
+                    mime="text/html",
+                    use_container_width=True,
+                    type="primary"
+                )
             else:
                 st.info("💡 Seleccioná Secretaría, Subsecretaría y Destino arriba para desplegar el reporte.")
-
         # -------------------------------------------------------------
         # SOLAPA 3: TOTALES POR OBJETO DEL GASTO
         # -------------------------------------------------------------

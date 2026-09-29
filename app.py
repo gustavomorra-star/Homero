@@ -2207,7 +2207,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
         # SOLAPA 2: DESGLOSE ESCALONADO POR DESTINO
         # -------------------------------------------------------------
         with tab_ejec_2:
-            st.markdown("##### 🏛️ Desglose Escalonado por Destino (Con Exportación e Impresión Oficial)")
+            st.markdown("##### 🏛️ Desglose Escalonado por Destino")
             cf1, cf2, col_f3 = st.columns(3)
             sec_ops = sorted([str(x) for x in df_validas[c_sec_k].unique() if str(x).strip() != ""])
 
@@ -2239,7 +2239,6 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
 
                 tot_devengado_val = df_f_oficial_ejec["_H_VAL"].sum()
 
-                # Generar estructura para la tabla jerárquica
                 f_plan_ejec = []
                 rows_html_esc = ""
                 for obj, df_obj in df_f_oficial_ejec.groupby(c_obj):
@@ -2251,11 +2250,11 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                     
                     f_plan_ejec.append({
                         "OBJETO / CUENTA / IMPUTACIÓN": f"<b>{obj}</b>",
-                        "PRESUPUESTO ": f"<b>${tp_g:,.2f}</b>",
-                        "DEVENGADO ": f"<b>${tp_h:,.2f}</b>",
-                        "EJECUTADO ": f"<b>${tp_i:,.2f}</b>",
-                        "MODIFICACIONES ": f"<b>${tp_j:,.2f}</b>",
-                        "SALDO ": f"<b>${tp_k:,.2f}</b>"
+                        "PRESUPUESTO": f"<b>${tp_g:,.2f}</b>",
+                        "DEVENGADO": f"<b>${tp_h:,.2f}</b>",
+                        "EJECUTADO": f"<b>${tp_i:,.2f}</b>",
+                        "MODIFICACIONES": f"<b>${tp_j:,.2f}</b>",
+                        "SALDO": f"<b>${tp_k:,.2f}</b>"
                     })
                     rows_html_esc += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${tp_g:,.2f}</td><td style="text-align: right;">${tp_h:,.2f}</td><td style="text-align: right;">${tp_i:,.2f}</td><td style="text-align: right;">${tp_j:,.2f}</td><td style="text-align: right;">${tp_k:,.2f}</td></tr>'
 
@@ -2268,11 +2267,11 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                         
                         f_plan_ejec.append({
                             "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;<b>{pad}</b>",
-                            "PRESUPUESTO (G)": f"<b>${pad_g:,.2f}</b>",
-                            "DEVENGADO (H)": f"<b>${pad_h:,.2f}</b>",
-                            "EJECUTADO (I)": f"<b>${pad_i:,.2f}</b>",
-                            "MODIFICACIONES (J)": f"<b>${pad_j:,.2f}</b>",
-                            "SALDO (K)": f"<b>${pad_k:,.2f}</b>"
+                            "PRESUPUESTO": f"<b>${pad_g:,.2f}</b>",
+                            "DEVENGADO": f"<b>${pad_h:,.2f}</b>",
+                            "EJECUTADO": f"<b>${pad_i:,.2f}</b>",
+                            "MODIFICACIONES": f"<b>${pad_j:,.2f}</b>",
+                            "SALDO": f"<b>${pad_k:,.2f}</b>"
                         })
                         rows_html_esc += f'<tr style="font-weight: bold;"><td style="text-align: left; padding-left: 20px;">{pad}</td><td style="text-align: right;">${pad_g:,.2f}</td><td style="text-align: right;">${pad_h:,.2f}</td><td style="text-align: right;">${pad_i:,.2f}</td><td style="text-align: right;">${pad_j:,.2f}</td><td style="text-align: right;">${pad_k:,.2f}</td></tr>'
 
@@ -2286,11 +2285,11 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                             
                             f_plan_ejec.append({
                                 "OBJETO / CUENTA / IMPUTACIÓN": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{partida_val}",
-                                "PRESUPUESTO (G)": f"${vg:,.2f}",
-                                "DEVENGADO (H)": f"${vh:,.2f}",
-                                "EJECUTADO (I)": f"${vi:,.2f}",
-                                "MODIFICACIONES (J)": f"${vj:,.2f}",
-                                "SALDO (K)": f"${vk:,.2f}"
+                                "PRESUPUESTO": f"${vg:,.2f}",
+                                "DEVENGADO": f"${vh:,.2f}",
+                                "EJECUTADO": f"${vi:,.2f}",
+                                "MODIFICACIONES": f"${vj:,.2f}",
+                                "SALDO": f"${vk:,.2f}"
                             })
                             rows_html_esc += f'<tr><td style="text-align: left; padding-left: 40px;">{partida_val}</td><td style="text-align: right;">${vg:,.2f}</td><td style="text-align: right;">${vh:,.2f}</td><td style="text-align: right;">${vi:,.2f}</td><td style="text-align: right;">${vj:,.2f}</td><td style="text-align: right;">${vk:,.2f}</td></tr>'
 
@@ -2313,7 +2312,7 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                 st.markdown("<br>", unsafe_allow_html=True)
                 st.write(pd.DataFrame(f_plan_ejec).to_html(escape=False, index=False), unsafe_allow_html=True)
 
-                # HTML Completo para impresión y descarga con formato formal idéntico
+                # HTML para impresión limpia sin letras de columnas
                 html_reporte_escalonado = f"""
                 <html>
                 <head>
@@ -2352,11 +2351,11 @@ elif opcion_menu == "📈 REPORTE DE EJECUCIÓN OFICIAL":
                         <thead>
                             <tr>
                                 <th style="text-align: left; padding-left: 8px;">OBJETO / CUENTA / IMPUTACIÓN</th>
-                                <th>PRESUPUESTO (G)</th>
-                                <th>DEVENGADO (H)</th>
-                                <th>EJECUTADO (I)</th>
-                                <th>MODIFICACIONES (J)</th>
-                                <th>SALDO (K)</th>
+                                <th>PRESUPUESTO</th>
+                                <th>DEVENGADO</th>
+                                <th>EJECUTADO</th>
+                                <th>MODIFICACIONES</th>
+                                <th>SALDO</th>
                             </tr>
                         </thead>
                         <tbody>

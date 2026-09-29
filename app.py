@@ -1894,7 +1894,7 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
         )
 
 # =============================================================
-# SECCIÓN 20: COMPARATIVO E HISTÓRICO (CON VISTA PREVIA Y FIRMAS)
+# SECCIÓN: COMPARATIVO E HISTÓRICO (CON VISTA PREVIA Y FIRMAS)
 # =============================================================
 elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     st.markdown("##### 📈 Reporte Comparativo e Histórico por Destino")
@@ -1907,90 +1907,91 @@ elif opcion_menu == "🔄 COMPARATIVO E HISTÓRICO":
     with col_comp3:
         metrica_comp = st.selectbox("Métrica a Comparar:", options=["DEVENGADO", "PRESUPUESTO"], key="comp_metrica")
 
-    # Intentamos leer de la solapa de ejecución si ya cargó, o usamos el egreso general como base segura
-    df_f1_comparativo = pd.DataFrame()
-    
-    # 1. Intentamos leer desde la hoja de ejecución oficial
-    df_ejec_temp = leer_datos_gsheet(URL_READ_EJECUCION)
-    if not df_ejec_temp.empty:
-        df_ejec_temp.columns = [str(c).strip().upper() for c in df_ejec_temp.columns]
-        cols_et = df_ejec_temp.columns.tolist()
-        if len(cols_et) > 7:
-            c_dest_t = cols_et[2]
-            c_dev_t = cols_et[7]
-            c_pres_t = cols_et[6]
-            
-            # Filtramos filas válidas igual que en la sección 21
-            df_f1_comparativo = df_ejec_temp[
-                df_ejec_temp[cols_et[3]].notna() & 
-                (df_ejec_temp[cols_et[3]].astype(str).str.strip() != "") & 
-                (df_ejec_temp[cols_et[3]].astype(str).str.upper() != "NAN")
-            ].copy()
-            
-            # Mapeamos columnas estándar para el comparativo
-            df_f1_comparativo["_DEST_FILTRO"] = df_f1_comparativo[c_dest_t]
-            col_metrica_objetivo = c_dev_t if metrica_comp == "DEVENGADO" else c_pres_t
-            
-            def limpiar_monto_comp(val):
-                if pd.isna(val): return 0.0
-                s = str(val).replace("$", "").replace(" ", "").strip()
-                if not s or s.lower() == "nan": return 0.0
-                if "," in s and "." in s:
-                    s = s.replace(".", "").replace(",", ".")
-                elif "," in s:
-                    s = s.replace(",", ".")
-                try:
-                    return float(s)
-                except:
-                    return 0.0
+    # Función auxiliar de limpieza robusta de montos
+    def limpiar_monto_comp(val):
+        if pd.isna(val): return 0.0
+        s = str(val).replace("$", "").replace(" ", "").strip()
+        if not s or s.lower() == "nan": return 0.0
+        if "," in s and "." in s:
+            s = s.replace(".", "").replace(",", ".")
+        elif "," in s:
+            s = s.replace(",", ".")
+        try:
+            return float(s)
+        except:
+            return 0.0
 
-            df_f1_comparativo["_VAL_COMP"] = df_f1_comparativo[col_metrica_objetivo].apply(limpiar_monto_comp)
+    # 1. CARGAMOS LOS DATOS DEL AÑO BASE (Desde la ejecución oficial o base general)
+    df_raw_1 = leer_datos_gsheet(URL_READ_EJECUCION)
+    if df_raw_1.empty:
+        df_raw_1 = df_egr_completo.copy() if not df_egr_completo.empty else pd.DataFrame()
 
-    # 2. Si la de ejecución viniera vacía, respaldamos con el egreso general de la app
-    if df_f1_comparativo.empty and not df_egr_completo.empty:
-        df_f1_comparativo = df_egr_completo.copy()
-        df_f1_comparativo["_DEST_FILTRO"] = df_f1_comparativo["destino"]
-        df_f1_comparativo["_VAL_COMP"] = pd.to_numeric(df_f1_comparativo["total"], errors='coerce').fillna(0.0)
+    if not df_raw_1.empty:
+        df_raw_1.columns = [str(c).strip().upper() for c in df_raw_1.columns]
+        cols_1 = df_raw_1.columns.tolist()
+        c_dest_1 = cols_1[2] if len(cols_1) > 2 else "DESTINO"
+        c_met_1 = cols_1[7] if metrica_comp == "DEVENGADO" and len(cols_1) > 7 else (cols_1[6] if len(cols_1) > 6 else "TOTAL")
+        
+        df_f1_comparativo = df_raw_1.copy()
+        df_f1_comparativo["_DEST"] = df_f1_comparativo[c_dest_1].astype(str).str.strip().str.upper()
+        df_f1_comparativo["_VAL"] = df_f1_comparativo[c_met_1].apply(limpiar_monto_comp)
+    else:
+        df_f1_comparativo = pd.DataFrame(columns=["_DEST", "_VAL"])
 
-    if df_f1_comparativo.empty:
-        st.warning("⚠️ No se encontraron registros para procesar el comparativo. Verificá la conexión con Google Sheets.")
+    # 2. CARGAMOS LOS DATOS DEL AÑO A COMPARAR
+    # Si usas una fuente distinta para el segundo año, cambialo acá. 
+    # Por defecto, si el usuario cambia de año, simulamos o leemos la misma estructura permitiendo variación si corresponde.
+    df_raw_2 = leer_datos_gsheet(URL_READ_EJECUCION) # O tu fuente de anio 2 si la tenés separada
+    if df_raw_2.empty:
+        df_raw_2 = df_egr_completo.copy() if not df_egr_completo.empty else pd.DataFrame()
+
+    if not df_raw_2.empty:
+        df_raw_2.columns = [str(c).strip().upper() for c in df_raw_2.columns]
+        cols_2 = df_raw_2.columns.tolist()
+        c_dest_2 = cols_2[2] if len(cols_2) > 2 else "DESTINO"
+        c_met_2 = cols_2[6] if metrica_comp == "PRESUPUESTO" and len(cols_2) > 6 else (cols_2[7] if len(cols_2) > 7 else "TOTAL")
+        
+        df_f2_comparativo = df_raw_2.copy()
+        df_f2_comparativo["_DEST"] = df_f2_comparativo[c_dest_2].astype(str).str.strip().str.upper()
+        # Nota: Multiplicamos o ajustamos si querés diferenciar matemáticamente o leemos su columna real
+        df_f2_comparativo["_VAL"] = df_f2_comparativo[c_met_2].apply(limpiar_monto_comp)
+    else:
+        df_f2_comparativo = pd.DataFrame(columns=["_DEST", "_VAL"])
+
+    if df_f1_comparativo.empty and df_f2_comparativo.empty:
+        st.warning("⚠️ No se encontraron registros para procesar el comparativo.")
         st.stop()
 
-    # Simulamos o preparamos el segundo año (si no hay 2 DF separados, proyectamos con una variación estimada o tomamos base)
-    df_f2_comparativo = df_f1_comparativo.copy()
-    # Si querés aplicar un factor de escala opcional para el año a comparar en caso de simulación:
-    # df_f2_comparativo["_VAL_COMP"] = df_f2_comparativo["_VAL_COMP"] * 1.05 
-
-    total_val_anio1 = df_f1_comparativo["_VAL_COMP"].sum()
-    total_val_anio2 = df_f2_comparativo["_VAL_COMP"].sum()
+    total_val_anio1 = df_f1_comparativo["_VAL"].sum()
+    total_val_anio2 = df_f2_comparativo["_VAL"].sum()
     variacion_global = total_val_anio2 - total_val_anio1
     porcentaje_var = (variacion_global / total_val_anio1 * 100) if total_val_anio1 > 0 else 0.0
 
     f_plan_comp = []
     rows_html_comp = ""
 
-    destinos_1 = df_f1_comparativo["_DEST_FILTRO"].dropna().astype(str).unique()
-    destinos_2 = df_f2_comparativo["_DEST_FILTRO"].dropna().astype(str).unique() if not df_f2_comparativo.empty else []
+    destinos_1 = df_f1_comparativo["_DEST"].dropna().unique() if not df_f1_comparativo.empty else []
+    destinos_2 = df_f2_comparativo["_DEST"].dropna().unique() if not df_f2_comparativo.empty else []
     destinos_unicos = sorted(list(set(destinos_1).union(set(destinos_2))))
 
     for dest in destinos_unicos:
-        if not dest.strip() or dest.upper() == "NAN": continue
+        if not dest or dest == "NAN": continue
         
-        sub_df_1 = df_f1_comparativo[df_f1_comparativo["_DEST_FILTRO"].astype(str).str.strip().str.upper() == dest.strip().upper()]
-        sub_df_2 = df_f2_comparativo[df_f2_comparativo["_DEST_FILTRO"].astype(str).str.strip().str.upper() == dest.strip().upper()] if not df_f2_comparativo.empty else pd.DataFrame()
+        sub_df_1 = df_f1_comparativo[df_f1_comparativo["_DEST"] == dest] if not df_f1_comparativo.empty else pd.DataFrame()
+        sub_df_2 = df_f2_comparativo[df_f2_comparativo["_DEST"] == dest] if not df_f2_comparativo.empty else pd.DataFrame()
 
-        val_1 = sub_df_1["_VAL_COMP"].sum() if not sub_df_1.empty else 0.0
-        val_2 = sub_df_2["_VAL_COMP"].sum() if not sub_df_2.empty else 0.0
+        val_1 = sub_df_1["_VAL"].sum() if not sub_df_1.empty else 0.0
+        val_2 = sub_df_2["_VAL"].sum() if not sub_df_2.empty else 0.0
         dif = val_2 - val_1
 
         f_plan_comp.append({
-            "DESTINO": f"<b>{dest.upper()}</b>",
+            "DESTINO": f"<b>{dest}</b>",
             f"{metrica_comp} ({anio_base})": f"<b>${val_1:,.2f}</b>",
             f"{metrica_comp} ({anio_comparar})": f"<b>${val_2:,.2f}</b>",
             "DIFERENCIA": f"<b>${dif:,.2f}</b>"
         })
         
-        rows_html_comp += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{dest.upper()}</td><td style="text-align: right;">${val_1:,.2f}</td><td style="text-align: right;">${val_2:,.2f}</td><td style="text-align: right;">${dif:,.2f}</td></tr>'
+        rows_html_comp += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{dest}</td><td style="text-align: right;">${val_1:,.2f}</td><td style="text-align: right;">${val_2:,.2f}</td><td style="text-align: right;">${dif:,.2f}</td></tr>'
 
     # 1. VISTA PREVIA ESTÉTICA EN LA APP
     st.markdown(f"""

@@ -1906,8 +1906,12 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
         with col_comp3:
             metrica_comp = st.selectbox("Métrica a Comparar:", options=["DEVENGADO", "PRESUPUESTO"], key="comp_metrica")
 
-        # Determinamos qué columna usar según la métrica elegida
-        col_metrica_anio1 = c_dev if metrica_comp == "DEVENGADO" else c_pres
+        # Aseguramos el mapeo correcto de las columnas según tus variables globales de nombres de columnas
+        # (Si en tu app se llaman diferente, podés reemplazar 'c_dev' y 'c_pres' por los strings de las columnas reales)
+        col_dev_real = c_dev if 'c_dev' in locals() else "DEVENGADO"
+        col_pres_real = c_pres if 'c_pres' in locals() else "PRESUPUESTO"
+
+        col_metrica_anio1 = col_dev_real if metrica_comp == "DEVENGADO" else col_pres_real
         col_metrica_anio2 = col_metrica_anio1 
 
         # Trabajamos sobre los DataFrames generales sin filtro de destino
@@ -1926,13 +1930,16 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
         f_plan_comp = []
         rows_html_comp = ""
 
+        # Columna de objetos / cuentas
+        c_obj_real = c_obj if 'c_obj' in locals() else list(df_validas.columns)[0]
+
         # Agrupación cruzada por objeto/cuenta a nivel general
-        objetos_unicos = sorted(list(set(df_f1_comparativo[c_obj].dropna().astype(str).unique()).union(
-                                  set(df_f2_comparativo[c_obj].dropna().astype(str).unique()))))
+        objetos_unicos = sorted(list(set(df_f1_comparativo[c_obj_real].dropna().astype(str).unique()).union(
+                                  set(df_f2_comparativo[c_obj_real].dropna().astype(str).unique()))))
 
         for obj in objetos_unicos:
-            sub_df_1 = df_f1_comparativo[df_f1_comparativo[c_obj].astype(str).str.strip() == obj.strip()]
-            sub_df_2 = df_f2_comparativo[df_f2_comparativo[c_obj].astype(str).str.strip() == obj.strip()]
+            sub_df_1 = df_f1_comparativo[df_f1_comparativo[c_obj_real].astype(str).str.strip() == obj.strip()]
+            sub_df_2 = df_f2_comparativo[df_f2_comparativo[c_obj_real].astype(str).str.strip() == obj.strip()]
 
             val_1 = sub_df_1["_VAL_COMP"].sum()
             val_2 = sub_df_2["_VAL_COMP"].sum()
@@ -1947,7 +1954,7 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
             
             rows_html_comp += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td style="text-align: right;">${val_1:,.2f}</td><td style="text-align: right;">${val_2:,.2f}</td><td style="text-align: right;">${dif:,.2f}</td></tr>'
 
-        # 1. VISTA PREVIA ESTÉTICA EN LA APP (Igual a los demás reportes)
+        # 1. VISTA PREVIA ESTÉTICA EN LA APP
         st.markdown(f"""
         <div style="border: 1px solid #000; padding: 0px; border-radius: 2px; background-color: #fff; font-family: Arial, sans-serif;">
             <table style="width: 100%; border-collapse: collapse;">
@@ -2029,7 +2036,6 @@ elif opcion_menu == "📋 FICHA TÉCNICA POR DESTINO":
             use_container_width=True,
             type="primary"
         )
-
 # =====================================================================
 # SECCIÓN 21: REPORTE DE EJECUCIÓN OFICIAL (TODAS LAS SOLAPAS)
 # =====================================================================

@@ -1484,7 +1484,6 @@ elif opcion_menu == "🎯 REPORTE POR FINALIDAD Y FUNCIÓN":
 
             <div class="firmas-container">
                 <div class="firma-box">Responsable Presupuesto</div>
-                <div class="firma-box">Contaduría General</div>
 				<div class="firma-box">Sec. Hacienda</div>
                 <div class="firma-box">Intendente</div>
             </div>

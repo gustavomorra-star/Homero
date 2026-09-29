@@ -6,6 +6,87 @@ import requests
 import time
 import json
 
+# ===================================================================== #
+# 1.5 CONTROL DE ACCESO Y AUTENTICACIÓN (LOGIN)                         #
+# ===================================================================== #
+
+# Definición de credenciales y subsecretarías permitidas
+CREDENCIALES = {
+    "Administrador": "admin2027",  # Contraseña maestra
+    "Subsecretaría de Hacienda": "hacienda2027",
+    "Subsecretaría de Obras Públicas": "obras2027",
+    "Subsecretaría de Gobierno": "gobierno2027"
+    # Podés agregar o modificar las subsecretarías que necesites aquí
+}
+
+# Inicializar variables de estado de sesión
+if "autenticado" not in st.session_state:
+    st.session_state["autenticado"] = False
+if "rol_usuario" not in st.session_state:
+    st.session_state["rol_usuario"] = ""
+if "subsecretaria_actual" not in st.session_state:
+    st.session_state["subsecretaria_actual"] = ""
+
+# Si no está logueado, mostrar formulario de acceso
+if not st.session_state["autenticado"]:
+    st.title("🔐 Acceso al Presupuesto Municipal 2027")
+    st.markdown("Por favor, seleccioná tu área e ingresá la contraseña correspondiente para continuar.")
+    
+    with st.form("form_login"):
+        opciones_areas = ["Seleccioná un área..."] + list(CREDENCIALES.keys())
+        area_elegida = st.selectbox("Área / Rol", opciones_areas)
+        password_ingresada = st.text_input("Contraseña", type="password")
+        
+        btn_ingresar = st.form_submit_button("Ingresar al Sistema")
+        
+        if btn_ingresar:
+            if area_elegida == "Seleccioná un área...":
+                st.warning("⚠️ Debes seleccionar un área válida.")
+            elif area_elegida in CREDENCIALES and CREDENCIALES[area_elegida] == password_ingresada:
+                st.session_state["autenticado"] = True
+                st.session_state["subsecretaria_actual"] = area_elegida
+                
+                if area_elegida == "Administrador":
+                    st.session_state["rol_usuario"] = "Admin"
+                else:
+                    st.session_state["rol_usuario"] = "Subsecretaria"
+                
+                st.success("¡Acceso exitoso! Cargando entorno...")
+                st.rerun()
+            else:
+                st.error("❌ Contraseña incorrecta.")
+    
+    # Detenemos la ejecución del resto de la app hasta que inicie sesión
+    st.stop()
+
+# Botón en la barra lateral para cerrar sesión
+if st.sidebar.button("🚪 Cerrar Sesión"):
+    st.session_state["autenticado"] = False
+    st.session_state["rol_usuario"] = ""
+    st.session_state["subsecretaria_actual"] = ""
+    st.rerun()
+
+
+# ===================================================================== #
+# 1.6 FILTRADO AUTOMÁTICO DE DATOS SEGÚN EL USUARIO LOGUEADO            #
+# ===================================================================== #
+
+# Si el usuario es una subsecretaría, filtramos los DataFrames globales
+if st.session_state["rol_usuario"] == "Subsecretaria":
+    area_activa = st.session_state["subsecretaria_actual"]
+    
+    # Filtrar Ficha técnica por destino (asumiendo que la columna se llama 'subsecretaria')
+    if "subsecretaria" in df_destinos_gsheet.columns:
+        df_destinos_gsheet = df_destinos_gsheet[
+            df_destinos_gsheet["subsecretaria"].str.strip().str.lower() == area_activa.strip().str.lower() if hasattr(area_activa, 'lower') else area_activa
+        ]
+    
+    # Filtrar Egresos / Matriz (asumiendo que también tienen la columna 'subsecretaria')
+    if "subsecretaria" in df_egr_completo.columns:
+        df_egr_completo = df_egr_completo[
+            df_egr_completo["subsecretaria"].str.strip().str.lower() == area_activa.strip().str.lower()
+        ]
+
 # Archivo local para persistencia de techos presupuestarios
 ARCH_TECHOS = "techos_config.json"
 

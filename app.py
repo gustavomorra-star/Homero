@@ -964,41 +964,40 @@ elif opcion_menu == "🛠️ PANEL DE MODIFICACIONES":
                 idx_fin = opciones_finalidad.index(val_fin) if val_fin in opciones_finalidad else 0
                 mod_finalidad = st.selectbox("FINALIDAD / FUNCIÓN:", options=opciones_finalidad, index=idx_fin)
 
-        if st.form_submit_button("🛠️ Guardar Cambios en este Registro", use_container_width=True):
-            if idx_real < len(st.session_state["db_local_backup"]["egresos"]):
-                # 1. Actualizamos el diccionario local en la sesión
-                datos_actualizados = {
-                    "objeto_gasto": mod_obj,
-                    "cuenta_padre": mod_padre,
-                    "cuenta_presupuestaria": mod_presup,
-                    "total": mod_monto,
-                    "fuente_fin": mod_fuente,
-                    "clase": mod_clase,
-                    "tipo": mod_tipo,
-                    "finalidad": mod_finalidad
-                }
-                
-                st.session_state["db_local_backup"]["egresos"][idx_real].update(datos_actualizados)
-                
-                # 2. Sincronizamos los cambios con Google Sheets a través del Webhook
-                try:
-                    # Incluimos el índice o identificador de fila si tu Apps Script lo requiere para pisar el registro correcto, 
-                    # o enviamos la solapa y los datos correspondientes.
-                    payload = {
-                        "pestana": "egresos", 
-                        "fila_idx": idx_real, # Útil si tu Google Apps Script identifica qué fila editar
-                        **datos_actualizados
-                    }
-                    resp = requests.post(URL_WEBHOOK_GSHEET, json=payload, timeout=10, allow_redirects=True)
-                    
-                    if resp.status_code in [200, 302]:
-                        st.success(f"¡Renglón {idx_real + 1} actualizado en la sesión y sincronizado en Google Sheets!")
-                    else:
-                        st.warning(f"⚠️ Actualizado localmente, pero el Webhook respondió con código: {resp.status_code}")
-                except Exception as e:
-                    st.warning(f"⚠️ Actualizado en la sesión. Error al sincronizar con Google Sheets: {e}")
-                
-                st.rerun()               
+                # Botón de envío correctamente indentado dentro del formulario
+                if st.form_submit_button("🛠️ Guardar Cambios en este Registro", use_container_width=True):
+                    if idx_real < len(st.session_state["db_local_backup"]["egresos"]):
+                        # 1. Actualizamos el diccionario local en la sesión
+                        datos_actualizados = {
+                            "objeto_gasto": mod_obj,
+                            "cuenta_padre": mod_padre,
+                            "cuenta_presupuestaria": mod_presup,
+                            "total": mod_monto,
+                            "fuente_fin": mod_fuente,
+                            "clase": mod_clase,
+                            "tipo": mod_tipo,
+                            "finalidad": mod_finalidad
+                        }
+                        
+                        st.session_state["db_local_backup"]["egresos"][idx_real].update(datos_actualizados)
+                        
+                        # 2. Sincronizamos los cambios con Google Sheets a través del Webhook
+                        try:
+                            payload = {
+                                "pestana": "egresos", 
+                                "fila_idx": idx_real,
+                                **datos_actualizados
+                            }
+                            resp = requests.post(URL_WEBHOOK_GSHEET, json=payload, timeout=10, allow_redirects=True)
+                            
+                            if resp.status_code in [200, 302]:
+                                st.success(f"¡Renglón {idx_real + 1} actualizado en la sesión y sincronizado en Google Sheets!")
+                            else:
+                                st.warning(f"⚠️ Actualizado localmente, pero el Webhook respondió con código: {resp.status_code}")
+                        except Exception as e:
+                            st.warning(f"⚠️ Actualizado en la sesión. Error al sincronizar con Google Sheets: {e}")
+                        
+                        st.rerun()
 
         with col_mod2:
             st.markdown("#### 🗑️ Dar de Baja")
@@ -1008,7 +1007,6 @@ elif opcion_menu == "🛠️ PANEL DE MODIFICACIONES":
                     st.session_state["db_local_backup"]["egresos"].pop(idx_real)
                 st.success(f"Renglón {idx_real + 1} eliminado.")
                 st.rerun()
-
 # =====================================================================
 # SECCIÓN 6: REPORTE CONSOLIDADO Y ESTADÍSTICAS
 # =====================================================================

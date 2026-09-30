@@ -93,7 +93,7 @@ def leer_datos_gsheet(param_url_o_gid):
     return df_vacio
 
 # URL de tu Webhook de Google Apps Script para escritura real
-URL_WEBHOOK_GSHEET = "https://script.google.com/macros/s/AKfycbw7vBw_vOFi17wwqtSeBzQiIQlEx3SHv6khsARrO8WRBTB9WXu9TJ3N8kLaINFAGTuf/exec"
+URL_WEBHOOK_GSHEET = "https://script.google.com/macros/s/AKfycbwOfDQPZ2b62zMIESSkUcyvZIB2_JzpBD85ORXZXFx0pmccK5ChZcl8OKH4za6xTDkq/exec"
 
 def guardar_fila_gsheet(pestana, nuevo_dict):
     # Respaldo local inmediato en sesión

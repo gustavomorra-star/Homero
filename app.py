@@ -967,8 +967,11 @@ elif opcion_menu == "🛠️ PANEL DE MODIFICACIONES":
                 # Botón de envío correctamente indentado dentro del formulario
                 if st.form_submit_button("🛠️ Guardar Cambios en este Registro", use_container_width=True):
                     if idx_real < len(st.session_state["db_local_backup"]["egresos"]):
-                        # 1. Actualizamos el diccionario local en la sesión
+                        # 1. Armamos el diccionario completo incluyendo los campos fijos (secretaria, subsecretaria, destino)
                         datos_actualizados = {
+                            "secretaria": str(fila_r.get("secretaria", "")),
+                            "subsecretaria": str(fila_r.get("subsecretaria", "")),
+                            "destino": str(fila_r.get("destino", "")),
                             "objeto_gasto": mod_obj,
                             "cuenta_padre": mod_padre,
                             "cuenta_presupuestaria": mod_presup,
@@ -979,9 +982,10 @@ elif opcion_menu == "🛠️ PANEL DE MODIFICACIONES":
                             "finalidad": mod_finalidad
                         }
                         
+                        # Actualizamos la sesión local
                         st.session_state["db_local_backup"]["egresos"][idx_real].update(datos_actualizados)
                         
-                        # 2. Sincronizamos los cambios con Google Sheets a través del Webhook
+                        # 2. Sincronizamos los cambios con Google Sheets a través del Webhook enviando el paquete completo
                         try:
                             payload = {
                                 "pestana": "egresos", 

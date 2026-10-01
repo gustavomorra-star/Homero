@@ -1,6 +1,0 @@
-[theme]
-primaryColor = "#85BB2F"        # Verde institucional de la bandera
-backgroundColor = "#FFFFFF"     # Fondo general blanco
-secondaryBackgroundColor = "#F4F7E6" # Tono suave inspirado en la bandera para barras y contenedores
-textColor = "#2C3E50"           # Color de texto oscuro para mayor contraste
-font = "sans serif"

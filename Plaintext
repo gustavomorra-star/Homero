@@ -1,0 +1,7 @@
+config.toml
+[theme]
+primaryColor = "#0056b3"        # Azul institucional para botones y elementos activos
+backgroundColor = "#FFFFFF"     # Fondo principal blanco
+secondaryBackgroundColor = "#F0F4F8" # Azul muy claro / grisáceo para la barra lateral y tarjetas
+textColor = "#212529"           # Color de texto oscuro para máxima legibilidad
+font = "sans serif"

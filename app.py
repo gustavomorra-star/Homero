@@ -85,45 +85,7 @@ if st.session_state["saludo_inicial"]:
 
   st.stop()
 
-# ===================================================================== #
-# 1. CONEXIÓN Y LECTURA ROBUSTA DESDE GOOGLE SHEETS                      #
-# ===================================================================== #
-SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
-URL_READ_EGRESOS = (
-    f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=0"
-)
-URL_READ_DESTINOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1365567783"
-URL_READ_RECURSOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=269081959"
 
-
-def leer_datos_gsheet(param_url_o_gid):
-  try:
-    resp = requests.get(param_url_o_gid, timeout=30)
-    if resp.status_code == 200:
-      df = pd.read_csv(io.StringIO(resp.text))
-      if not df.empty:
-        df.columns = [str(col).strip().lower() for col in df.columns]
-        df = df.fillna("")
-        for col in df.select_dtypes(include=["object", "string"]).columns:
-          df[col] = df[col].astype(str).str.strip()
-        if "total" in df.columns:
-          s_total = (
-              df["total"].astype(str).str.replace("$", "", regex=False).str.strip()
-          )
-          s_total = s_total.str.replace(".", "", regex=False).str.replace(
-              ",", ".", regex=False
-          )
-          df["total"] = pd.to_numeric(s_total, errors="coerce").fillna(0.0)
-        return df
-    return pd.DataFrame()
-  except Exception:
-    return pd.DataFrame()
-
-
-df_egr_completo = leer_datos_gsheet(URL_READ_EGRESOS)
-df_destinos_gsheet = leer_datos_gsheet(URL_READ_DESTINOS)
-
-st.success("¡Sistema cargado correctamente!")
 # =====================================================================
 # 1. CONEXIÓN Y LECTURA ROBUSTA DESDE GOOGLE SHEETS
 # =====================================================================

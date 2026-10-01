@@ -39,6 +39,7 @@ st.set_page_config(page_title="Presupuesto Municipal 2027", layout="wide")
 # ===================================================================== #
 # SALUDO INICIAL DE BIENVENIDA (Sunchales - Presupuesto 2027)             #
 # ===================================================================== #
+
 if "saludo_inicial" not in st.session_state:
   st.session_state["saludo_inicial"] = True
 
@@ -58,25 +59,22 @@ if st.session_state["saludo_inicial"]:
 
     st.markdown("---")
 
-    # Bandera / Imagen institucional
-    st.image(
-        "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Bandera_de_la_Ciudad_de_Sunchales.svg/800px-Bandera_de_la_Ciudad_de_Sunchales.svg.png",
-        use_container_width=True,
-    )
-
+    # Contenedor institucional con los colores de Sunchales
     st.markdown(
-        "<p style='text-align: center; font-size: 1.1rem; color: #374151;"
-        " margin-top: 15px;'>Bienvenido al sistema oficial de gestión y"
-        " planificación presupuestaria <b>Homero</b>.</p>",
+        """
+        <div style="background-color: #F0F4F8; padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #0056b3; margin-bottom: 15px;">
+            <h3 style="color: #0056b3; margin: 0;">Municipalidad de Sunchales</h3>
+            <p style="color: #4B5563; margin: 5px 0 0 0; font-size: 0.95rem;">Santa Fe — Gestión Presupuestaria 2027</p>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
-    if st.button("🚀 Ingresar al Sistema", use_container_width=True):
-      st.session_state["saludo_inicial"] = False
-      st.rerun()
-
-  st.stop()  # Detiene la carga del resto del panel hasta que presionen el botón
-
+    # Imagen limpia de la bandera de la ciudad
+    st.image(
+        "https://upload.wikimedia.org/wikipedia/commons/c/c5/Bandera_de_la_Ciudad_de_Sunchales.svg",
+        use_container_width=True,
+    )
 # =====================================================================
 # 1. CONEXIÓN Y LECTURA ROBUSTA DESDE GOOGLE SHEETS
 # =====================================================================

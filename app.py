@@ -84,8 +84,6 @@ if st.session_state["saludo_inicial"]:
       st.rerun()
 
   st.stop()
-
-
 # =====================================================================
 # 1. CONEXIÓN Y LECTURA ROBUSTA DESDE GOOGLE SHEETS
 # =====================================================================

@@ -36,6 +36,54 @@ for k in ["destinos", "egresos", "recursos"]:
 # Configuración de la página
 st.set_page_config(page_title="Presupuesto Municipal 2027", layout="wide")
 
+import io
+import json
+import os
+import pandas as pd
+import requests
+import streamlit as st
+import time
+
+# Archivo local para persistencia de techos presupuestarios
+ARCH_TECHOS = "techos_config.json"
+
+
+def cargar_techos_disco():
+  if os.path.exists(ARCH_TECHOS):
+    try:
+      with open(ARCH_TECHOS, "r", encoding="utf-8") as f:
+        return json.load(f)
+    except Exception:
+      return {}
+  return {}
+
+
+def guardar_techos_disco(techos_dict):
+  try:
+    with open(ARCH_TECHOS, "w", encoding="utf-8") as f:
+      json.dump(techos_dict, f, ensure_ascii=False, indent=4)
+  except Exception as e:
+    st.warning(f"No se pudo guardar el archivo de techos: {e}")
+
+
+# Inicialización blindada
+if "db_local_backup" not in st.session_state or not isinstance(
+    st.session_state["db_local_backup"], dict
+):
+  st.session_state["db_local_backup"] = {
+      "destinos": [],
+      "egresos": [],
+      "recursos": [],
+  }
+for k in ["destinos", "egresos", "recursos"]:
+  if k not in st.session_state["db_local_backup"] or not isinstance(
+      st.session_state["db_local_backup"][k], list
+  ):
+    st.session_state["db_local_backup"][k] = []
+
+# Configuración de la página
+st.set_page_config(page_title="Presupuesto Municipal 2027", layout="wide")
+
 # ===================================================================== #
 # SALUDO INICIAL DE BIENVENIDA (Sunchales - Presupuesto 2027)             #
 # ===================================================================== #
@@ -45,7 +93,6 @@ if "saludo_inicial" not in st.session_state:
 if st.session_state["saludo_inicial"]:
   _, col_centro, _ = st.columns([1, 2, 1])
   with col_centro:
-    # Encabezado con un degradado que combina el amarillo y verde de la bandera
     st.markdown(
         """
         <div style="background: linear-gradient(135deg, #F1C40F 0%, #85BB2F 100%); padding: 30px; border-radius: 12px; text-align: center; color: #2C3E50; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;">
@@ -56,7 +103,6 @@ if st.session_state["saludo_inicial"]:
         unsafe_allow_html=True,
     )
 
-    # Bandera oficial de Sunchales desde la fuente institucional
     st.image(
         "https://sunchales.gob.ar/wp-content/uploads/2025/05/Bandera-de-Sunchales_01.jpg",
         use_container_width=True,
@@ -74,6 +120,46 @@ if st.session_state["saludo_inicial"]:
       st.rerun()
 
   st.stop()
+
+# ===================================================================== #
+# 1. CONEXIÓN Y LECTURA ROBUSTA DESDE GOOGLE SHEETS                      #
+# ===================================================================== #
+SPREADSHEET_ID = "1r6izG5X1gil8MaZA1zD-WW2T1BA5mSC1Yq9-R663azU"
+URL_READ_EGRESOS = (
+    f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=0"
+)
+URL_READ_DESTINOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1365567783"
+URL_READ_RECURSOS = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=269081959"
+
+
+def leer_datos_gsheet(param_url_o_gid):
+  try:
+    resp = requests.get(param_url_o_gid, timeout=30)
+    if resp.status_code == 200:
+      df = pd.read_csv(io.StringIO(resp.text))
+      if not df.empty:
+        df.columns = [str(col).strip().lower() for col in df.columns]
+        df = df.fillna("")
+        for col in df.select_dtypes(include=["object", "string"]).columns:
+          df[col] = df[col].astype(str).str.strip()
+        if "total" in df.columns:
+          s_total = (
+              df["total"].astype(str).str.replace("$", "", regex=False).str.strip()
+          )
+          s_total = s_total.str.replace(".", "", regex=False).str.replace(
+              ",", ".", regex=False
+          )
+          df["total"] = pd.to_numeric(s_total, errors="coerce").fillna(0.0)
+        return df
+    return pd.DataFrame()
+  except Exception:
+    return pd.DataFrame()
+
+
+df_egr_completo = leer_datos_gsheet(URL_READ_EGRESOS)
+df_destinos_gsheet = leer_datos_gsheet(URL_READ_DESTINOS)
+
+st.success("¡Sistema cargado correctamente!")
 # =====================================================================
 # 1. CONEXIÓN Y LECTURA ROBUSTA DESDE GOOGLE SHEETS
 # =====================================================================

@@ -1,48 +1,13 @@
+import io
+import json
 import os
 import pandas as pd
-import streamlit as st
-import io
 import requests
+import streamlit as st
 import time
-import json
 
-# Archivo local para persistencia de techos presupuestarios
-ARCH_TECHOS = "techos_config.json"
-
-def cargar_techos_disco():
-    if os.path.exists(ARCH_TECHOS):
-        try:
-            with open(ARCH_TECHOS, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return {}
-    return {}
-
-def guardar_techos_disco(techos_dict):
-    try:
-        with open(ARCH_TECHOS, "w", encoding="utf-8") as f:
-            json.dump(techos_dict, f, ensure_ascii=False, indent=4)
-    except Exception as e:
-        st.warning(f"No se pudo guardar el archivo de techos: {e}")
-
-# Inicialización blindada (ampliada para incluir recursos)
-if "db_local_backup" not in st.session_state or not isinstance(st.session_state["db_local_backup"], dict):
-    st.session_state["db_local_backup"] = {"destinos": [], "egresos": [], "recursos": []}
-
-for k in ["destinos", "egresos", "recursos"]:
-    if k not in st.session_state["db_local_backup"] or not isinstance(st.session_state["db_local_backup"][k], list):
-        st.session_state["db_local_backup"][k] = []
-
-# Configuración de la página
+# Configuración inicial de la página
 st.set_page_config(page_title="Presupuesto Municipal 2027", layout="wide")
-
-import io
-import json
-import os
-import pandas as pd
-import requests
-import streamlit as st
-import time
 
 # Archivo local para persistencia de techos presupuestarios
 ARCH_TECHOS = "techos_config.json"
@@ -66,7 +31,7 @@ def guardar_techos_disco(techos_dict):
     st.warning(f"No se pudo guardar el archivo de techos: {e}")
 
 
-# Inicialización blindada
+# Inicialización blindada de la sesión
 if "db_local_backup" not in st.session_state or not isinstance(
     st.session_state["db_local_backup"], dict
 ):
@@ -75,14 +40,13 @@ if "db_local_backup" not in st.session_state or not isinstance(
       "egresos": [],
       "recursos": [],
   }
+
 for k in ["destinos", "egresos", "recursos"]:
   if k not in st.session_state["db_local_backup"] or not isinstance(
       st.session_state["db_local_backup"][k], list
   ):
     st.session_state["db_local_backup"][k] = []
 
-# Configuración de la página
-st.set_page_config(page_title="Presupuesto Municipal 2027", layout="wide")
 
 # ===================================================================== #
 # SALUDO INICIAL DE BIENVENIDA (Sunchales - Presupuesto 2027)             #

@@ -45,10 +45,10 @@ if "saludo_inicial" not in st.session_state:
 if st.session_state["saludo_inicial"]:
   _, col_centro, _ = st.columns([1, 2, 1])
   with col_centro:
-    # Encabezado institucional con los colores de Sunchales
+    # Encabezado con un degradado que combina el amarillo y verde de la bandera
     st.markdown(
         """
-        <div style="background: linear-gradient(135deg, #F4D03F 0%, #85BB2F 100%); padding: 30px; border-radius: 12px; text-align: center; color: #2C3E50; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;">
+        <div style="background: linear-gradient(135deg, #F1C40F 0%, #85BB2F 100%); padding: 30px; border-radius: 12px; text-align: center; color: #2C3E50; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;">
             <h1 style="margin: 0; font-size: 2.2rem; color: #1B4F72; text-shadow: 1px 1px 2px rgba(255,255,255,0.6);">Municipalidad de Sunchales</h1>
             <h3 style="margin: 10px 0 0 0; font-weight: 500; font-size: 1.2rem; color: #2C3E50;">Santa Fe — Sistema Homero (Presupuesto 2027)</h3>
         </div>
@@ -56,9 +56,9 @@ if st.session_state["saludo_inicial"]:
         unsafe_allow_html=True,
     )
 
-    # Bandera oficial de Sunchales animada / directa
+    # Bandera oficial de Sunchales desde la fuente institucional
     st.image(
-        "https://upload.wikimedia.org/wikipedia/commons/c/c5/Bandera_de_la_Ciudad_de_Sunchales.svg",
+        "https://sunchales.gob.ar/wp-content/uploads/2025/05/Bandera-de-Sunchales_01.jpg",
         use_container_width=True,
     )
 
@@ -74,7 +74,6 @@ if st.session_state["saludo_inicial"]:
       st.rerun()
 
   st.stop()
-		
 # =====================================================================
 # 1. CONEXIÓN Y LECTURA ROBUSTA DESDE GOOGLE SHEETS
 # =====================================================================

@@ -35,53 +35,6 @@ for k in ["destinos", "egresos", "recursos"]:
 
 # Configuración de la página
 st.set_page_config(page_title="Presupuesto Municipal 2027", layout="wide")
-
-# ===================================================================== #
-# SALUDO INICIAL DE BIENVENIDA (Sunchales - Presupuesto 2027)             #
-# ===================================================================== #
-if "saludo_inicial" not in st.session_state:
-  st.session_state["saludo_inicial"] = True
-
-if st.session_state["saludo_inicial"]:
-  # Contenedor principal de bienvenida centrado
-  _, col_centro, _ = st.columns([1, 2, 1])
-  with col_centro:
-    # Encabezado con los colores de la bandera de Sunchales (Amarillo y Verde)
-    st.markdown(
-        """
-        <div style="background: linear-gradient(135deg, #003366 0%, #0056b3 100%); padding: 30px; border-radius: 12px; text-align: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;">
-            <h1 style="margin: 0; font-size: 2.2rem; color: #FFFFFF;">Municipalidad de Sunchales</h1>
-            <h3 style="margin: 10px 0 0 0; font-weight: 300; font-size: 1.2rem; color: #E2E8F0;">Santa Fe — Sistema Homero (Presupuesto 2027)</h3>
-        <div style="background: linear-gradient(135deg, #F1C40F 0%, #85BB2F 100%); padding: 30px; border-radius: 12px; text-align: center; color: #2C3E50; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;">
-            <h1 style="margin: 0; font-size: 2.2rem; color: #1B4F72; text-shadow: 1px 1px 2px rgba(255,255,255,0.6);">Municipalidad de Sunchales</h1>
-            <h3 style="margin: 10px 0 0 0; font-weight: 500; font-size: 1.2rem; color: #2C3E50;">Santa Fe — Sistema Homero (Presupuesto 2027)</h3>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # Bandera institucional
-    # Nota: Si subes la imagen de la bandera a tu repositorio (por ejemplo, como "bandera_sunchales.png"), 
-    # puedes mostrarla directamente de forma local con: st.image("bandera_sunchales.png", use_container_width=True)
-    st.image(
-        "https://upload.wikimedia.org/wikipedia/commons/c/c5/Bandera_de_la_Ciudad_de_Sunchales.svg",
-        use_container_width=True,
-    )
-
-    st.markdown(
-        "<p style='text-align: center; font-size: 1.1rem; color: #4B5563;"
-        " margin: 20px 0;'>Bienvenido al sistema oficial de gestión y"
-        " planificación presupuestaria.</p>",
-        unsafe_allow_html=True,
-    )
-
-    # Botón para entrar al sistema principal
-    if st.button("🚀 Ingresar al Sistema", use_container_width=True):
-      st.session_state["saludo_inicial"] = False
-      st.rerun()
-
-  # Detiene la ejecución solo durante la pantalla de bienvenida inicial
-  st.stop()
 # =====================================================================
 # 1. CONEXIÓN Y LECTURA ROBUSTA DESDE GOOGLE SHEETS
 # =====================================================================

@@ -827,7 +827,7 @@ elif opcion_menu == "🏛️ REPORTE OFICIAL POR DESTINO":
                 f_plan, html_rows = [], ""
                 for obj, df_obj in df_f_of.groupby("objeto_gasto"):
                     t_o = df_obj["total"].sum()
-                    f_plan.append({"OBJETO DEL GASTO": f"<b>{obj}</b>", "PRESUPUESTO": f"<b>${t_o:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINANCIAMIENTO": ""})
+                    f_plan.append({"OBJETO DEL GASTO": f"<b>{obj}</b>", "PRESUPUESTO": f"<b>${t_o:,.2f}</b>", "F.FIN": "", "CLASE": "", "TIPO": "", "FINALIDAD": ""})
                     html_rows += f'<tr style="font-weight: bold; background-color: #f9f9f5;"><td style="text-align: left; padding-left: 5px;">{obj}</td><td>${t_o:,.2f}</td><td></td><td></td><td></td><td></td></tr>'
 
                     for pad, df_pad in df_obj.groupby("cuenta_padre"):
@@ -836,7 +836,7 @@ elif opcion_menu == "🏛️ REPORTE OFICIAL POR DESTINO":
                         html_rows += f'<tr style="font-weight: bold;"><td style="text-align: left; padding-left: 20px;">{pad}</td><td>${t_p:,.2f}</td><td></td><td></td><td></td><td></td></tr>'
 
                         for _, r in df_pad.iterrows():
-                            f_plan.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{r['cuenta_presupuestaria']}", "PRESUPUESTO": f"${r['total']:,.2f}", "F.FIN": r["fuente_fin"], "CLASE": r["clase"], "TIPO": r["tipo"], "FINANCIAMIENTO": r["finalidad"]})
+                            f_plan.append({"OBJETO DEL GASTO": f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{r['cuenta_presupuestaria']}", "PRESUPUESTO": f"${r['total']:,.2f}", "F.FIN": r["fuente_fin"], "CLASE": r["clase"], "TIPO": r["tipo"], "FINALIDAD": r["finalidad"]})
                             html_rows += f'<tr><td style="text-align: left; padding-left: 40px;">{r["cuenta_presupuestaria"]}</td><td>${r["total"]:,.2f}</td><td>{r["fuente_fin"]}</td><td>{r["clase"]}</td><td>{r["tipo"]}</td><td>{r["finalidad"]}</td></tr>'
 
                 st.write(pd.DataFrame(f_plan).to_html(escape=False, index=False), unsafe_allow_html=True)
@@ -1131,7 +1131,7 @@ elif opcion_menu == "📄 EXPORTACIÓN Y FIRMAS":
                             <th>F.FIN</th>
                             <th>CLASE</th>
                             <th>TIPO</th>
-                            <th>FINANCIAMIENTO</th>
+                            <th>FINALIDAD</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1356,7 +1356,7 @@ elif opcion_menu == "🏢 VISTA POR SECRETARÍA Y SUBSECRETARÍA":
                                 <th>F.FIN</th>
                                 <th>CLASE</th>
                                 <th>TIPO</th>
-                                <th>FINANCIAMIENTO</th>
+                                <th>FINALIDAD</th>
                             </tr>
                         </thead>
                         <tbody>

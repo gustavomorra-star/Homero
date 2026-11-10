@@ -124,6 +124,7 @@ df_destinos_gsheet = leer_datos_gsheet(URL_READ_DESTINOS)
 MAPEO_GASTOS = {
     "1. Gastos en personal": {
         "21.1.0.0.00.000 - Personal Permanente": [
+			"21.1.1.0.00.000 - Retribución del Cargo",
             "21.1.2.0.00.000 - Retribución a personal Directivo y de control",
             "21.1.3.0.00.000 - Retribuciones que no hacen al cargo",
             "21.1.4.0.00.000 - Sueldo Anual Complementario",
